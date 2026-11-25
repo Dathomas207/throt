@@ -1,0 +1,566 @@
+import crypto from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
+import express from 'express'
+import { renderDogPage, renderNotFound } from './publicPage.js'
+
+export const LIMITS = {
+  body: '400kb',
+  routePoints: 5000,
+  name: 60,
+  email: 254,
+  dogName: 40,
+  breed: 60,
+  bio: 280,
+  age: 20,
+  title: 80,
+  note: 500,
+  place: 80,
+  miles: 200,
+  minutes: 1440,
+  sniffs: 1000,
+  weight: 400,
+  activeInvites: 50,
+  dogsPerUser: 20,
+}
+export const ROLES = ['owner', 'walker', 'family', 'daycare']
+export const INVITE_ROLES = ['walker', 'family', 'daycare']
+export const WALK_TYPES = ['Walk', 'Hike', 'Run', 'Swim', 'Fetch', 'Training', 'Dog park', 'Daycare']
+const SESSION_DAYS = 30
+const INVITE_DAYS = 14
+const DAY = 864e5
+
+class HttpError extends Error {
+  constructor(status, message) { super(message); this.status = status }
+}
+const bad = (msg) => new HttpError(400, msg)
+
+const sha = (s) => crypto.createHash('sha256').update(s).digest('hex')
+const newToken = () => crypto.randomBytes(32).toString('base64url')
+const newId = () => crypto.randomUUID()
+const iso = (v) => new Date(v).toISOString()
+const num = (v) => Number(v) || 0
+const round = (v, p) => Math.round(v * p) / p
+const firstName = (name) => String(name || '').trim().split(/\s+/)[0].slice(0, 30)
+
+// ---- input validation -------------------------------------------------------
+function text(v, label, { max, min = 0 } = {}) {
+  if (v == null) v = ''
+  if (typeof v !== 'string') throw bad(`${label} must be text.`)
+  // Drop control characters, collapse runs of whitespace.
+  const s = v.replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim()
+  if (s.length < min) throw bad(`${label} is required.`)
+  if (s.length > max) throw bad(`${label} must be ${max} characters or fewer.`)
+  return s
+}
+function number(v, label, { min = 0, max, integer = false, optional = false } = {}) {
+  if (v == null || v === '') { if (optional) return null; throw bad(`${label} is required.`) }
+  if (typeof v !== 'number' || !Number.isFinite(v)) throw bad(`${label} must be a number.`)
+  if (integer && !Number.isInteger(v)) throw bad(`${label} must be a whole number.`)
+  if (v < min || v > max) throw bad(`${label} must be between ${min} and ${max}.`)
+  return v
+}
+function email(v) {
+  if (typeof v !== 'string') throw bad('Email is required.')
+  const s = v.trim().toLowerCase()
+  if (!s) throw bad('Email is required.')
+  if (s.length > LIMITS.email) throw bad(`Email must be ${LIMITS.email} characters or fewer.`)
+  if (!/^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(s)) throw bad('That email does not look right.')
+  return s
+}
+function birthday(v) {
+  if (v == null || v === '') return null
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw bad('Birthday must look like 2021-05-30.')
+  const d = new Date(v + 'T00:00:00Z')
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) throw bad('Birthday is not a real date.')
+  if (d.getTime() > Date.now() + DAY) throw bad('Birthday cannot be in the future.')
+  if (d.getTime() < Date.now() - 40 * 365.25 * DAY) throw bad('Birthday is too long ago.')
+  return v
+}
+function route(v) {
+  if (v == null) return null
+  if (!Array.isArray(v)) throw bad('Route must be a list of [lat, lng] pairs.')
+  if (v.length > LIMITS.routePoints) throw bad(`Route must be ${LIMITS.routePoints} points or fewer.`)
+  if (v.length < 2) return null
+  const out = []
+  for (const p of v) {
+    if (!Array.isArray(p) || p.length !== 2) throw bad('Route must be a list of [lat, lng] pairs.')
+    const [lat, lng] = p
+    if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) throw bad('Route has a point that is not a valid coordinate.')
+    out.push([round(lat, 1e5), round(lng, 1e5)])
+  }
+  return out
+}
+function bool(v, label) {
+  if (typeof v !== 'boolean') throw bad(`${label} must be true or false.`)
+  return v
+}
+function object(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) throw bad('Send a JSON object.')
+  return v
+}
+function dogFields(b, { partial }) {
+  const out = {}
+  if (!partial || b.name !== undefined) out.name = text(b.name, 'Dog name', { min: 1, max: LIMITS.dogName })
+  if (!partial || b.breed !== undefined) out.breed = text(b.breed, 'Breed', { max: LIMITS.breed })
+  if (!partial || b.bio !== undefined) out.bio = text(b.bio, 'Bio', { max: LIMITS.bio })
+  if (!partial || b.age !== undefined) out.age = text(b.age, 'Age', { max: LIMITS.age })
+  if (!partial || b.birthday !== undefined) out.birthday = birthday(b.birthday)
+  if (!partial || b.weight !== undefined) out.weight = number(b.weight, 'Weight', { min: 0.5, max: LIMITS.weight, optional: true })
+  return out
+}
+function ageLabel(dog) {
+  if (dog.birthday) {
+    const b = new Date(dog.birthday + 'T00:00:00Z'), n = new Date()
+    let months = (n.getUTCFullYear() - b.getUTCFullYear()) * 12 + (n.getUTCMonth() - b.getUTCMonth()) - (n.getUTCDate() < b.getUTCDate() ? 1 : 0)
+    if (months < 0) months = 0
+    if (months < 1) return 'Under 1 mo'
+    if (months < 24) return `${months} ${months === 1 ? 'mo' : 'mos'}`
+    return `${Math.floor(months / 12)} yrs`
+  }
+  return dog.age || ''
+}
+export function slugify(name) {
+  const s = String(name).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/g, '')
+  return s || 'dog'
+}
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/
+const isUnique = (e) => e && (e.code === '23505' || /unique|duplicate/i.test(e.message || ''))
+
+// ---- small in-memory rate limiter ------------------------------------------
+// Fixed window per key. Good enough for a single trial instance. It resets on
+// restart and is not shared between instances.
+function limiter({ windowMs, max }) {
+  const hits = new Map()
+  return (key) => {
+    const now = Date.now()
+    if (hits.size > 20000) for (const [k, v] of hits) if (v.reset <= now) hits.delete(k)
+    let h = hits.get(key)
+    if (!h || h.reset <= now) { h = { n: 0, reset: now + windowMs }; hits.set(key, h) }
+    h.n += 1
+    return { ok: h.n <= max, retry: Math.ceil((h.reset - now) / 1000) }
+  }
+}
+
+export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = {} } = {}) {
+  const app = express()
+  app.disable('x-powered-by')
+  app.set('trust proxy', trustProxy)
+  const R = { sessionMax: 20, sessionWindowMs: 15 * 60e3, writeMax: 120, writeWindowMs: 60e3, readMax: 600, readWindowMs: 60e3, ...rate }
+  const sessionLimit = limiter({ windowMs: R.sessionWindowMs, max: R.sessionMax })
+  const writeLimit = limiter({ windowMs: R.writeWindowMs, max: R.writeMax })
+  const readLimit = limiter({ windowMs: R.readWindowMs, max: R.readMax })
+  const limited = (res, r) => { res.set('Retry-After', String(r.retry)); throw new HttpError(429, 'Too many requests. Wait a moment and try again.') }
+  const origin = (req) => (baseUrl || `${req.protocol}://${req.get('host') || 'localhost'}`).replace(/\/+$/, '')
+
+  app.use((req, res, next) => {
+    res.set('X-Content-Type-Options', 'nosniff')
+    res.set('Referrer-Policy', 'same-origin')
+    next()
+  })
+
+  app.get('/healthz', async (req, res) => {
+    try { await db.query('SELECT 1'); res.json({ ok: true, db: db.kind }) } catch (e) { res.status(503).json({ ok: false }) }
+  })
+
+  // ---- API ------------------------------------------------------------------
+  const api = express.Router()
+  api.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store')
+    const r = readLimit('ip:' + req.ip)
+    if (!r.ok) return limited(res, r)
+    next()
+  })
+  api.use(express.json({ limit: LIMITS.body }))
+  // The client uses this to tell a real Trot API from static hosting, where any
+  // path answers with index.html.
+  api.get('/health', (req, res) => res.json({ ok: true, service: 'trot' }))
+
+  async function userFor(req) {
+    const h = req.get('authorization') || ''
+    const m = /^Bearer ([A-Za-z0-9_-]{20,200})$/.exec(h)
+    if (!m) return null
+    const { rows } = await db.query(
+      'SELECT u.id, u.name, u.email FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > $2',
+      [sha(m[1]), iso(Date.now())])
+    return rows[0] ? { ...rows[0], tokenHash: sha(m[1]) } : null
+  }
+  const auth = async (req, res, next) => {
+    const u = await userFor(req)
+    if (!u) throw new HttpError(401, 'Sign in to continue.')
+    req.user = u
+    if (req.method !== 'GET') {
+      const r = writeLimit('user:' + u.id)
+      if (!r.ok) return limited(res, r)
+    }
+    next()
+  }
+  async function dogFor(slug, userId, { owner = false } = {}) {
+    if (!SLUG_RE.test(slug)) throw new HttpError(404, 'No dog with that address.')
+    const { rows } = await db.query('SELECT * FROM dogs WHERE slug = $1', [slug])
+    const dog = rows[0]
+    if (!dog) throw new HttpError(404, 'No dog with that address.')
+    const m = await db.query('SELECT role FROM memberships WHERE dog_id = $1 AND user_id = $2', [dog.id, userId])
+    if (!m.rows[0]) throw new HttpError(403, 'You are not on this dog\'s care team.')
+    if (owner && m.rows[0].role !== 'owner') throw new HttpError(403, 'Only the owner can do that.')
+    return { dog, role: m.rows[0].role }
+  }
+  const dogOut = (d, role) => ({
+    slug: d.slug, name: d.name, breed: d.breed, birthday: d.birthday || null, age: ageLabel(d), weight: d.weight == null ? null : num(d.weight), bio: d.bio,
+    public: !!d.is_public, shareRoutes: !!d.share_routes, ...(role ? { role } : {}),
+  })
+  const totalsOut = (r) => ({ outings: num(r && r.outings), miles: round(num(r && r.miles), 100), minutes: round(num(r && r.minutes), 10) })
+  async function totals(dogId, since) {
+    const q = since
+      ? await db.query('SELECT COUNT(*) AS outings, COALESCE(SUM(miles), 0) AS miles, COALESCE(SUM(minutes), 0) AS minutes FROM walks WHERE dog_id = $1 AND started_at >= $2', [dogId, since])
+      : await db.query('SELECT COUNT(*) AS outings, COALESCE(SUM(miles), 0) AS miles, COALESCE(SUM(minutes), 0) AS minutes FROM walks WHERE dog_id = $1', [dogId])
+    return totalsOut(q.rows[0])
+  }
+  async function pawCounts(walkIds, userId) {
+    const counts = {}, mine = {}
+    if (!walkIds.length) return { counts, mine }
+    const ph = walkIds.map((_, i) => `$${i + 1}`).join(', ')
+    const c = await db.query(`SELECT walk_id, COUNT(*) AS n FROM paws WHERE walk_id IN (${ph}) GROUP BY walk_id`, walkIds)
+    c.rows.forEach((r) => { counts[r.walk_id] = num(r.n) })
+    if (userId) {
+      const m = await db.query(`SELECT walk_id FROM paws WHERE user_id = $${walkIds.length + 1} AND walk_id IN (${ph})`, [...walkIds, userId])
+      m.rows.forEach((r) => { mine[r.walk_id] = true })
+    }
+    return { counts, mine }
+  }
+  const parseRoute = (s) => { if (!s) return null; try { const v = JSON.parse(s); return Array.isArray(v) && v.length > 1 ? v : null } catch (e) { return null } }
+  // Lists carry a thinned route for the thumbnail. The full route comes from GET /api/walks/:id.
+  const thin = (pts, max = 120) => {
+    if (!pts || pts.length <= max) return pts
+    const out = []
+    for (let i = 0; i < max; i++) out.push(pts[Math.round((i * (pts.length - 1)) / (max - 1))])
+    return out
+  }
+  const WALK_COLS = 'w.id, w.dog_id, w.user_id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, d.slug AS dog_slug, d.name AS dog_name, u.name AS user_name'
+  async function walksOut(rows, userId, { full = false } = {}) {
+    const { counts, mine } = await pawCounts(rows.map((r) => r.id), userId)
+    return rows.map((r) => {
+      const pts = parseRoute(r.route)
+      return {
+        id: r.id, dog: { slug: r.dog_slug, name: r.dog_name }, by: { id: r.user_id, name: r.user_name, you: r.user_id === userId },
+        type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs),
+        startedAt: iso(r.started_at), route: full ? pts : thin(pts), paws: counts[r.id] || 0, pawed: !!mine[r.id],
+      }
+    })
+  }
+
+  // -- session
+  api.post('/session', async (req, res) => {
+    const r = sessionLimit('ip:' + req.ip)
+    if (!r.ok) return limited(res, r)
+    const b = object(req.body)
+    const mail = email(b.email)
+    const name = text(b.name, 'Your name', { min: 1, max: LIMITS.name })
+    const now = Date.now()
+    let { rows } = await db.query('SELECT id, name, email FROM users WHERE email = $1', [mail])
+    let created = false
+    if (!rows[0]) {
+      try {
+        await db.query('INSERT INTO users (id, name, email, created_at) VALUES ($1, $2, $3, $4)', [newId(), name, mail, iso(now)])
+        created = true
+      } catch (e) { if (!isUnique(e)) throw e }
+      rows = (await db.query('SELECT id, name, email FROM users WHERE email = $1', [mail])).rows
+    }
+    const user = rows[0]
+    const token = newToken()
+    await db.query('DELETE FROM sessions WHERE expires_at < $1', [iso(now)])
+    await db.query('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES ($1, $2, $3, $4)', [sha(token), user.id, iso(now), iso(now + SESSION_DAYS * DAY)])
+    res.status(created ? 201 : 200).json({ token, user: { id: user.id, name: user.name, email: user.email }, created })
+  })
+  api.delete('/session', auth, async (req, res) => {
+    await db.query('DELETE FROM sessions WHERE token_hash = $1', [req.user.tokenHash])
+    res.json({ ok: true })
+  })
+
+  api.get('/me', auth, async (req, res) => {
+    const { rows } = await db.query(
+      'SELECT d.*, m.role FROM memberships m JOIN dogs d ON d.id = m.dog_id WHERE m.user_id = $1 ORDER BY m.created_at ASC, d.slug ASC', [req.user.id])
+    res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email }, dogs: rows.map((d) => dogOut(d, d.role)) })
+  })
+
+  // -- dogs
+  api.post('/dogs', auth, async (req, res) => {
+    const f = dogFields(object(req.body), { partial: false })
+    const owned = await db.query('SELECT COUNT(*) AS n FROM memberships WHERE user_id = $1 AND role = $2', [req.user.id, 'owner'])
+    if (num(owned.rows[0].n) >= LIMITS.dogsPerUser) throw bad(`You can add up to ${LIMITS.dogsPerUser} dogs in this trial.`)
+    const base = slugify(f.name)
+    const now = iso(Date.now())
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const taken = new Set((await db.query('SELECT slug FROM dogs WHERE slug = $1 OR slug LIKE $2', [base, base + '-%'])).rows.map((r) => r.slug))
+      let slug = base
+      for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`
+      const id = newId()
+      try {
+        await db.tx(async (t) => {
+          await t.query('INSERT INTO dogs (id, slug, name, breed, birthday, age, weight, bio, is_public, share_routes, created_by, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, $9, $10)',
+            [id, slug, f.name, f.breed, f.birthday, f.age, f.weight, f.bio, req.user.id, now])
+          await t.query('INSERT INTO memberships (user_id, dog_id, role, created_at) VALUES ($1, $2, $3, $4)', [req.user.id, id, 'owner', now])
+        })
+      } catch (e) { if (isUnique(e)) continue; throw e }
+      const { rows } = await db.query('SELECT * FROM dogs WHERE id = $1', [id])
+      return res.status(201).json({ dog: dogOut(rows[0], 'owner') })
+    }
+    throw new HttpError(503, 'Could not pick an address for this dog. Try again.')
+  })
+
+  api.get('/dogs/:slug', auth, async (req, res) => {
+    const { dog, role } = await dogFor(req.params.slug, req.user.id)
+    const since = iso(Date.now() - 7 * DAY)
+    const members = await db.query('SELECT u.id, u.name, m.role, m.created_at FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.dog_id = $1 ORDER BY m.created_at ASC, u.id ASC', [dog.id])
+    const per = await db.query('SELECT user_id, COUNT(*) AS outings, COALESCE(SUM(miles), 0) AS miles, COALESCE(SUM(minutes), 0) AS minutes FROM walks WHERE dog_id = $1 AND started_at >= $2 GROUP BY user_id', [dog.id, since])
+    const byUser = Object.fromEntries(per.rows.map((r) => [r.user_id, totalsOut(r)]))
+    const recent = await db.query(`SELECT ${WALK_COLS} FROM walks w JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id WHERE w.dog_id = $1 ORDER BY w.started_at DESC, w.id DESC LIMIT 20`, [dog.id])
+    const wk = await db.query('SELECT started_at, minutes, miles, type FROM walks WHERE dog_id = $1 AND started_at >= $2 ORDER BY started_at DESC LIMIT 500', [dog.id, since])
+    res.json({
+      dog: dogOut(dog, role),
+      totals: { week: await totals(dog.id, since), lifetime: await totals(dog.id) },
+      team: members.rows.map((m) => ({ id: m.id, name: m.name, role: m.role, you: m.id === req.user.id, week: byUser[m.id] || totalsOut(null) })),
+      weekWalks: wk.rows.map((r) => ({ startedAt: iso(r.started_at), minutes: num(r.minutes), miles: num(r.miles), type: r.type })),
+      walks: await walksOut(recent.rows, req.user.id),
+    })
+  })
+
+  api.patch('/dogs/:slug', auth, async (req, res) => {
+    const { dog } = await dogFor(req.params.slug, req.user.id, { owner: true })
+    const b = object(req.body)
+    const f = dogFields(b, { partial: true })
+    if (b.public !== undefined) f.is_public = bool(b.public, 'public')
+    const sr = b.share_routes !== undefined ? b.share_routes : b.shareRoutes
+    if (sr !== undefined) f.share_routes = bool(sr, 'share_routes')
+    // Column names come from this fixed list, never from the request.
+    const cols = ['name', 'breed', 'bio', 'age', 'birthday', 'weight', 'is_public', 'share_routes'].filter((c) => f[c] !== undefined)
+    if (!cols.length) throw bad('Nothing to change.')
+    await db.query(`UPDATE dogs SET ${cols.map((c, i) => `${c} = $${i + 1}`).join(', ')} WHERE id = $${cols.length + 1}`, [...cols.map((c) => f[c]), dog.id])
+    const { rows } = await db.query('SELECT * FROM dogs WHERE id = $1', [dog.id])
+    res.json({ dog: dogOut(rows[0], 'owner') })
+  })
+
+  // -- invites
+  api.post('/dogs/:slug/invites', auth, async (req, res) => {
+    const { dog } = await dogFor(req.params.slug, req.user.id, { owner: true })
+    const b = req.body == null ? {} : object(req.body)
+    const role = b.role === undefined ? 'walker' : b.role
+    if (!INVITE_ROLES.includes(role)) throw bad(`Role must be one of: ${INVITE_ROLES.join(', ')}.`)
+    const now = Date.now()
+    const open = await db.query('SELECT COUNT(*) AS n FROM invites WHERE dog_id = $1 AND used_by IS NULL AND expires_at > $2', [dog.id, iso(now)])
+    if (num(open.rows[0].n) >= LIMITS.activeInvites) throw bad('This dog has too many open invites. Wait for some to expire.')
+    const token = newToken()
+    const expiresAt = iso(now + INVITE_DAYS * DAY)
+    await db.query('INSERT INTO invites (token_hash, dog_id, role, created_by, created_at, expires_at) VALUES ($1, $2, $3, $4, $5, $6)', [sha(token), dog.id, role, req.user.id, iso(now), expiresAt])
+    const p = `/?invite=${token}`
+    res.status(201).json({ token, role, expiresAt, path: p, url: origin(req) + p })
+  })
+  const TOKEN_RE = /^[A-Za-z0-9_-]{20,200}$/
+  async function inviteFor(token) {
+    if (!TOKEN_RE.test(token)) throw new HttpError(404, 'This invite link is not valid.')
+    const { rows } = await db.query('SELECT i.*, d.slug, d.name AS dog_name FROM invites i JOIN dogs d ON d.id = i.dog_id WHERE i.token_hash = $1', [sha(token)])
+    if (!rows[0]) throw new HttpError(404, 'This invite link is not valid.')
+    return rows[0]
+  }
+  // Lets the sign-in screen say which dog the invite is for. Dog name and role only.
+  api.get('/invites/:token', async (req, res) => {
+    const inv = await inviteFor(req.params.token)
+    const open = !inv.used_by && new Date(inv.expires_at).getTime() > Date.now()
+    res.json({ dogName: inv.dog_name, role: inv.role, open })
+  })
+  api.post('/invites/:token/accept', auth, async (req, res) => {
+    const inv = await inviteFor(req.params.token)
+    const out = (role, already) => res.json({ dog: { slug: inv.slug, name: inv.dog_name }, role, already })
+    const mine = await db.query('SELECT role FROM memberships WHERE dog_id = $1 AND user_id = $2', [inv.dog_id, req.user.id])
+    if (mine.rows[0]) return out(mine.rows[0].role, true)
+    const now = iso(Date.now())
+    await db.tx(async (t) => {
+      // Single use: the UPDATE only matches while the invite is unused and unexpired.
+      const u = await t.query('UPDATE invites SET used_by = $1, used_at = $2 WHERE token_hash = $3 AND used_by IS NULL AND expires_at > $2 RETURNING role', [req.user.id, now, inv.token_hash])
+      if (!u.rows[0]) throw new HttpError(410, 'This invite link has expired or was already used. Ask for a new one.')
+      await t.query('INSERT INTO memberships (user_id, dog_id, role, created_at) VALUES ($1, $2, $3, $4)', [req.user.id, inv.dog_id, inv.role, now])
+    })
+    out(inv.role, false)
+  })
+
+  // -- walks
+  api.post('/dogs/:slug/walks', auth, async (req, res) => {
+    const { dog } = await dogFor(req.params.slug, req.user.id)
+    const b = object(req.body)
+    const type = b.type === undefined ? 'Walk' : b.type
+    if (!WALK_TYPES.includes(type)) throw bad(`Type must be one of: ${WALK_TYPES.join(', ')}.`)
+    const title = text(b.title, 'Title', { min: 1, max: LIMITS.title })
+    const note = text(b.note, 'Note', { max: LIMITS.note })
+    const place = text(b.place, 'Place', { max: LIMITS.place })
+    const miles = number(b.miles ?? 0, 'Miles', { max: LIMITS.miles })
+    const minutes = number(b.minutes, 'Minutes', { max: LIMITS.minutes })
+    const sniffs = number(b.sniffs ?? 0, 'Sniff stops', { max: LIMITS.sniffs, integer: true })
+    const pts = route(b.route)
+    const now = Date.now()
+    let started = now - minutes * 60e3
+    if (b.startedAt !== undefined && b.startedAt !== null) {
+      if (typeof b.startedAt !== 'string' || b.startedAt.length > 40) throw bad('startedAt must be an ISO date.')
+      started = new Date(b.startedAt).getTime()
+      if (Number.isNaN(started)) throw bad('startedAt must be an ISO date.')
+      if (started > now + 5 * 60e3) throw bad('A walk cannot start in the future.')
+      if (started < now - 366 * DAY) throw bad('A walk cannot be more than a year old.')
+    }
+    const id = newId()
+    await db.query('INSERT INTO walks (id, dog_id, user_id, type, title, note, place, miles, minutes, sniffs, started_at, route, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
+      [id, dog.id, req.user.id, type, title, note, place, round(miles, 100), round(minutes, 100), sniffs, iso(started), pts ? JSON.stringify(pts) : null, iso(now)])
+    const { rows } = await db.query(`SELECT ${WALK_COLS} FROM walks w JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id WHERE w.id = $1`, [id])
+    res.status(201).json({ walk: (await walksOut(rows, req.user.id, { full: true }))[0] })
+  })
+
+  const ID_RE = /^[0-9a-f-]{36}$/
+  // Members only. Anyone else gets the same 404 as for a walk that does not exist.
+  async function walkFor(id, userId) {
+    if (!ID_RE.test(id)) throw new HttpError(404, 'No such walk.')
+    const { rows } = await db.query(`SELECT ${WALK_COLS} FROM walks w JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id JOIN memberships m ON m.dog_id = w.dog_id AND m.user_id = $2 WHERE w.id = $1`, [id, userId])
+    if (!rows[0]) throw new HttpError(404, 'No such walk.')
+    return rows[0]
+  }
+  api.get('/walks/:id', auth, async (req, res) => {
+    const w = await walkFor(req.params.id, req.user.id)
+    res.json({ walk: (await walksOut([w], req.user.id, { full: true }))[0] })
+  })
+  const pawState = async (walkId, userId) => {
+    const { counts, mine } = await pawCounts([walkId], userId)
+    return { paws: counts[walkId] || 0, pawed: !!mine[walkId] }
+  }
+  api.post('/walks/:id/paw', auth, async (req, res) => {
+    const w = await walkFor(req.params.id, req.user.id)
+    await db.query('INSERT INTO paws (walk_id, user_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (walk_id, user_id) DO NOTHING', [w.id, req.user.id, iso(Date.now())])
+    res.json(await pawState(w.id, req.user.id))
+  })
+  api.delete('/walks/:id/paw', auth, async (req, res) => {
+    const w = await walkFor(req.params.id, req.user.id)
+    await db.query('DELETE FROM paws WHERE walk_id = $1 AND user_id = $2', [w.id, req.user.id])
+    res.json(await pawState(w.id, req.user.id))
+  })
+
+  // -- feed: newest first, keyset pagination on (started_at, id)
+  api.get('/feed', auth, async (req, res) => {
+    let limit = 20
+    if (req.query.limit !== undefined) {
+      limit = Number(req.query.limit)
+      if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw bad('limit must be a whole number from 1 to 50.')
+    }
+    const params = [req.user.id]
+    let where = ''
+    if (req.query.dog !== undefined) {
+      const { dog } = await dogFor(String(req.query.dog), req.user.id)
+      params.push(dog.id)
+      where += ` AND w.dog_id = $${params.length}`
+    }
+    if (req.query.cursor !== undefined) {
+      let at, id
+      try { [at, id] = Buffer.from(String(req.query.cursor).slice(0, 200), 'base64url').toString('utf8').split('|') } catch (e) {}
+      if (!at || !id || Number.isNaN(new Date(at).getTime()) || !ID_RE.test(id)) throw bad('That cursor is not valid.')
+      params.push(iso(at), id)
+      where += ` AND (w.started_at < $${params.length - 1} OR (w.started_at = $${params.length - 1} AND w.id < $${params.length}))`
+    }
+    params.push(limit + 1)
+    const { rows } = await db.query(
+      `SELECT ${WALK_COLS} FROM walks w JOIN memberships m ON m.dog_id = w.dog_id AND m.user_id = $1 JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id WHERE TRUE${where} ORDER BY w.started_at DESC, w.id DESC LIMIT $${params.length}`, params)
+    const page = rows.slice(0, limit)
+    const last = page[page.length - 1]
+    res.json({
+      walks: await walksOut(page, req.user.id),
+      nextCursor: rows.length > limit ? Buffer.from(`${iso(last.started_at)}|${last.id}`).toString('base64url') : null,
+    })
+  })
+
+  // -- public
+  async function publicDog(slug) {
+    if (!SLUG_RE.test(slug)) return null
+    const { rows } = await db.query('SELECT * FROM dogs WHERE slug = $1', [slug])
+    const dog = rows[0]
+    // Private dogs look exactly like dogs that do not exist.
+    if (!dog || !dog.is_public) return null
+    const since = iso(Date.now() - 7 * DAY)
+    const w = await db.query(
+      'SELECT w.id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, u.name AS user_name, m.role FROM walks w JOIN users u ON u.id = w.user_id LEFT JOIN memberships m ON m.dog_id = w.dog_id AND m.user_id = w.user_id WHERE w.dog_id = $1 ORDER BY w.started_at DESC, w.id DESC LIMIT 10', [dog.id])
+    const { counts } = await pawCounts(w.rows.map((r) => r.id), null)
+    return {
+      slug: dog.slug, name: dog.name, breed: dog.breed, bio: dog.bio, shareRoutes: !!dog.share_routes,
+      totals: { lifetime: await totals(dog.id), week: await totals(dog.id, since) },
+      walks: w.rows.map((r) => {
+        const out = {
+          type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs), startedAt: iso(r.started_at),
+          // First names only for people. A daycare is a business, so its name is shown whole.
+          with: r.role === 'daycare' ? r.user_name : firstName(r.user_name), paws: counts[r.id] || 0,
+        }
+        if (dog.share_routes) out.route = thin(parseRoute(r.route), 300)
+        return out
+      }),
+    }
+  }
+  api.get('/public/dogs/:slug', async (req, res) => {
+    const dog = await publicDog(req.params.slug)
+    if (!dog) throw new HttpError(404, 'No public dog with that address.')
+    res.json({ dog })
+  })
+
+  api.use((req, res) => res.status(404).json({ error: 'Not found.' }))
+  api.use((err, req, res, next) => {
+    let status = err.status || err.statusCode || 500
+    let message = err.message
+    if (err.type === 'entity.too.large') { status = 413; message = 'That is too much data for one request.' }
+    else if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) { status = 400; message = 'The request body is not valid JSON.' }
+    else if (status >= 500) { console.error(err); message = 'Something went wrong on our side.' }
+    res.status(status).json({ error: message })
+  })
+  app.use('/api', api)
+
+  // ---- public dog page --------------------------------------------------------
+  const pageHeaders = (res) => {
+    res.set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+    res.set('X-Frame-Options', 'DENY')
+    res.type('html')
+  }
+  app.get('/d/:slug', async (req, res) => {
+    const r = readLimit('ip:' + req.ip)
+    pageHeaders(res)
+    if (!r.ok) return res.status(429).set('Retry-After', String(r.retry)).send(renderNotFound())
+    let dog = null
+    try { dog = await publicDog(req.params.slug) } catch (e) { console.error(e); return res.status(500).send(renderNotFound()) }
+    if (!dog) return res.status(404).set('Cache-Control', 'no-store').send(renderNotFound())
+    res.set('Cache-Control', 'public, max-age=60').send(renderDogPage(dog, origin(req)))
+  })
+  app.use('/d', (req, res) => { pageHeaders(res); res.status(404).send(renderNotFound()) })
+
+  // ---- built frontend ---------------------------------------------------------
+  // The stock service worker in public/ caches every same-origin GET. Behind this
+  // server that would keep signed-in API answers in the browser cache, so the
+  // server answers /sw.js itself with a version that leaves /api, /d and /healthz alone.
+  app.get('/sw.js', (req, res) => {
+    res.type('application/javascript').set('Cache-Control', 'no-cache').send(`// Network first, falling back to cache, for the app shell only.
+const CACHE = 'trot-v2'
+self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())))
+self.addEventListener('fetch', (e) => {
+  const u = new URL(e.request.url)
+  if (e.request.method !== 'GET' || u.origin !== location.origin) return
+  if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/d/') || u.pathname === '/healthz') return
+  // Cache under the path only, so a one-time invite token in the query never lands in the cache.
+  const key = u.pathname
+  e.respondWith(fetch(e.request).then((r) => { if (r.ok) { const c = r.clone(); caches.open(CACHE).then((x) => x.put(key, c)) } return r }).catch(() => caches.match(key).then((r) => r || caches.match('/'))))
+})
+`)
+  })
+  if (staticDir) {
+    const index = path.join(staticDir, 'index.html')
+    app.use(express.static(staticDir, { index: false, maxAge: '1h', setHeaders: (res, p) => { if (/[\\/]assets[\\/]/.test(p)) res.set('Cache-Control', 'public, max-age=31536000, immutable') } }))
+    app.use((req, res, next) => {
+      if (req.method !== 'GET' && req.method !== 'HEAD') return next()
+      // A missing file is a 404. Everything else is a route inside the app.
+      if (path.extname(req.path)) return res.status(404).type('text').send('Not found')
+      if (!fs.existsSync(index)) return res.status(503).type('text').send('The frontend is not built yet. Run: npm run build')
+      res.set('Cache-Control', 'no-cache').sendFile(index)
+    })
+  }
+  app.use((req, res) => res.status(404).type('text').send('Not found'))
+  app.use((err, req, res, next) => { console.error(err); res.status(500).type('text').send('Something went wrong.') })
+  return app
+}

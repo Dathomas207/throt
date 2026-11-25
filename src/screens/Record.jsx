@@ -10,7 +10,7 @@ const LOOPS = [1, 2, 3]
 const MAX_ACCURACY_M = 40 // ignore GPS fixes less certain than this
 const MIN_STEP_M = 4 // ignore movement smaller than this to cut jitter
 const METERS_PER_MILE = 1609.344
-export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast }) {
+export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast, meName, dogName }) {
   const [hand] = useState(() => { const h = takeHandoff(); return h && h.kind === 'demo' && !ROUTES[h.key] ? null : h })
   const [mode, setMode] = useState('setup')
   const [type, setType] = useState('Walk')
@@ -91,17 +91,18 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast 
   const titleAt = live || rk === 'loop' ? '' : demoKey ? r.name.split(' ')[0] + ' ' + (r.name.split(' ')[1] || '') : r.place || ''
   const finish = () => { setPaused(true); const h = new Date().getHours(); setTitle(`${h < 11 ? 'Morning' : h < 15 ? 'Midday' : h < 19 ? 'Evening' : 'Night'} ${type.toLowerCase()}${titleAt ? ' at ' + titleAt : ''}`.trim()); setMode('done') }
   const save = () => {
-    const a = { id: 'm' + Date.now(), dog: 'Biscuit', by: me, type, title: title || type, daysAgo: 0, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), place: live ? 'Live GPS' : r.place || r.name, route: demoKey, pts: live ? (gps.length > 1 ? gps : null) : r.pts.slice(0, Math.max(2, idx + 1)), miles: Math.round(miles * 100) / 100, minutes: sec / 60, sniffs, paws: 0, comments: 0, note }
+    const a = { id: 'm' + Date.now(), dog: dogName || 'Biscuit', by: me, type, title: title || type, daysAgo: 0, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), place: live ? 'Live GPS' : r.place || r.name, route: demoKey, pts: live ? (gps.length > 1 ? gps : null) : r.pts.slice(0, Math.max(2, idx + 1)), miles: Math.round(miles * 100) / 100, minutes: sec / 60, sniffs, paws: 0, comments: 0, note }
     saveWalk(a)
   }
   const start = () => { setSec(0); dist.current = 0; last.current = null; fixes.current = 0; setGps([]); setWeak(false); setPaused(false); setMode('run') }
   const canStart = live || !!r
-  const meP = PEOPLE[me]
+  const meP = { ...(PEOPLE[me] || PEOPLE.dale), ...(meName ? { name: meName } : {}) }
+  const dn = dogName || 'Biscuit'
   if (mode === 'setup') return (
     <div className="scroll pad">
-      <header className="row g10"><button className="round" aria-label="Close" onClick={() => setTab('home')}><Ic n="x" /></button><h1 className="h1">Walk Biscuit</h1></header>
-      <div className="who"><Av t="B" s={64} bg="#C8F031" c="#0F1B2D" /><div className="plus">+</div><Av t={meP.name[0]} s={44} bg={meP.color} c={meP.ink} /><div><div className="dogname">Biscuit</div><div className="meta">going out with {meP.name}</div></div></div>
-      {conn.tag && <div className="hint"><Ic n="tag" s={18} c="#1F5AE8" />Trot Tag heard nearby. Biscuit was added automatically.</div>}
+      <header className="row g10"><button className="round" aria-label="Close" onClick={() => setTab('home')}><Ic n="x" /></button><h1 className="h1">Walk {dn}</h1></header>
+      <div className="who"><Av t={dn[0]} s={64} bg="#C8F031" c="#0F1B2D" /><div className="plus">+</div><Av t={meP.name[0]} s={44} bg={meP.color} c={meP.ink} /><div><div className="dogname">{dn}</div><div className="meta">going out with {meP.name}</div></div></div>
+      {conn.tag && <div className="hint"><Ic n="tag" s={18} c="#1F5AE8" />Trot Tag heard nearby. {dn} was added automatically.</div>}
       <div className="eyebrow dark">ACTIVITY</div>
       <div className="chips wrap">{['Walk', 'Hike', 'Run', 'Swim', 'Fetch', 'Training', 'Dog park'].map((t) => <button key={t} className={`chip flat ${type === t ? 'on' : ''}`} aria-pressed={type === t} onClick={() => setType(t)}>{t}</button>)}</div>
       <div className="eyebrow dark">ROUTE</div>
@@ -124,7 +125,7 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast 
     <div className="fill navy">
       <TrotMap route={live ? gps : r.pts} upto={live ? null : idx} live bottom={panelH} className="abs" interactive={false} />
       <div className="over topbar row g8">
-        <div className="pill"><Av t="B" s={30} />Biscuit{conn.tag && <Ic n="tag" s={16} c="#1F5AE8" />}</div>
+        <div className="pill"><Av t={dn[0]} s={30} />{dn}{conn.tag && <Ic n="tag" s={16} c="#1F5AE8" />}</div>
         <div className="pill">with {meP.name}</div>
         {!live && <div className="pill dark">Demo ×{SPEED}</div>}
         {live && mode === 'run' && (weak || gps.length === 0) && <div className="pill gpswait" role="status">Waiting for a good GPS fix</div>}
@@ -136,10 +137,10 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast 
           <Range min={todayMin + sec / 60} light />
           <div className="row g12"><button className="cta grow" onClick={() => setPaused(!paused)}><Ic n={paused ? 'play' : 'pause'} c="#0F1B2D" />{paused ? 'Resume' : 'Pause'}</button><button className="cta white grow" onClick={finish}>Finish</button></div>
         </>) : (<>
-          <div className="row between"><h2 className="white">Nice one, Biscuit</h2><div className="num white">{miles.toFixed(2)} mi · {fmtTime(sec / 60)}</div></div>
+          <div className="row between"><h2 className="white">Nice one, {dn}</h2><div className="num white">{miles.toFixed(2)} mi · {fmtTime(sec / 60)}</div></div>
           <label className="field"><span>Title</span><input value={title} onChange={(e) => setTitle(e.target.value)} /></label>
-          <label className="field"><span>How did Biscuit do?</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Found a stick, met a friend…" /></label>
-          <div className="row g12"><button className="cta white grow" onClick={() => setTab('home')}>Discard</button><button className="cta grow" onClick={save}>Save to Biscuit</button></div>
+          <label className="field"><span>How did {dn} do?</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Found a stick, met a friend…" /></label>
+          <div className="row g12"><button className="cta white grow" onClick={() => setTab('home')}>Discard</button><button className="cta grow" onClick={save}>Save to {dn}</button></div>
         </>)}
       </div>
     </div>

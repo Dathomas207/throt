@@ -13,7 +13,7 @@ const fmtDist = (mi) => (mi < 0.1 ? Math.max(10, Math.round((mi * 5280) / 10) * 
 
 const Target = () => <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F5AE8" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="1.5" fill="#1F5AE8" /><path d="M12 2v4M12 18v4M2 12h4M18 12h4" /></svg>
 
-export default function Explore({ setTab, setToast }) {
+export default function Explore({ setTab, setToast, dogName }) {
   const [user, setUser] = useState(null)
   const [view, setView] = useState(null)
   const [res, setRes] = useState(null)
@@ -122,8 +122,8 @@ export default function Explore({ setTab, setToast }) {
           <div className="eyebrow dark">BUILD A LOOP FROM HERE</div>
           <div className="loops">{LOOPS.map((m) => <button key={m} className={`chip flat ${loop && loop.miles === m ? 'on' : ''}`} aria-pressed={!!(loop && loop.miles === m)} onClick={() => buildLoop(m)}><b>{m}</b> mi loop</button>)}</div>
           {loop && loop.status === 'loading' && <div className="mload" role="status"><span className="spin" aria-hidden="true" />Routing a {loop.miles} mile loop on real paths</div>}
-          {ready && <div className="rsum"><b>{loop.route.miles.toFixed(1)} mi</b><span>about {loop.route.minutes} min at Biscuit's pace · {loop.route.approximate ? 'approximate' : 'routed on mapped paths'}</span></div>}
-          {ready && <button className="cta" onClick={walk}>Walk Biscuit here</button>}
+          {ready && <div className="rsum"><b>{loop.route.miles.toFixed(1)} mi</b><span>about {loop.route.minutes} min at {dogName || 'Biscuit'}'s pace · {loop.route.approximate ? 'approximate' : 'routed on mapped paths'}</span></div>}
+          {ready && <button className="cta" onClick={walk}>Walk {dogName || 'Biscuit'} here</button>}
           {ready && loop.route.approximate && <div className="mnote"><span className="grow"><b>Approximate loop.</b> The routing service did not answer, so this is a simple circle, not a walkable path.</span><button onClick={() => buildLoop(loop.miles)}>Retry</button></div>}
           {!loop && <div className="meta">Pick a loop length to preview a route, then start the walk.</div>}
           {p.routes && p.routes.length > 0 && <div className="eyebrow dark">SAMPLE ROUTES (DEMO PLAYBACK)</div>}
