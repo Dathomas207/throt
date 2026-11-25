@@ -252,7 +252,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
     } catch (e) { return { error: e.message } }
   }
   const renameMe = async (name) => {
-    try { const r = await api.patch('/me', { name }); setMe((m) => ({ ...m, user: r.user })); reload(); return { user: r.user } }
+    try { const r = await api.patch('/me', { name }); setMe((m) => ({ ...m, user: { ...m.user, ...r.user } })); reload(); return { user: r.user } }
     catch (e) { return { error: e.message } }
   }
   const listInvites = () => api.get(`/dogs/${slug}/invites`)
@@ -279,7 +279,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
       <div className="shell">
         <main className="screen">
           {tab === 'home' && <Home {...ctx} />}
-          {tab === 'explore' && <Explore setTab={setTab} setToast={setToast} dogName={dog.name} />}
+          {tab === 'explore' && <Explore setTab={setTab} setToast={setToast} dogName={dog.name} account />}
           {/* Record looks `me` up in the demo PEOPLE table, so it stays a valid demo id. meName and dogName carry the real names. */}
           {tab === 'record' && <Record me="dale" conn={{}} setTab={setTab} saveWalk={saveWalk} todayMin={todayMin} setToast={setToast} meName={me.user.name} dogName={dog.name} />}
           {tab === 'people' && <People {...ctx} />}

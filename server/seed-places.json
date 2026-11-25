@@ -407,6 +407,622 @@
    "address": "Shuffletown Park, Belhaven Boulevard, Charlotte, NC",
    "note": "County dog park in Shuffletown Park, about 4.6 acres, fenced.",
    "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
+  },
+  {
+   "name": "Canine Commons Dog Park",
+   "category": "park",
+   "address": "181 Lake Drive, Pineville, NC 28134",
+   "note": "Town of Pineville fenced off-leash dog park. Dogs must be licensed and vaccinated, and puppies under four months are not permitted.",
+   "source_url": "https://www.pinevillenc.gov/?p=716"
+  },
+  {
+   "name": "The Preserve Dog Park",
+   "category": "park",
+   "address": "330 O'Henry Avenue, Davidson, NC",
+   "note": "Town dog park in Davidson. The listing says dogs must be registered with the Davidson Police Department before using it.",
+   "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
+  },
+  {
+   "name": "Purser-Hulsey Park dog park",
+   "category": "park",
+   "address": "3024 Matthews-Mint Hill Road, Matthews, NC 28105",
+   "note": "Public dog park run by the Town of Matthews inside Purser-Hulsey Park, with an open fenced field.",
+   "source_url": "https://www.sniffspot.com/listings/matthews-nc/purser-hulsey-park-dog-park-entrance-336970"
+  },
+  {
+   "name": "Shamrock Drive Dog Park",
+   "category": "park",
+   "address": "1704 Shamrock Drive, Charlotte, NC 28205",
+   "note": "Small off-leash dog park listed in a Charlotte dog park roundup. The listing describes a mulch surface, limited shade and no water on site.",
+   "source_url": "https://articles.hepper.com/off-leash-dog-parks-in-charlotte-nc/"
+  },
+  {
+   "name": "Reedy Creek Nature Preserve",
+   "category": "park",
+   "address": "2900 Rocky River Road, Charlotte, NC 28215",
+   "note": "County nature preserve next to Reedy Creek Park, listed with about ten miles of hiking trails for dogs on leash.",
+   "source_url": "https://doggieswelcome.com/dog-friendly-places-in-charlotte-north-carolina/"
+  },
+  {
+   "name": "McDowell Nature Preserve",
+   "category": "park",
+   "address": "15222 York Road, Charlotte, NC",
+   "note": "County nature preserve and nature center on Lake Wylie with hiking trails. Named by CharlotteFive readers as a favorite place to take dogs; keep dogs leashed.",
+   "source_url": "https://www.wsoctv.com/station/search/best-nature-preserves-in-charlotte/712496695/?outputType=amp"
+  },
+  {
+   "name": "Latta Nature Preserve",
+   "category": "park",
+   "address": "6211 Sample Road, Huntersville, NC",
+   "note": "County nature preserve on Mountain Island Lake with about 16 miles of trails. The Lake Norman visitor guide says dogs are welcome on a leash of six feet or shorter.",
+   "source_url": "https://www.wsoctv.com/station/search/best-nature-preserves-in-charlotte/712496695/?outputType=amp"
+  },
+  {
+   "name": "U.S. National Whitewater Center",
+   "category": "park",
+   "address": "5000 Whitewater Center Parkway, Charlotte, NC 28214",
+   "note": "Outdoor center with trails along the Catawba River. Listed with a large fenced off-leash area that needs a pass, and leashed dogs are welcome on the rest of the grounds.",
+   "source_url": "https://www.visitnc.com/itinerary/2-days-4-paws-dog-friendly-charlotte-escape"
+  },
+  {
+   "name": "Latta Park",
+   "category": "park",
+   "address": "601 East Park Avenue, Charlotte, NC",
+   "note": "Neighborhood park in Dilworth with walking trails, courts and picnic areas. Keep dogs leashed.",
+   "source_url": "https://en.wikipedia.org/wiki/Latta_Park"
+  },
+  {
+   "name": "Evergreen Nature Preserve",
+   "category": "park",
+   "address": "1336 Norland Road, Charlotte, NC",
+   "note": "Wooded county nature preserve in east Charlotte with natural surface trails. Listed as allowing dogs on the trail if leashed.",
+   "source_url": "https://www.axios.com/local/charlotte/2021/03/26/20-walking-trails-in-charlotte-for-nature-lovers-and-city-views-252146"
+  },
+  {
+   "name": "Briar Creek Greenway, Masonic Drive access",
+   "category": "park",
+   "address": "1812 Masonic Drive, Charlotte, NC",
+   "note": "Short greenway section between Masonic Drive and Arnold Drive. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Briar Creek Greenway, Runnymede Lane access",
+   "category": "park",
+   "address": "1798 Runnymede Lane, Charlotte, NC",
+   "note": "Greenway section between Colony Road and Runnymede Lane near Myers Park High School. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Briar Creek Greenway, Museum Plaza access",
+   "category": "park",
+   "address": "115 Museum Plaza, Charlotte, NC",
+   "note": "Greenway section from Randolph Road to Meadowbrook Road in Eastover. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Irwin Creek Greenway, Clanton Road access",
+   "category": "park",
+   "address": "1520 Clanton Road, Charlotte, NC",
+   "note": "Greenway section from West Boulevard to Clanton Road. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Irwin Creek Greenway, Remount Road access",
+   "category": "park",
+   "address": "1225 Remount Road, Charlotte, NC",
+   "note": "Greenway section from West Boulevard to Clanton Road. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Stewart Creek Greenway, Bruns Avenue access",
+   "category": "park",
+   "address": "540 South Bruns Avenue, Charlotte, NC",
+   "note": "Part of the Irwin Creek, Stewart Creek and Wesley Heights greenway west of Uptown. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Irwin Creek Greenway, Sycamore Street access",
+   "category": "park",
+   "address": "215 North Sycamore Street, Charlotte, NC",
+   "note": "Part of the Irwin Creek, Stewart Creek and Wesley Heights greenway near Frazier Park. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Little Sugar Creek Greenway, 12th Street access",
+   "category": "park",
+   "address": "745 East 12th Street, Charlotte, NC",
+   "note": "Northern section of the greenway running from 12th Street to 24th Street. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Little Sugar Creek Greenway, 24th Street access",
+   "category": "park",
+   "address": "716 East 24th Street, Charlotte, NC",
+   "note": "Northern section of the greenway running from 12th Street to 24th Street. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Little Sugar Creek Greenway, Baxter Street access",
+   "category": "park",
+   "address": "1108 Baxter Street, Charlotte, NC",
+   "note": "Urban section of the greenway between East 7th Street and Freedom Park. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Little Sugar Creek Greenway, 3rd Street access",
+   "category": "park",
+   "address": "1129 East 3rd Street, Charlotte, NC",
+   "note": "Urban section of the greenway between East 7th Street and Freedom Park. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Little Sugar Creek Greenway, Tyvola Road access",
+   "category": "park",
+   "address": "2524 Tyvola Road, Charlotte, NC",
+   "note": "Southern section of the greenway running from Tyvola Road toward Interstate 485. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Little Sugar Creek Greenway, Park Road access",
+   "category": "park",
+   "address": "6110 Park Road, Charlotte, NC",
+   "note": "Southern section of the greenway running from Tyvola Road toward Interstate 485. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Little Sugar Creek Greenway, Sharon Road West access",
+   "category": "park",
+   "address": "2212 Sharon Road West, Charlotte, NC",
+   "note": "Southern section of the greenway running from Tyvola Road toward Interstate 485. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "McMullen Creek Greenway, Pineville-Matthews Road access",
+   "category": "park",
+   "address": "8135 Pineville-Matthews Road, Charlotte, NC",
+   "note": "Start of the Lower McAlpine, McMullen and Four Mile Creek greenway. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Lower McAlpine Creek Greenway, Johnston Road access",
+   "category": "park",
+   "address": "11823 Johnston Road, Charlotte, NC",
+   "note": "Part of the Lower McAlpine, McMullen and Four Mile Creek greenway. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Four Mile Creek Greenway, Bevington Place access",
+   "category": "park",
+   "address": "5803 Bevington Place, Charlotte, NC",
+   "note": "Part of the Lower McAlpine, McMullen and Four Mile Creek greenway near Rea Road. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Four Mile Creek Greenway, Matthews",
+   "category": "park",
+   "address": "1631 Pleasant Plains Road, Matthews, NC",
+   "note": "Matthews section of the Four Mile Creek greenway. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "McAlpine Creek Greenway, Boyce Road access",
+   "category": "park",
+   "address": "300 Boyce Road, Charlotte, NC",
+   "note": "Part of the Campbell Creek and McAlpine Creek greenway. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "McAlpine Creek Greenway, Old Bell Road access",
+   "category": "park",
+   "address": "110 Old Bell Road, Charlotte, NC",
+   "note": "Part of the Campbell Creek and McAlpine Creek greenway. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Campbell Creek Greenway, Margaret Wallace Road access",
+   "category": "park",
+   "address": "2116 Margaret Wallace Road, Charlotte, NC",
+   "note": "Part of the Campbell Creek and McAlpine Creek greenway. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Mallard Creek Greenway, Mallard Creek Road access",
+   "category": "park",
+   "address": "9801 Mallard Creek Road, Charlotte, NC",
+   "note": "Part of the Clarks, Mallard, Toby and Barton Creek greenway network in University City. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Mallard Creek Greenway, Mallard Creek Church Road access",
+   "category": "park",
+   "address": "201 East Mallard Creek Church Road, Charlotte, NC",
+   "note": "Part of the Clarks, Mallard, Toby and Barton Creek greenway network in University City. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Toby Creek Greenway, University City Boulevard access",
+   "category": "park",
+   "address": "8416 University City Boulevard, Charlotte, NC",
+   "note": "Part of the Clarks, Mallard, Toby and Barton Creek greenway network in University City. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Torrence Creek Greenway, Bradford Hill Lane access",
+   "category": "park",
+   "address": "13120 Bradford Hill Lane, Huntersville, NC",
+   "note": "Greenway in Huntersville. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "McDowell Creek Greenway, Townley Road access",
+   "category": "park",
+   "address": "8925 Townley Road, Huntersville, NC",
+   "note": "Greenway running between Westmoreland Road and Sam Furr Road. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Caldwell Station Creek Greenway, Bailey Road access",
+   "category": "park",
+   "address": "11536 Bailey Road, Cornelius, NC",
+   "note": "Greenway running from Statesville Road to Old Statesville Road by Bailey Road Park. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "South Prong Rocky River Greenway, South Street access",
+   "category": "park",
+   "address": "859 South Street, Davidson, NC",
+   "note": "Greenway linking Davidson and Cornelius. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Six Mile Creek Greenway, Marvin Road access",
+   "category": "park",
+   "address": "17820 Marvin Road, Charlotte, NC",
+   "note": "Short greenway on the southern edge of the county near Ballantyne. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Walker Branch Greenway, Rivergate Parkway access",
+   "category": "park",
+   "address": "14501 Rivergate Parkway, Charlotte, NC",
+   "note": "Short greenway in Steele Creek. County greenway access point with parking. Dogs are allowed on county greenways on a leash.",
+   "source_url": "https://blog.mecknc.gov/mecklenburg-county-greenways"
+  },
+  {
+   "name": "Divine Barrel Brewing",
+   "category": "bar",
+   "address": "3701 North Davidson Street, Charlotte, NC",
+   "note": "NoDa brewery. A local dog guide lists dogs as welcome inside and on the shaded patio, on leash.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Free Range Brewing",
+   "category": "bar",
+   "address": "2320 North Davidson Street, Charlotte, NC",
+   "note": "Villa Heights brewery. A local dog guide lists leashed dogs as welcome inside and outside.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Heist Brewery and Barrel Arts",
+   "category": "bar",
+   "address": "1064 Woodward Avenue, Charlotte, NC",
+   "note": "Heist's production brewery and taproom near Camp North End. A local dog guide lists dogs as welcome inside and in the outdoor gravel and grass areas.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Hi-Wire Brewing",
+   "category": "bar",
+   "address": "340 West Tremont Avenue, Charlotte, NC",
+   "note": "South End taproom listed among dog friendly patios. The city tourism guide says dogs are allowed inside the taproom.",
+   "source_url": "https://www.scoopcharlotte.com/2023/06/16/best-kid-dog-friendly-patios-around-charlotte-for-2023/"
+  },
+  {
+   "name": "HopFly Brewing Company",
+   "category": "bar",
+   "address": "1327 South Mint Street, Charlotte, NC",
+   "note": "South End brewery listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Monday Night Brewing",
+   "category": "bar",
+   "address": "2217 South Tryon Street, Charlotte, NC",
+   "note": "South End brewery with a garden patio, listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Protagonist",
+   "category": "bar",
+   "address": "227 Southside Drive, Charlotte, NC",
+   "note": "Lower South End beer hall with a street-facing patio, listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Lenny Boy Brewing Co.",
+   "category": "bar",
+   "address": "3000 South Tryon Street, Charlotte, NC",
+   "note": "Brewery and kombucha maker south of South End. A local dog guide lists two dog friendly patios; dogs are not allowed inside.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Lower Left Brewing Co.",
+   "category": "bar",
+   "address": "4528 Nations Crossing Road, Charlotte, NC",
+   "note": "Small Lower South End brewery. A local dog guide lists dogs as welcome on its two outdoor patios.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Legion Brewing, SouthPark",
+   "category": "bar",
+   "address": "4350 Congress Street, Charlotte, NC",
+   "note": "SouthPark brewpub. Legion is listed among dog friendly patios; dogs stay outside because food is prepared on site.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Legion Brewing, West Morehead",
+   "category": "bar",
+   "address": "2013 West Morehead Street, Charlotte, NC",
+   "note": "Legion's West Morehead brewery and taproom. Legion is listed among dog friendly patios.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Pilot Brewing Company",
+   "category": "bar",
+   "address": "1331 Central Avenue, Charlotte, NC",
+   "note": "Small Plaza Midwood brewery. A local dog guide lists dogs as welcome at the outdoor seating with a walk-up window, not inside.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Southern Strain Brewing, Plaza Midwood",
+   "category": "bar",
+   "address": "1800 Central Avenue, Charlotte, NC",
+   "note": "Plaza Midwood taproom listed among dog friendly patios. The city tourism guide says this location allows dogs inside.",
+   "source_url": "https://www.scoopcharlotte.com/2023/06/16/best-kid-dog-friendly-patios-around-charlotte-for-2023/"
+  },
+  {
+   "name": "Armored Cow Brewing Co.",
+   "category": "bar",
+   "address": "8821 JW Clay Boulevard, Charlotte, NC",
+   "note": "University City brewery described as dog friendly in a local trainer's brewery guide.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Edge City Brewery",
+   "category": "bar",
+   "address": "6209 Old Post Road, Charlotte, NC",
+   "note": "Neighborhood brewery in south Charlotte listed with a dog friendly patio.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "The Olde Mecklenburg Brewery, Ballantyne",
+   "category": "bar",
+   "address": "15025 Bowl Street, Charlotte, NC",
+   "note": "Ballantyne location of Olde Mecklenburg with a biergarten. Listed among pet friendly patios in Ballantyne.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Suffolk Punch Brewing, SouthPark",
+   "category": "bar",
+   "address": "4400 Sharon Road, Charlotte, NC",
+   "note": "SouthPark location of Suffolk Punch, listed with a dog friendly patio.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/24/breweries-in-charlotte-31429"
+  },
+  {
+   "name": "Charlotte Beer Garden",
+   "category": "bar",
+   "address": "1300 South Tryon Street, Charlotte, NC",
+   "note": "Large South End beer bar. Listed with a dog friendly patio on the ground level.",
+   "source_url": "https://www.scoopcharlotte.com/2023/06/16/best-kid-dog-friendly-patios-around-charlotte-for-2023/"
+  },
+  {
+   "name": "VBGB Beer Hall and Garden",
+   "category": "bar",
+   "address": "920 Hamilton Street, Charlotte, NC 28206",
+   "note": "Beer hall near the AvidXchange Music Factory with a large patio. Listed as welcoming leashed dogs on the patio.",
+   "source_url": "https://www.yahoo.com/news/restaurants-charlotte-dog-friendly-where-100000122.html"
+  },
+  {
+   "name": "Seoul Food Meat Company",
+   "category": "bar",
+   "address": "1400 South Church Street, Charlotte, NC 28203",
+   "note": "Korean barbecue restaurant and bar in South End. Listed with a patio that has a fenced dog area.",
+   "source_url": "https://www.yahoo.com/news/restaurants-charlotte-dog-friendly-where-100000122.html"
+  },
+  {
+   "name": "Craft Tasting Room and Growler Shop",
+   "category": "bar",
+   "address": "1320 South Church Street, Charlotte, NC 28203",
+   "note": "Beer bar and bottle shop in the Gold District with outdoor seating. Named by CharlotteFive readers as a favorite spot to bring a dog.",
+   "source_url": "https://www.yahoo.com/news/best-spots-charlotte-hang-dog-100000022.html"
+  },
+  {
+   "name": "Angry Ale's",
+   "category": "bar",
+   "address": "1518 Montford Drive, Charlotte, NC 28209",
+   "note": "Montford Drive bar and grill. Listed as dog friendly on the patio, with a menu for dogs.",
+   "source_url": "https://www.yahoo.com/news/restaurants-charlotte-dog-friendly-where-100000122.html"
+  },
+  {
+   "name": "Sir Edmond Halley's",
+   "category": "bar",
+   "address": "4151 Park Road, Charlotte, NC 28209",
+   "note": "Pub at Park Road Shopping Center. Listed as dog friendly on the shaded patio.",
+   "source_url": "https://www.yahoo.com/news/restaurants-charlotte-dog-friendly-where-100000122.html"
+  },
+  {
+   "name": "McKoy's Smokehouse and Saloon",
+   "category": "bar",
+   "address": "4630 Old Pineville Road, Charlotte, NC 28217",
+   "note": "Smokehouse and bar off Old Pineville Road. Listed as dog friendly on the patio.",
+   "source_url": "https://www.yahoo.com/news/restaurants-charlotte-dog-friendly-where-100000122.html"
+  },
+  {
+   "name": "Hattie's Tap and Tavern",
+   "category": "bar",
+   "address": "2918 The Plaza, Charlotte, NC 28205",
+   "note": "Neighborhood bar on The Plaza. Listed as dog friendly throughout, including indoors.",
+   "source_url": "https://www.rover.com/charlotte--nc--dog-friendly-restaurants/"
+  },
+  {
+   "name": "Pinhouse",
+   "category": "bar",
+   "address": "2306 Central Avenue, Charlotte, NC",
+   "note": "Plaza Midwood bar with duckpin bowling, listed among dog friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2023/06/16/best-kid-dog-friendly-patios-around-charlotte-for-2023/"
+  },
+  {
+   "name": "Piedmont Social House",
+   "category": "bar",
+   "address": "2135 Ayrsley Town Boulevard, Charlotte, NC",
+   "note": "Bar and game hall in Ayrsley near Steele Creek, listed among dog friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2023/06/16/best-kid-dog-friendly-patios-around-charlotte-for-2023/"
+  },
+  {
+   "name": "Rosie's Wine Garden",
+   "category": "bar",
+   "address": "940 North Davidson Street, Charlotte, NC",
+   "note": "Wine garden near Optimist Park, listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Hello, Sailor",
+   "category": "bar",
+   "address": "20210 Henderson Road, Cornelius, NC",
+   "note": "Lakefront restaurant and bar on Lake Norman, listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Wine Vault",
+   "category": "bar",
+   "address": "9009 J M Keynes Drive, Charlotte, NC 28262",
+   "note": "Wine bar in University City with a large open patio, listed in a dog friendly restaurant guide.",
+   "source_url": "https://www.rover.com/charlotte--nc--dog-friendly-restaurants/"
+  },
+  {
+   "name": "Cheat's Cheesesteaks",
+   "category": "cafe",
+   "address": "913 Pecan Avenue, Charlotte, NC",
+   "note": "Plaza Midwood sandwich shop listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "300 East",
+   "category": "cafe",
+   "address": "300 East Boulevard, Charlotte, NC",
+   "note": "Long-running Dilworth restaurant listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Reid's Fine Foods, SouthPark",
+   "category": "cafe",
+   "address": "4331 Barclay Downs Drive, Charlotte, NC",
+   "note": "Market and wine bar in SouthPark listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Duckworth's Grill and Taphouse, SouthPark",
+   "category": "cafe",
+   "address": "4625 Piedmont Row Drive, Charlotte, NC",
+   "note": "Taphouse and grill at Piedmont Row listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "The Cowfish Sushi Burger Bar",
+   "category": "cafe",
+   "address": "4310 Sharon Road, Charlotte, NC",
+   "note": "SouthPark restaurant listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Harriet's Hamburgers, Ballantyne",
+   "category": "cafe",
+   "address": "15119 Bowl Street, Charlotte, NC",
+   "note": "Burger counter at The Bowl in Ballantyne, listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "The Improper Pig",
+   "category": "cafe",
+   "address": "9855 Sandy Rock Place, Charlotte, NC",
+   "note": "Barbecue restaurant in the Ballantyne area listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "The Common Market, South End",
+   "category": "cafe",
+   "address": "235 West Tremont Avenue, Charlotte, NC",
+   "note": "Deli, bottle shop and bar in South End. Listed with a dog friendly patio.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Taco Boy",
+   "category": "cafe",
+   "address": "3700 South Boulevard, Charlotte, NC",
+   "note": "Taco restaurant in Lower South End listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "The Waterman Fish Bar",
+   "category": "cafe",
+   "address": "2729 South Boulevard, Charlotte, NC",
+   "note": "Seafood restaurant in South End listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Tupelo Honey",
+   "category": "cafe",
+   "address": "101 South Tryon Street, Charlotte, NC",
+   "note": "Southern restaurant in Uptown listed among pet friendly patios.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Boudreaux's Louisiana Kitchen",
+   "category": "cafe",
+   "address": "501 East 36th Street, Charlotte, NC 28205",
+   "note": "Cajun restaurant in NoDa. Listed with a dog friendly patio.",
+   "source_url": "https://www.sydnicolephotography.com/blog/the-best-pet-friendly-restaurants-breweries-in-charlotte-nc/"
+  },
+  {
+   "name": "Two Scoops Creamery",
+   "category": "cafe",
+   "address": "913 Central Avenue, Charlotte, NC 28204",
+   "note": "Ice cream shop on Central Avenue. Listed as offering a non-dairy frozen treat made for dogs.",
+   "source_url": "https://www.visitnc.com/itinerary/2-days-4-paws-dog-friendly-charlotte-escape"
+  },
+  {
+   "name": "Shake Shack, South End",
+   "category": "cafe",
+   "address": "1930 Camden Road, Charlotte, NC",
+   "note": "Burger chain location on the Rail Trail, listed among dog friendly patios. The chain sells dog treats.",
+   "source_url": "https://www.scoopcharlotte.com/2023/06/16/best-kid-dog-friendly-patios-around-charlotte-for-2023/"
+  },
+  {
+   "name": "Zapata's Mexican Restaurant, Ballantyne",
+   "category": "cafe",
+   "address": "15105 John J Delaney Drive, Charlotte, NC 28277",
+   "note": "Mexican restaurant in Ballantyne. Listed as allowing leashed pets on the outdoor patio.",
+   "source_url": "https://www.rover.com/charlotte--nc--dog-friendly-restaurants/"
+  },
+  {
+   "name": "Camp North End",
+   "category": "other",
+   "address": "300 Camp Road, Charlotte, NC",
+   "note": "Former industrial campus north of Uptown with shops, food stalls and open courtyards. Listed as welcoming dogs across the outdoor areas.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Truist Field",
+   "category": "other",
+   "address": "324 South Mint Street, Charlotte, NC 28202",
+   "note": "Home of the Charlotte Knights in Uptown. The team holds Bark in the Park games where dogs can attend; check the schedule for dates.",
+   "source_url": "https://www.yahoo.com/news/best-spots-charlotte-hang-dog-100000022.html"
+  },
+  {
+   "name": "Kimpton Tryon Park Hotel",
+   "category": "other",
+   "address": "303 South Church Street, Charlotte, NC 28202",
+   "note": "Uptown hotel next to Romare Bearden Park. Listed as welcoming pets of all sizes.",
+   "source_url": "https://www.visitnc.com/itinerary/2-days-4-paws-dog-friendly-charlotte-escape"
   }
  ]
 }

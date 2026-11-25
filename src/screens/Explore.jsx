@@ -3,7 +3,7 @@ import TrotMap, { useHeight } from '../Map.jsx'
 import { Ic, Av } from '../ui.jsx'
 import { ROUTES, haversine } from '../data.js'
 import { api, hasToken } from '../api.js'
-import { fetchPlaces, readPlaceCache, fetchTrails, samplePlaces, bboxAround, bboxKey, snapBbox, areaSummary, mergePlaces, normalizeCommunity, communityLine, validateNewPlace, perfMark, CATEGORIES, COMMUNITY_KIND } from '../osm.js'
+import { fetchPlaces, readPlaceCache, fetchTrails, samplePlaces, bboxAround, bboxKey, snapBbox, areaSummary, mergePlaces, normalizeCommunity, communityLine, validateNewPlace, perfMark, CATEGORIES, COMMUNITY_KIND, DOG_POLICY, AMENITY, REPORT_REASONS, CLAIM_ROLE, claimRolesFor, maintainedLine, verifiedTag, checkedLine, googleMapsUrl } from '../osm.js'
 import { routeLoop, routeThrough, locate, setHandoff, loadSavedRoutes, saveRoute, deleteSavedRoute, fmtDist, walkMinutes, peekDemoRoute, resolveDemoRoute, useHereLoop, locationHelp, DEFAULT_CENTER, MAX_WAYPOINTS, MAX_SAVED } from '../routing.js'
 import { searchPlaces, searchMode, MIN_QUERY } from '../search.js'
 import '../maps.css'
@@ -93,7 +93,8 @@ function PlaceSearch({ near, onChoose }) {
   )
 }
 
-export default function Explore({ setTab, setToast, dogName }) {
+// `account` is set when the screen belongs to a signed-in person's own page. The demo never has it.
+export default function Explore({ setTab, setToast, dogName, account }) {
   const dn = dogName || 'Biscuit'
   const t0 = useRef(performance.now()).current
   const first = useRef(readView()).current // the last area looked at, so the first paint is already there
@@ -244,8 +245,8 @@ export default function Explore({ setTab, setToast, dogName }) {
   const savedOne = detail && detail.type === 'saved' ? saved.find((x) => x.id === detail.id) || null : null
   const hereOn = !!(detail && detail.type === 'here')
 
-  const closeDetail = () => { clearLoop(); here.clear(); setDetail(null); setDel(null) }
-  const openPlace = (id) => { clearLoop(); setHi(id); setDetail({ type: 'place', id }); if (snap === 'peek') setSnap('half') }
+  const closeDetail = () => { clearLoop(); here.clear(); setDetail(null); setDel(null); setAct(null) }
+  const openPlace = (id) => { clearLoop(); setAct(null); setHi(id); setDetail({ type: 'place', id }); if (snap === 'peek') setSnap('half') }
   const openLine = (id) => { clearLoop(); const [type, ...rest] = id.split(':'); setDetail({ type, id: rest.join(':') }); setDel(null); if (snap === 'peek') setSnap('half') }
   // List and map stay linked: a row tap highlights and centers the pin, a pin tap highlights the row and scrolls to it.
   const rowTap = (x) => { if (hi === x.id) { openPlace(x.id); return } setHi(x.id); setFocus({ id: x.id, n: Date.now() }) }
@@ -350,14 +351,51 @@ export default function Explore({ setTab, setToast, dogName }) {
     } catch (err) { if (alive.current) setAdd((a) => a && ({ ...a, busy: false, error: (err && err.message) || 'That did not save. Try again.' })) }
   }
   const [confirming, setConfirming] = useState(false)
+  const [act, setAct] = useState(null) // claim, report or edit form for the open place: { type, id, busy, error, ...fields }
   const toggleConfirm = async (x) => {
     if (confirming) return
     setConfirming(true)
     try {
       const r = await (x.confirmed ? api.places.unconfirm(x.cid) : api.places.confirm(x.cid))
-      if (alive.current && r) setComm((c) => c.map((y) => (y.id === x.id ? { ...y, confirmations: Math.max(0, Number(r.confirmations) || 0), confirmed: !!r.confirmed } : y)))
+      // Confirming is also what moves "Last checked" to today.
+      if (alive.current && r) setComm((c) => c.map((y) => (y.id === x.id ? { ...y, confirmations: Math.max(0, Number(r.confirmations) || 0), confirmed: !!r.confirmed, ...(r.confirmed ? { lastCheckedAt: new Date().toISOString() } : {}) } : y)))
     } catch (err) { setToast((err && err.message) || 'That did not save. Try again.') }
     if (alive.current) setConfirming(false)
+  }
+
+  // Ownership: claim a listing, report a problem, and for the approved manager, edit it. All three need an
+  // account. In the demo, or signed out, the tap explains that and nothing is sent.
+  const canAct = !!account && hasToken()
+  const NEED = { claim: 'Claiming a place', report: 'Reporting a problem', edit: 'Editing a listing' }
+  const startAct = (type, x) => {
+    if (!canAct) { setToast(`${NEED[type]} needs your own Trot account. Create a page for your dog first.`); setAct({ type: 'need', what: type, id: x.id }); return }
+    const base = { type, id: x.id, busy: false, error: '', tried: false }
+    if (type === 'claim') setAct({ ...base, role: claimRolesFor(x.category)[0], email: '', message: '' })
+    else if (type === 'report') setAct({ ...base, reason: '', note: '' })
+    else setAct({ ...base, dogPolicy: x.dogPolicy || 'unknown', note: x.note || '', amenities: x.amenities || [], eventNote: x.eventNote || '', website: x.ownerSite || '' })
+  }
+  const actErrs = !act ? {} : act.type === 'claim' ? (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(act.email.trim()) ? {} : { email: 'Type an email where we can reach you about this claim.' })
+    : act.type === 'report' ? (act.reason ? {} : { reason: 'Pick what is wrong.' })
+    : act.type === 'edit' ? (act.website.trim() && !/^https:\/\/[^\s]+\.[^\s]+$/i.test(act.website.trim()) ? { website: 'The website has to start with https://' } : {}) : {}
+  const submitAct = async (e, x) => {
+    e.preventDefault()
+    if (!act || act.busy) return
+    if (Object.keys(actErrs).length) { setAct({ ...act, tried: true }); return }
+    setAct({ ...act, busy: true, error: '' })
+    const patch = (more) => setComm((c) => c.map((y) => (y.id === x.id ? { ...y, ...more } : y)))
+    try {
+      if (act.type === 'claim') { await api.places.claim(x.cid, { role: act.role, contactEmail: act.email.trim(), message: act.message.trim() }); if (!alive.current) return; patch({ myClaim: 'pending' }); setToast('Claim sent. We review claims by hand.') }
+      else if (act.type === 'report') { const r = await api.places.report(x.cid, { reason: act.reason, note: act.note.trim() }); if (!alive.current) return; patch({ reported: true, ...(r && r.flagged ? { flagged: true } : {}) }); setToast('Report sent. Thank you.') }
+      else {
+        const r = await api.places.update(x.cid, { dogPolicy: act.dogPolicy, note: act.note.trim(), amenities: act.amenities, eventNote: act.eventNote.trim(), website: act.website.trim() })
+        const [made] = normalizeCommunity([r && r.place])
+        if (!alive.current) return
+        // Only what the manager can change is taken from the answer, so what the map added to the place stays.
+        if (made) patch({ note: made.note, dogPolicy: made.dogPolicy, amenities: made.amenities, eventNote: made.eventNote, website: made.website, ownerSite: made.website, lastCheckedAt: made.lastCheckedAt })
+        setToast('Listing updated')
+      }
+      setAct(null)
+    } catch (err) { if (alive.current) setAct((a) => a && ({ ...a, busy: false, error: (err && err.message) || 'That did not save. Try again.' })) }
   }
 
   // Sheet height: three snap points, dragged by the handle or stepped with it from the keyboard.
@@ -378,6 +416,7 @@ export default function Explore({ setTab, setToast, dogName }) {
   }
 
   const ready = loop && loop.status === 'ready'
+  const pa = act && p && act.id === p.id ? act : null // the form that belongs to the open place
   // What the sheet shows in place of the list. A detail whose subject has gone (a new area, a deleted route) falls back to the list.
   const dk = b.on || add ? null : p ? 'place' : trail ? 'trail' : savedOne ? 'saved' : hereOn && here.loop ? 'here' : null
   const cat = filter === 'all' || filter === 'trails' ? null : CAT[filter]
@@ -519,13 +558,59 @@ export default function Explore({ setTab, setToast, dogName }) {
           </div>
           {p.community && (<>
             <div className="mnote info"><span className="grow"><b>{communityLine(p)}.</b> {p.curated ? 'This comes from a public listing of dog-friendly places, not from OpenStreetMap. Rules change, so check before you go.' : 'This comes from Trot members, not from OpenStreetMap.'}</span></div>
+            {p.flagged && <div className="mnote" role="note"><span className="grow"><b>Several people reported a problem here.</b> It may have closed or stopped welcoming dogs. Check before you go.</span></div>}
+            <div className="pown"><b>{maintainedLine(p)}</b><span>{checkedLine(p)}</span></div>
             {p.address && !(p.details || []).some((r) => r.label === 'Address') && <div className="meta">{p.address}</div>}
             {p.note && <p className="pnote">{p.note}</p>}
+            {(p.dogPolicy !== 'unknown' || p.amenities.length > 0) && <div className="tags own" aria-label="Dog policy and amenities">{p.dogPolicy !== 'unknown' && <span className="pol">{DOG_POLICY[p.dogPolicy]}</span>}{p.amenities.map((k) => <span key={k}>{AMENITY[k]}</span>)}</div>}
+            {p.eventNote && <p className="pnote"><b>Events:</b> {p.eventNote}</p>}
             {hasToken() ? <button className={`cta ${p.confirmed ? '' : 'white bordered'}`} aria-pressed={p.confirmed} disabled={confirming} onClick={() => toggleConfirm(p)}>{p.confirmed ? 'Dogs welcome here · you confirmed' : 'Dogs welcome here'}</button> : <div className="meta">Create a page to confirm places.</div>}
           </>)}
           {(p.chips || p.tags).length > 0 && <div className="tags">{(p.chips || p.tags).map((t) => <span key={t}>{t}</span>)}</div>}
           {p.details && p.details.length > 0 && <dl className="pinfo">{p.details.map((r) => <div key={r.label}><dt>{r.label}</dt><dd>{r.value}</dd></div>)}</dl>}
-          <div className="plinks">{p.website && <a href={p.website} target="_blank" rel="noopener noreferrer">Website</a>}{p.phone && <a href={'tel:' + p.phone.replace(/[^\d+]/g, '')}>Call {p.phone}</a>}{p.sourceUrl && <a href={p.sourceUrl} target="_blank" rel="noopener noreferrer">Source</a>}<a href={directions(p.at)} target="_blank" rel="noopener noreferrer">Directions</a></div>
+          <div className="plinks">{p.website && <a href={p.website} target="_blank" rel="noopener noreferrer">Website</a>}{p.phone && <a href={'tel:' + p.phone.replace(/[^\d+]/g, '')}>Call {p.phone}</a>}{p.sourceUrl && <a href={p.sourceUrl} target="_blank" rel="noopener noreferrer">Source</a>}<a href={directions(p.at)} target="_blank" rel="noopener noreferrer">Directions</a><a href={googleMapsUrl(p)} target="_blank" rel="noopener">Open in Google Maps</a></div>
+          {p.community && (<>
+            <div className="pacts">
+              {p.managedByYou ? <button className="cta bordered small" aria-expanded={pa && pa.type === 'edit'} onClick={() => startAct('edit', p)}>Edit listing</button> : !p.managedBy && p.myClaim !== 'pending' && <button className="cta bordered small" aria-expanded={pa && (pa.type === 'claim' || pa.what === 'claim')} onClick={() => startAct('claim', p)}>Claim this place</button>}
+              {!p.reported && <button className="cta white bordered small" aria-expanded={pa && (pa.type === 'report' || pa.what === 'report')} onClick={() => startAct('report', p)}>Report a problem</button>}
+            </div>
+            {p.myClaim === 'pending' && <div className="mnote info" role="status"><span className="grow"><b>Claim sent.</b> We review claims by hand.</span></div>}
+            {p.reported && <div className="mnote info" role="status"><span className="grow"><b>Report sent.</b> The Trot team will take a look.</span></div>}
+            {pa && pa.type === 'need' && <div className="mnote info" role="status"><span className="grow"><b>Create an account first.</b> {NEED[pa.what]} needs your own Trot page, so there is a name behind it.</span><button onClick={() => setAct(null)}>OK</button></div>}
+            {pa && pa.type === 'claim' && (
+              <form className="addform actform" onSubmit={(e) => submitAct(e, p)} noValidate>
+                <div className="eyebrow dark">CLAIM THIS PLACE</div>
+                <div className="meta">Whoever maintains a listing keeps its dog policy up to date. We check each claim by hand before it shows.</div>
+                <fieldset className="radios"><legend className="sr">How are you connected to this place?</legend>{claimRolesFor(p.category).map((r) => <label key={r} className="lrow"><input type="radio" name="claim-role" checked={pa.role === r} onChange={() => setAct({ ...pa, role: r })} /><span>{CLAIM_ROLE[r]}</span></label>)}</fieldset>
+                <label className="field lightf"><span>Contact email</span><input type="email" value={pa.email} maxLength={254} autoComplete="email" inputMode="email" aria-invalid={!!(pa.tried && actErrs.email)} aria-describedby="claim-email-err" onChange={(e) => setAct({ ...pa, email: e.target.value })} />{pa.tried && actErrs.email && <em id="claim-email-err" className="ferr" role="alert">{actErrs.email}</em>}</label>
+                <label className="field lightf"><span>Message (optional) · {pa.message.length}/500</span><textarea value={pa.message} rows={2} maxLength={500} placeholder="Your role here, and the best way to check it" onChange={(e) => setAct({ ...pa, message: e.target.value })} /></label>
+                {pa.error && <div className="mnote" role="alert"><span className="grow">{pa.error}</span></div>}
+                <div className="row g10 nowrap"><button className="cta white bordered small" type="button" onClick={() => setAct(null)} disabled={pa.busy}>Cancel</button><button className="cta grow" type="submit" disabled={pa.busy}>{pa.busy ? 'Sending' : 'Send claim'}</button></div>
+              </form>
+            )}
+            {pa && pa.type === 'report' && (
+              <form className="addform actform" onSubmit={(e) => submitAct(e, p)} noValidate>
+                <div className="eyebrow dark">REPORT A PROBLEM</div>
+                <fieldset className="radios" aria-describedby="report-reason-err"><legend className="sr">What is wrong with this listing?</legend>{REPORT_REASONS.map(([k, label]) => <label key={k} className="lrow"><input type="radio" name="report-reason" checked={pa.reason === k} onChange={() => setAct({ ...pa, reason: k })} /><span>{label}</span></label>)}</fieldset>
+                {pa.tried && actErrs.reason && <em id="report-reason-err" className="ferr" role="alert">{actErrs.reason}</em>}
+                <label className="field lightf"><span>Note (optional) · {pa.note.length}/280</span><textarea value={pa.note} rows={2} maxLength={280} placeholder="What did you see?" onChange={(e) => setAct({ ...pa, note: e.target.value })} /></label>
+                {pa.error && <div className="mnote" role="alert"><span className="grow">{pa.error}</span></div>}
+                <div className="row g10 nowrap"><button className="cta white bordered small" type="button" onClick={() => setAct(null)} disabled={pa.busy}>Cancel</button><button className="cta grow" type="submit" disabled={pa.busy}>{pa.busy ? 'Sending' : 'Send report'}</button></div>
+              </form>
+            )}
+            {pa && pa.type === 'edit' && (
+              <form className="addform actform" onSubmit={(e) => submitAct(e, p)} noValidate>
+                <div className="eyebrow dark">EDIT LISTING</div>
+                <label className="field lightf"><span>Dog policy</span><select value={pa.dogPolicy} onChange={(e) => setAct({ ...pa, dogPolicy: e.target.value })}>{Object.entries(DOG_POLICY).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
+                <label className="field lightf"><span>Note · {pa.note.length}/280</span><textarea value={pa.note} rows={2} maxLength={280} onChange={(e) => setAct({ ...pa, note: e.target.value })} /></label>
+                <fieldset className="radios two"><legend>Amenities</legend>{Object.entries(AMENITY).map(([k, v]) => <label key={k} className="lrow"><input type="checkbox" checked={pa.amenities.includes(k)} onChange={(e) => setAct({ ...pa, amenities: e.target.checked ? [...pa.amenities, k] : pa.amenities.filter((a) => a !== k) })} /><span>{v}</span></label>)}</fieldset>
+                <label className="field lightf"><span>Events (optional) · {pa.eventNote.length}/140</span><input value={pa.eventNote} maxLength={140} placeholder="Yappy hour, Thursdays 5 to 7" onChange={(e) => setAct({ ...pa, eventNote: e.target.value })} /></label>
+                <label className="field lightf"><span>Website (optional)</span><input type="url" inputMode="url" value={pa.website} maxLength={300} placeholder="https://" aria-invalid={!!(pa.tried && actErrs.website)} aria-describedby="edit-site-err" onChange={(e) => setAct({ ...pa, website: e.target.value })} />{pa.tried && actErrs.website && <em id="edit-site-err" className="ferr" role="alert">{actErrs.website}</em>}</label>
+                {pa.error && <div className="mnote" role="alert"><span className="grow">{pa.error}</span></div>}
+                <div className="row g10 nowrap"><button className="cta white bordered small" type="button" onClick={() => setAct(null)} disabled={pa.busy}>Cancel</button><button className="cta grow" type="submit" disabled={pa.busy}>{pa.busy ? 'Saving' : 'Save listing'}</button></div>
+              </form>
+            )}
+          </>)}
           {p.dogs != null && <div className="meta"><b>{p.dogs}</b> dogs this week (sample figure)</div>}
           {p.top && <div className="topdog"><Av t={p.top[0]} s={32} bg="#C8F031" c="#0F1B2D" /><span><b>{p.top}</b> is top dog here with {p.topVisits} visits this week (sample)</span></div>}
           <div className="eyebrow dark">BUILD A LOOP FROM THIS PLACE</div>
@@ -554,7 +639,7 @@ export default function Explore({ setTab, setToast, dogName }) {
           <div className="row between top"><div><h2>{listHead}</h2>{listMeta && <div className="meta">{listMeta}</div>}</div></div>
           {places.slice(0, MAX_PINS).map((x) => (
             <div key={x.id} className={`prow ${hi === x.id ? 'hi' : ''}`} ref={(n) => { if (n) rows.current.set(x.id, n); else rows.current.delete(x.id) }}>
-              <button className="rrow" aria-pressed={hi === x.id} onClick={() => rowTap(x)}><CatDot c={x.category} community={x.community && !x.curated} /><span className="grow"><b>{x.name}</b><small>{x.community ? communityLine(x) : x.kind + (x.tags.length ? ' · ' + x.tags.slice(0, 2).join(' · ') : '')}</small>{x.curated && x.note && <small className="rnote">{x.note}</small>}{x.curated && x.address && <small className="rnote dim">{String(x.address).replace(/, NC \d{5}$/, '')}</small>}</span>{x.d != null && <span className="num">{fmtDist(x.d)}</span>}</button>
+              <button className="rrow" aria-pressed={hi === x.id} onClick={() => rowTap(x)}><CatDot c={x.category} community={x.community && !x.curated} /><span className="grow"><b>{x.name}{x.community && x.managedBy && <span className="vtag">{verifiedTag(x)}</span>}</b><small>{x.community ? communityLine(x) : x.kind + (x.tags.length ? ' · ' + x.tags.slice(0, 2).join(' · ') : '')}</small>{x.curated && x.note && <small className="rnote">{x.note}</small>}{x.curated && x.address && <small className="rnote dim">{String(x.address).replace(/, NC \d{5}$/, '')}</small>}</span>{x.d != null && <span className="num">{fmtDist(x.d)}</span>}</button>
               {hi === x.id && <button className="cta bordered small" onClick={() => openPlace(x.id)}>Details</button>}
             </div>
           ))}

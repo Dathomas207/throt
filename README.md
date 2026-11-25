@@ -27,6 +27,7 @@ Environment variables:
 - `SEED_DEMO`: demo dogs and people are seeded at every start so the trial does not look empty. Set `SEED_DEMO=0` to skip seeding (rows already seeded stay), or `SEED_DEMO=remove` to delete every demo dog and demo person at the next start.
 - `DEMO_ON_LEADERBOARDS`: set to `0` to keep demo dogs off leaderboards and challenge boards while leaving their pages in place.
 - `GEOCODE`: set to `0` to stop the one-time address lookups for the curated places (see below).
+- `ADMIN_EMAILS`: comma-separated emails of the people who review place claims and reports, for example `ADMIN_EMAILS=dana@example.com,lee@example.com`. Anyone signed in with one of them is an admin and sees an Admin section in Settings. When unset there are no admins, every `/api/admin` route answers 403, and claims wait unreviewed. Read the note on sign-in under Trial limitations before setting it.
 
 Tests (server, against pg-mem, or against real Postgres when `DATABASE_URL` is set):
 
@@ -58,7 +59,7 @@ All JSON. Send the session token as `Authorization: Bearer <token>`.
 | `GET /api/health` | anyone | Tells the app a Trot API is present |
 | `POST /api/session` | anyone | `{ name, email }` creates or finds the user, returns a token |
 | `DELETE /api/session` | signed in | Sign out |
-| `GET /api/me` | signed in | The user, their dogs and roles |
+| `GET /api/me` | signed in | The user (with `isAdmin`), their dogs and roles |
 | `PATCH /api/me` | signed in | `{ name }` changes your display name |
 | `POST /api/dogs` | signed in | Create a dog. The creator becomes owner |
 | `GET /api/dogs/:slug` | team | Profile, team with last 7 days per person, recent walks |
@@ -99,10 +100,17 @@ All JSON. Send the session token as `Authorization: Bearer <token>`.
 | `GET /api/challenges`, `GET /api/challenges/:key` | anyone | The challenges defined in server code, with windows, and progress for `dog=<slug>` when signed in. The second adds a board of public joined dogs |
 | `POST` and `DELETE /api/dogs/:slug/challenges/:key` | team | Join or leave. Idempotent |
 | `GET /api/pack` | anyone | Recent outings of public dogs, with what their public pages show |
-| `GET /api/places?s=&w=&n=&e=` | anyone | Community and curated dog places in a box of at most about 1 degree per side, at most 300 |
+| `GET /api/places?s=&w=&n=&e=` | anyone | Community and curated dog places in a box of at most about 1 degree per side, at most 300. Each carries `managedBy` (first name or `null`), `managedRole`, `managedByYou`, `dogPolicy`, `amenities`, `eventNote`, `website`, `lastCheckedAt`, `flagged` (3 or more open `closed` or `not_dog_friendly` reports) and, for the signed-in caller, `myClaim` (`pending`, `approved`, `rejected` or `null`) |
 | `POST /api/places` | signed in | `{ name, category, lat, lng, note }`. The adder is the first confirmation. Rate limited per person |
-| `POST` and `DELETE /api/places/:id/confirm` | signed in | Confirm or take back "dogs welcome here". Idempotent |
-| `DELETE /api/places/:id` | whoever added it | Not for curated places |
+| `POST` and `DELETE /api/places/:id/confirm` | signed in | Confirm or take back "dogs welcome here". Idempotent. Confirming sets `lastCheckedAt` |
+| `DELETE /api/places/:id` | whoever added it | Not for curated places, and not once someone else maintains the listing |
+| `POST /api/places/:id/claim` | signed in | `{ role, contactEmail, message }` asks to maintain a listing. `role` is `owner` for a business or `steward` for a park. One pending claim per person per place, none on a place that already has a manager. Rate limited per person |
+| `PATCH /api/places/:id` | the approved manager | `dogPolicy` (`inside`, `patio`, `off_leash`, `leashed`, `unknown`), `note` (280), `amenities` (any of `water_bowls`, `treats`, `fenced`, `shade`, `dog_menu`, `waste_bags`), `eventNote` (140), `website` (https only, or `null` to remove). Sets `lastCheckedAt`. A curated place keeps its `sourceUrl` |
+| `POST /api/places/:id/report` | signed in | `{ reason, note }` where `reason` is `not_dog_friendly`, `closed`, `wrong_location` or `other`. One open report per person per place. Rate limited per person |
+| `GET /api/admin/claims?status=pending` | admin | Claims with the place, the claimant's name and both emails. `status` is `pending` (default), `approved`, `rejected` or `all` |
+| `POST /api/admin/claims/:id/approve`, `POST /api/admin/claims/:id/reject` | admin | Decide a pending claim, once. Approving sets the place's manager and role |
+| `GET /api/admin/reports` | admin | Open reports, oldest first. `status=resolved` lists the closed ones |
+| `POST /api/admin/reports/:id/resolve` | admin | Close a report |
 | `GET /api/geo/...` | anyone | Shared cache for OpenStreetMap lookups (`server/geo.js`) |
 | `GET /api/public/dogs/:slug` | anyone | Public dogs only. No routes unless `share_routes` is on. Includes awards the owner made public |
 | `GET /api/public/dogs/:slug/photo` | anyone | Public dogs only. The photo as image bytes. 404 for a private dog |
@@ -115,6 +123,8 @@ JSON never carries the photo itself. Dogs and walks carry a `photoUrl` (or `null
 Read these before inviting anyone.
 
 - **There is no password and no email verification.** Sign-in is a name and an email. Anyone who knows a person's email can sign in as that person, see their dogs and walks (including routes), and post as them. Do not put anything in Trot during the trial that you would not want a stranger to see. Real sign-in (emailed links or passkeys) has to come before a wider launch.
+- **Admins and listing managers rest on the same sign-in.** An admin is whoever signs in with an email in `ADMIN_EMAILS`, and a listing's manager is whoever signs in as the approved claimant. Because sign-in does not verify the email yet, anyone who knows one of those addresses can act as that person: approve claims, or change a listing's dog policy. Keep `ADMIN_EMAILS` to addresses that are not public, and put real sign-in in place before vendors rely on their listings. There is no endpoint yet to take a manager off a listing; approving another claim on the place replaces them, and otherwise it is a database edit (`UPDATE places SET managed_by = NULL, managed_role = NULL`).
+- **Google Maps is a link only.** "Open in Google Maps" and Directions open Google in a new tab with our own name, address or pin in the address. Nothing is read from Google, stored, or drawn on the Trot map.
 - An invite link works once and lasts 14 days. Whoever opens it first joins the team, so send it to one person. The owner can remove someone from the team and cancel an unused invite. A walk can be deleted by the person who logged it or by the dog's owner. There is no way yet to leave a team yourself, hand a dog to a new owner, or delete a dog or an account, short of editing the database. Someone removed from a team can no longer delete the walks they logged, but the owner can.
 - A dog's page is public by default: photo, name, breed, bio, totals, and the last 10 outings with title, note, place name, date and the walker's first name. Route maps stay off the public page unless the owner turns them on. The owner can make the page private in Settings or in Edit profile. While the page is public, anyone can load the dog's photo from its address.
 - The care team sees full routes, which usually start and end at home.

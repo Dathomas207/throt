@@ -1017,7 +1017,7 @@ test('community places: box rules, add, confirm once per person, first names onl
   const made = await call('POST', '/api/places', { token: ann.token, body: good })
   assert.equal(made.status, 201, made.text)
   const pl = made.json.place
-  assert.deepEqual(Object.keys(pl).sort(), ['addedBy', 'at', 'category', 'confirmations', 'confirmed', 'id', 'name', 'note'])
+  assert.deepEqual(Object.keys(pl).sort(), ['addedBy', 'amenities', 'at', 'category', 'confirmations', 'confirmed', 'dogPolicy', 'eventNote', 'flagged', 'id', 'lastCheckedAt', 'managedBy', 'managedByYou', 'managedRole', 'myClaim', 'name', 'note', 'website'])
   assert.deepEqual([pl.name, pl.category, pl.note, pl.addedBy, pl.confirmations, pl.confirmed], ['The Salty Dog Taproom', 'bar', 'Water bowls on the patio.', 'Ann', 1, true], 'the creator is the first confirmation')
   assert.ok(Math.abs(pl.at[0] - lat) < 1e-5 && Math.abs(pl.at[1] - lng) < 1e-5)
 
@@ -1701,7 +1701,7 @@ test('curated places: seeded once, geocoded once, hidden until they have coordin
     const first = await call('GET', box, { from: l.url })
     assert.deepEqual(first.json.places.map((p) => p.name).sort(), ['Barkside Dog Park', 'Hound and Hops'], 'the failed one is hidden meanwhile')
     const park = first.json.places.find((p) => p.name === 'Barkside Dog Park')
-    assert.deepEqual(Object.keys(park).sort(), ['addedBy', 'address', 'at', 'category', 'confirmations', 'confirmed', 'curated', 'id', 'name', 'note', 'sourceUrl'])
+    assert.deepEqual(Object.keys(park).sort(), ['addedBy', 'address', 'amenities', 'at', 'category', 'confirmations', 'confirmed', 'curated', 'dogPolicy', 'eventNote', 'flagged', 'id', 'lastCheckedAt', 'managedBy', 'managedByYou', 'managedRole', 'myClaim', 'name', 'note', 'sourceUrl', 'website'])
     assert.deepEqual([park.curated, park.address, park.sourceUrl, park.addedBy, park.at, park.confirmations, park.confirmed, park.category], [true, '1 Park Road, Charlotte, NC 28203', 'https://example.org/parks', null, [35.2001, -80.8404], 0, false, 'park'])
 
     // Second pass, as at the next startup: only the missing row is looked up.
@@ -1728,7 +1728,7 @@ test('curated places: seeded once, geocoded once, hidden until they have coordin
     assert.equal((await mem.query('SELECT COUNT(*) AS n FROM places')).rows[0].n * 1, 3)
     // A place a person adds keeps the plain shape.
     const mine = await call('POST', '/api/places', { token: u.json.token, from: l.url, body: { name: 'My spot', category: 'water', lat: 35.21, lng: -80.84 } })
-    assert.deepEqual(Object.keys(mine.json.place).sort(), ['addedBy', 'at', 'category', 'confirmations', 'confirmed', 'id', 'name', 'note'])
+    assert.deepEqual(Object.keys(mine.json.place).sort(), ['addedBy', 'amenities', 'at', 'category', 'confirmations', 'confirmed', 'dogPolicy', 'eventNote', 'flagged', 'id', 'lastCheckedAt', 'managedBy', 'managedByYou', 'managedRole', 'myClaim', 'name', 'note', 'website'])
     // The shipped list loads, without duplicates.
     const real = JSON.parse(fs.readFileSync(new URL('./seed-places.json', import.meta.url), 'utf8'))
     const n = await seedPlaces(mem, real)
@@ -1762,4 +1762,262 @@ test('demo seed: Dale owns Biscuit and Millie, and both have photos, health reco
       assert.ok(!page.text.includes('certificate (sample)'), 'documents are not public')
     }
   } finally { await new Promise((r) => l.s.close(r)); await mem.close() }
+})
+
+// ---- place ownership: claims, manager edits, freshness, reports, admins ----
+import { httpsLink, claimRolesFor } from './routesPlaces.js'
+const ownSpot = () => ({ lat: -30 - Math.random() * 10, lng: 60 + Math.random() * 10 })
+const addPlace = async (token, over = {}, from = base) => {
+  const r = await call('POST', '/api/places', { token, from, body: { name: 'Lucky Dog Bark and Brew', category: 'bar', note: 'Dogs on the patio.', ...ownSpot(), ...over } })
+  assert.equal(r.status, 201, r.text)
+  return r.json.place
+}
+const onePlace = async (pl, token, from = base) => (await call('GET', `/api/places?s=${pl.at[0] - 0.001}&w=${pl.at[1] - 0.001}&n=${pl.at[0] + 0.001}&e=${pl.at[1] + 0.001}`, { token, from })).json.places.find((x) => x.id === pl.id)
+
+test('place claims: a signed-in person asks once, only an admin approves, and approval names the manager', async () => {
+  const l = await listen(createApp({ db, adminEmails: ` ${mail('cl-admin').toUpperCase()} , someone@example.invalid,`, rate: { sessionMax: 1000, writeMax: 100000, readMax: 100000 } }))
+  const c = (m, p, o = {}) => call(m, p, { ...o, from: l.url })
+  try {
+    const adder = await signIn('Ann Adder', 'cl-adder'), vera = await signIn('Vera Vendor', 'cl-vera'), rex = await signIn('Rex Rival', 'cl-rex'), boss = await signIn('Ada Admin', 'cl-admin')
+    const pl = await addPlace(adder.token), park = await addPlace(adder.token, { name: 'Freedom Park Dog Run', category: 'park' })
+    assert.deepEqual([pl.managedBy, pl.managedRole, pl.managedByYou, pl.myClaim, pl.dogPolicy, pl.amenities, pl.eventNote, pl.website, pl.flagged], [null, null, false, null, 'unknown', [], '', null, false])
+    assert.ok(Date.now() - new Date(pl.lastCheckedAt).getTime() < 60e3, 'a new place counts as checked when it is added')
+
+    // isAdmin comes back with the session and with /api/me.
+    assert.equal((await c('GET', '/api/me', { token: boss.token })).json.user.isAdmin, true)
+    assert.equal((await c('GET', '/api/me', { token: vera.token })).json.user.isAdmin, false)
+    assert.equal((await c('POST', '/api/session', { body: { name: 'Ada Admin', email: mail('cl-admin') } })).json.user.isAdmin, true)
+    assert.equal((await call('GET', '/api/me', { token: boss.token })).json.user.isAdmin, false, 'with ADMIN_EMAILS unset there are no admins')
+
+    const good = { role: 'owner', contactEmail: 'Vera@LuckyDog.example', message: 'I am the general manager.' }
+    assert.equal((await c('POST', `/api/places/${pl.id}/claim`, { body: good })).status, 401)
+    for (const over of [{ role: 'boss' }, { role: undefined }, { role: 'steward' }, { contactEmail: 'nope' }, { contactEmail: undefined }, { message: 'x'.repeat(501) }, { message: 7 }]) {
+      assert.equal((await c('POST', `/api/places/${pl.id}/claim`, { token: vera.token, body: { ...good, ...over } })).status, 400, JSON.stringify(over).slice(0, 60))
+    }
+    assert.equal((await c('POST', `/api/places/${park.id}/claim`, { token: vera.token, body: good })).status, 400, 'a park is stewarded, not owned')
+    assert.equal((await c('POST', `/api/places/${crypto.randomUUID()}/claim`, { token: vera.token, body: good })).status, 404)
+    assert.equal((await c('POST', '/api/places/nope/claim', { token: vera.token, body: good })).status, 404)
+    const made = await c('POST', `/api/places/${pl.id}/claim`, { token: vera.token, body: good })
+    assert.equal(made.status, 201, made.text)
+    assert.deepEqual(made.json.claim, { id: made.json.claim.id, placeId: pl.id, role: 'owner', status: 'pending' })
+    assert.equal((await c('POST', `/api/places/${pl.id}/claim`, { token: vera.token, body: good })).status, 409, 'one pending claim per person per place')
+    const rival = await c('POST', `/api/places/${pl.id}/claim`, { token: rex.token, body: { ...good, contactEmail: 'rex@rival.example', message: '' } })
+    assert.equal(rival.status, 201, 'someone else can still ask')
+    const steward = await c('POST', `/api/places/${park.id}/claim`, { token: rex.token, body: { role: 'steward', contactEmail: 'rex@rival.example' } })
+    assert.equal(steward.status, 201, steward.text)
+    assert.equal((await onePlace(pl, vera.token, l.url)).myClaim, 'pending')
+    assert.equal((await onePlace(pl, adder.token, l.url)).myClaim, null)
+    assert.equal((await onePlace(pl, undefined, l.url)).myClaim, null)
+    assert.equal((await onePlace(pl, vera.token, l.url)).managedBy, null, 'a pending claim changes nothing on the listing')
+
+    // Admin routes: 401 signed out, 403 for everyone who is not an admin, and for everyone when ADMIN_EMAILS is unset.
+    const routes = [['GET', '/api/admin/claims'], ['GET', '/api/admin/claims?status=pending'], ['POST', `/api/admin/claims/${made.json.claim.id}/approve`], ['POST', `/api/admin/claims/${made.json.claim.id}/reject`], ['GET', '/api/admin/reports'], ['POST', `/api/admin/reports/${crypto.randomUUID()}/resolve`]]
+    for (const [m, p] of routes) {
+      assert.equal((await c(m, p)).status, 401, `${m} ${p} signed out`)
+      assert.equal((await c(m, p, { token: vera.token })).status, 403, `${m} ${p} as the claimant`)
+      assert.equal((await c(m, p, { token: adder.token })).status, 403, `${m} ${p} as someone else`)
+      assert.equal((await call(m, p, { token: boss.token })).status, 403, `${m} ${p} with no admins configured`)
+    }
+    assert.equal((await onePlace(pl, vera.token, l.url)).managedBy, null, 'none of that approved anything')
+
+    const list = await c('GET', '/api/admin/claims?status=pending', { token: boss.token })
+    assert.equal(list.status, 200)
+    const mine = list.json.claims.find((x) => x.id === made.json.claim.id)
+    assert.deepEqual(mine, { id: mine.id, role: 'owner', status: 'pending', contactEmail: 'vera@luckydog.example', message: 'I am the general manager.', createdAt: mine.createdAt, decidedAt: null, place: { id: pl.id, name: 'Lucky Dog Bark and Brew', category: 'bar', address: '', managed: false }, by: { name: 'Vera Vendor', email: mail('cl-vera') } })
+    assert.ok(list.json.claims.every((x) => x.status === 'pending'))
+    assert.equal((await c('GET', '/api/admin/claims?status=nonsense', { token: boss.token })).status, 400)
+    assert.equal((await c('POST', '/api/admin/claims/nope/approve', { token: boss.token })).status, 404)
+    assert.equal((await c('POST', `/api/admin/claims/${crypto.randomUUID()}/approve`, { token: boss.token })).status, 404)
+
+    const ok = await c('POST', `/api/admin/claims/${mine.id}/approve`, { token: boss.token })
+    assert.equal(ok.status, 200, ok.text)
+    assert.deepEqual([ok.json.claim.status, ok.json.claim.place.managed, !!ok.json.claim.decidedAt], ['approved', true, true])
+    assert.equal((await c('POST', `/api/admin/claims/${mine.id}/approve`, { token: boss.token })).status, 409, 'decided once')
+    assert.equal((await c('POST', `/api/admin/claims/${mine.id}/reject`, { token: boss.token })).status, 409)
+    assert.equal((await c('POST', `/api/admin/claims/${rival.json.claim.id}/reject`, { token: boss.token })).json.claim.status, 'rejected')
+    assert.ok(!(await c('GET', '/api/admin/claims', { token: boss.token })).json.claims.some((x) => x.place.id === pl.id), 'nothing pending on the place any more')
+    assert.equal((await c('GET', '/api/admin/claims?status=approved', { token: boss.token })).json.claims.filter((x) => x.place.id === pl.id).length, 1)
+    assert.ok((await c('GET', '/api/admin/claims?status=all', { token: boss.token })).json.claims.filter((x) => x.place.id === pl.id).length === 2)
+
+    const seen = await onePlace(pl, undefined, l.url)
+    assert.deepEqual([seen.managedBy, seen.managedRole, seen.managedByYou, seen.myClaim], ['Vera', 'owner', false, null], 'first name only')
+    const anon = await c('GET', `/api/places?s=${pl.at[0] - 0.001}&w=${pl.at[1] - 0.001}&n=${pl.at[0] + 0.001}&e=${pl.at[1] + 0.001}`)
+    assert.ok(!anon.text.includes('Vendor') && !anon.text.includes('@'), 'no surname and no email, contact or otherwise, in the public answer')
+    const own = await onePlace(pl, vera.token, l.url)
+    assert.deepEqual([own.managedByYou, own.myClaim], [true, 'approved'])
+    assert.equal((await onePlace(pl, rex.token, l.url)).myClaim, 'rejected')
+    assert.equal((await c('POST', `/api/places/${pl.id}/claim`, { token: rex.token, body: good })).status, 409, 'a managed place takes no new claims')
+    assert.equal((await c('POST', `/api/places/${pl.id}/claim`, { token: vera.token, body: good })).status, 409)
+    assert.equal((await c('DELETE', `/api/places/${pl.id}`, { token: adder.token })).status, 403, 'the adder cannot remove a listing someone else maintains')
+
+    await c('POST', `/api/admin/claims/${steward.json.claim.id}/approve`, { token: boss.token })
+    const p2 = await onePlace(park, undefined, l.url)
+    assert.deepEqual([p2.managedBy, p2.managedRole], ['Rex', 'steward'])
+    await db.query('DELETE FROM places WHERE id = $1 OR id = $2', [pl.id, park.id])
+  } finally { await new Promise((r) => l.s.close(r)) }
+})
+
+test('claims are rate limited per person', async () => {
+  const l = await listen(createApp({ db, rate: { sessionMax: 1000, writeMax: 100000, readMax: 100000, claimMax: 2 } }))
+  try {
+    const a = await signIn('Cora Claimer', 'cl-rate'), b = await signIn('Ann Adder', 'cl-rate2')
+    const places = [await addPlace(b.token), await addPlace(b.token), await addPlace(b.token)]
+    const post = (pl, token) => call('POST', `/api/places/${pl.id}/claim`, { token, from: l.url, body: { role: 'owner', contactEmail: 'c@example.com' } })
+    assert.equal((await post(places[0], a.token)).status, 201)
+    assert.equal((await post(places[1], a.token)).status, 201)
+    assert.equal((await post(places[1], a.token)).status, 409, 'a repeat is refused before it counts')
+    const third = await post(places[2], a.token)
+    assert.equal(third.status, 429)
+    assert.ok(Number(third.headers.get('retry-after')) > 0)
+    assert.equal((await post(places[2], b.token)).status, 201, 'the limit is per person')
+    for (const p of places) await db.query('DELETE FROM places WHERE id = $1', [p.id])
+  } finally { await new Promise((r) => l.s.close(r)) }
+})
+
+test('only the approved manager can edit a listing, every field is validated, and an edit counts as a check', async () => {
+  const l = await listen(createApp({ db, adminEmails: mail('ed-admin'), rate: { sessionMax: 1000, writeMax: 100000, readMax: 100000 } }))
+  const c = (m, p, o = {}) => call(m, p, { ...o, from: l.url })
+  try {
+    const adder = await signIn('Ann Adder', 'ed-adder'), vera = await signIn('Vera Vendor', 'ed-vera'), boss = await signIn('Ada Admin', 'ed-admin')
+    const pl = await addPlace(adder.token)
+    const edit = { dogPolicy: 'patio', note: 'Dogs on the covered patio, not inside.', amenities: ['treats', 'water_bowls'], eventNote: 'Yappy hour, Thursdays 5 to 7.', website: 'https://luckydog.example/charlotte' }
+    assert.equal((await c('PATCH', `/api/places/${pl.id}`, { body: edit })).status, 401)
+    for (const who of [adder, vera, boss]) assert.equal((await c('PATCH', `/api/places/${pl.id}`, { token: who.token, body: edit })).status, 403, 'not the adder, not a claimant-to-be, not even an admin')
+    const claim = await c('POST', `/api/places/${pl.id}/claim`, { token: vera.token, body: { role: 'owner', contactEmail: 'vera@luckydog.example' } })
+    assert.equal((await c('PATCH', `/api/places/${pl.id}`, { token: vera.token, body: edit })).status, 403, 'a pending claim is not enough')
+    assert.equal((await c('POST', `/api/admin/claims/${claim.json.claim.id}/approve`, { token: boss.token })).status, 200)
+
+    for (const over of [{ dogPolicy: 'sometimes' }, { dogPolicy: 3 }, { note: 'x'.repeat(281) }, { note: 9 }, { amenities: 'treats' }, { amenities: ['treats', 'pool'] }, { amenities: [5] }, { eventNote: 'x'.repeat(141) }, { website: 'http://luckydog.example' }, { website: 'javascript:alert(1)' }, { website: 'https://' }, { website: 'https://localhost' }, { website: 'https://user:pw@luckydog.example' }, { website: 'https://luckydog.example/' + 'x'.repeat(300) }, { website: 12 }]) {
+      assert.equal((await c('PATCH', `/api/places/${pl.id}`, { token: vera.token, body: over })).status, 400, JSON.stringify(over).slice(0, 70))
+    }
+    assert.equal((await c('PATCH', `/api/places/${pl.id}`, { token: vera.token, body: {} })).status, 400, 'nothing to change')
+    assert.equal((await c('PATCH', `/api/places/${pl.id}`, { token: vera.token, body: { name: 'Renamed', lat: 1 } })).status, 400, 'name and position are not the manager\'s to change')
+    assert.equal((await c('PATCH', `/api/places/${crypto.randomUUID()}`, { token: vera.token, body: edit })).status, 404)
+    assert.deepEqual([(await onePlace(pl, undefined, l.url)).dogPolicy, (await onePlace(pl, undefined, l.url)).note], ['unknown', 'Dogs on the patio.'], 'a refused edit changes nothing')
+
+    await db.query('UPDATE places SET last_checked_at = $1 WHERE id = $2', ['2020-01-01T00:00:00.000Z', pl.id])
+    const done = await c('PATCH', `/api/places/${pl.id}`, { token: vera.token, body: edit })
+    assert.equal(done.status, 200, done.text)
+    const p = done.json.place
+    assert.deepEqual([p.dogPolicy, p.note, p.amenities, p.eventNote, p.website, p.managedBy, p.managedRole, p.managedByYou, p.name], ['patio', 'Dogs on the covered patio, not inside.', ['water_bowls', 'treats'], 'Yappy hour, Thursdays 5 to 7.', 'https://luckydog.example/charlotte', 'Vera', 'owner', true, 'Lucky Dog Bark and Brew'])
+    assert.ok(Date.now() - new Date(p.lastCheckedAt).getTime() < 60e3, 'the edit is the newest check')
+    // One field at a time leaves the others alone, and an empty website takes the link off.
+    const one = await c('PATCH', `/api/places/${pl.id}`, { token: vera.token, body: { website: '' } })
+    assert.deepEqual([one.json.place.website, one.json.place.dogPolicy, one.json.place.amenities.length], [null, 'patio', 2])
+    assert.equal((await c('PATCH', `/api/places/${pl.id}`, { token: vera.token, body: { website: null, amenities: [] } })).json.place.amenities.length, 0)
+    await db.query('DELETE FROM places WHERE id = $1', [pl.id])
+  } finally { await new Promise((r) => l.s.close(r)) }
+
+  assert.equal(httpsLink('https://example.org/a b'), null)
+  assert.equal(httpsLink(' https://Example.org '), 'https://example.org/')
+  assert.deepEqual([claimRolesFor('park'), claimRolesFor('bar'), claimRolesFor('other')], [['steward'], ['owner'], ['owner', 'steward']])
+})
+
+test('a curated listing keeps its source, is checked at seed time, and a manager\'s note survives the next seed', async () => {
+  const mem = await createDb('')
+  const l = await listen(createApp({ db: mem, adminEmails: 'boss@example.com', rate: { sessionMax: 1000 } }))
+  const c = (m, p, o = {}) => call(m, p, { ...o, from: l.url })
+  try {
+    const data = { places: [{ name: 'Hound and Hops', category: 'bar', address: '2 Brew Street, Charlotte, NC 28205', note: 'Dogs on the patio.', source_url: 'https://example.org/hops' }] }
+    const t0 = Date.parse('2026-03-01T12:00:00Z')
+    await seedPlaces(mem, data, t0)
+    await geocodePlaces(mem, { fetchImpl: async () => ({ ok: true, json: async () => [{ lat: '35.21', lon: '-80.81' }] }), delayMs: 0 })
+    const box = '/api/places?s=35.2&w=-80.82&n=35.22&e=-80.8'
+    let p = (await c('GET', box)).json.places[0]
+    assert.deepEqual([p.lastCheckedAt, p.managedBy, p.sourceUrl], ['2026-03-01T12:00:00.000Z', null, 'https://example.org/hops'])
+    const sess = async (name, email) => (await c('POST', '/api/session', { body: { name, email } })).json.token
+    const vera = await sess('Vera Vendor', 'vera@example.com'), boss = await sess('Ada Admin', 'boss@example.com'), cy = await sess('Cy Confirmer', 'cy@example.com')
+    const claim = await c('POST', `/api/places/${p.id}/claim`, { token: vera, body: { role: 'owner', contactEmail: 'vera@example.com' } })
+    await c('POST', `/api/admin/claims/${claim.json.claim.id}/approve`, { token: boss })
+    assert.equal((await c('PATCH', `/api/places/${p.id}`, { token: vera, body: { note: 'Inside too, on a leash.', dogPolicy: 'inside' } })).status, 200)
+    await seedPlaces(mem, data, t0 + 864e5)
+    p = (await c('GET', box)).json.places[0]
+    assert.deepEqual([p.note, p.dogPolicy, p.sourceUrl, p.curated, p.managedBy, p.addedBy], ['Inside too, on a leash.', 'inside', 'https://example.org/hops', true, 'Vera', null], 'the seed does not write over the manager, and the source stays')
+    // A confirmation by anyone signed in is the newest check. Taking it back does not move the date.
+    await mem.query('UPDATE places SET last_checked_at = $1 WHERE id = $2', ['2020-01-01T00:00:00.000Z', p.id])
+    assert.equal((await c('POST', `/api/places/${p.id}/confirm`, { token: cy })).status, 200)
+    const after = (await c('GET', box)).json.places[0].lastCheckedAt
+    assert.ok(Date.now() - new Date(after).getTime() < 60e3)
+    await c('DELETE', `/api/places/${p.id}/confirm`, { token: cy })
+    assert.equal((await c('GET', box)).json.places[0].lastCheckedAt, after)
+  } finally { await new Promise((r) => l.s.close(r)); await mem.close() }
+})
+
+test('reports: one open report per person per place, rate limited, flagged at three, resolved by an admin', async () => {
+  const l = await listen(createApp({ db, adminEmails: mail('rp-admin'), rate: { sessionMax: 1000, writeMax: 100000, readMax: 100000, reportMax: 3 } }))
+  const c = (m, p, o = {}) => call(m, p, { ...o, from: l.url })
+  try {
+    const adder = await signIn('Ann Adder', 'rp-adder'), boss = await signIn('Ada Admin', 'rp-admin')
+    const u = []
+    for (let i = 0; i < 4; i++) u.push(await signIn(`Reporter${i} Surname`, `rp-${i}`))
+    const pl = await addPlace(adder.token), other = await addPlace(adder.token, { name: 'Second Spot' })
+    const rep = (who, body, place = pl) => c('POST', `/api/places/${place.id}/report`, { token: who && who.token, body })
+    assert.equal((await rep(null, { reason: 'closed' })).status, 401)
+    for (const body of [{}, { reason: 'rude staff' }, { reason: 5 }, { reason: 'closed', note: 'x'.repeat(281) }, { reason: 'closed', note: 4 }]) assert.equal((await rep(u[0], body)).status, 400, JSON.stringify(body).slice(0, 60))
+    assert.equal((await c('POST', `/api/places/${crypto.randomUUID()}/report`, { token: u[0].token, body: { reason: 'closed' } })).status, 404)
+
+    const first = await rep(u[0], { reason: 'closed', note: 'Papered over windows.' })
+    assert.equal(first.status, 201, first.text)
+    assert.deepEqual(first.json, { report: { id: first.json.report.id, placeId: pl.id, reason: 'closed' }, flagged: false })
+    assert.equal((await rep(u[0], { reason: 'other' })).status, 409, 'one open report per person per place')
+    assert.equal((await rep(u[0], { reason: 'wrong_location' }, other)).status, 201, 'another place is fine')
+    assert.equal((await rep(u[1], { reason: 'not_dog_friendly' })).json.flagged, false)
+    assert.equal((await rep(u[2], { reason: 'wrong_location' })).json.flagged, false, 'a wrong pin does not count toward the flag')
+    assert.equal((await onePlace(pl, undefined, l.url)).flagged, false, 'two is not enough')
+    assert.equal((await rep(u[3], { reason: 'closed' })).json.flagged, true)
+    assert.equal((await onePlace(pl, undefined, l.url)).flagged, true)
+    assert.equal((await onePlace(other, undefined, l.url)).flagged, false)
+
+    // Rate limit: three accepted reports an hour here. A refused or repeated one does not use it up.
+    const third = await addPlace(adder.token, { name: 'Third Spot' }), fourth = await addPlace(adder.token, { name: 'Fourth Spot' })
+    assert.equal((await rep(u[0], { reason: 'other' }, third)).status, 201)
+    const over = await rep(u[0], { reason: 'other' }, fourth)
+    assert.equal(over.status, 429)
+    assert.ok(Number(over.headers.get('retry-after')) > 0)
+    assert.equal((await rep(u[1], { reason: 'other' }, fourth)).status, 201, 'the limit is per person')
+
+    const open = await c('GET', '/api/admin/reports', { token: boss.token })
+    assert.equal(open.status, 200)
+    const here = open.json.reports.filter((r) => r.place.id === pl.id)
+    assert.equal(here.length, 4)
+    assert.deepEqual(here[0], { id: first.json.report.id, reason: 'closed', note: 'Papered over windows.', createdAt: here[0].createdAt, resolvedAt: null, place: { id: pl.id, name: 'Lucky Dog Bark and Brew', category: 'bar', address: '', flagged: true }, by: 'Reporter0' })
+    assert.ok(!open.text.includes('Surname') && !open.text.includes('@'), 'first names only, no emails')
+    assert.equal((await c('GET', '/api/admin/reports?status=old', { token: boss.token })).status, 400)
+
+    assert.equal((await c('POST', `/api/admin/reports/${first.json.report.id}/resolve`, { token: u[0].token })).status, 403)
+    assert.deepEqual((await c('POST', `/api/admin/reports/${first.json.report.id}/resolve`, { token: boss.token })).json, { ok: true })
+    assert.equal((await c('POST', `/api/admin/reports/${first.json.report.id}/resolve`, { token: boss.token })).status, 404, 'resolved once')
+    assert.equal((await c('POST', '/api/admin/reports/nope/resolve', { token: boss.token })).status, 404)
+    assert.equal((await onePlace(pl, undefined, l.url)).flagged, false, 'back under three open reports')
+    assert.equal((await c('GET', '/api/admin/reports', { token: boss.token })).json.reports.filter((r) => r.place.id === pl.id).length, 3)
+    assert.equal((await c('GET', '/api/admin/reports?status=resolved', { token: boss.token })).json.reports.filter((r) => r.place.id === pl.id).length, 1)
+    assert.equal((await rep(u[1], { reason: 'closed' })).status, 409, 'still open for this person')
+    // Removing a place takes its claims and reports with it.
+    assert.equal((await c('DELETE', `/api/places/${pl.id}`, { token: adder.token })).status, 200)
+    assert.equal((await db.query('SELECT COUNT(*) AS n FROM place_reports WHERE place_id = $1', [pl.id])).rows[0].n * 1, 0)
+    for (const p of [other, third, fourth]) await db.query('DELETE FROM places WHERE id = $1', [p.id])
+  } finally { await new Promise((r) => l.s.close(r)) }
+})
+
+test('the client reads the ownership fields safely and builds a plain Google Maps link', async () => {
+  const { normalizeCommunity, googleMapsUrl, relativeDate, maintainedLine, checkedLine, verifiedTag, mergePlaces } = await import('../src/osm.js')
+  const now = new Date(2026, 10, 25, 9).getTime(), ago = (d) => new Date(now - d * 864e5).toISOString()
+  const raw = { id: 'a', name: 'Hound & Hops', at: [35.2, -80.8], category: 'bar', curated: true, address: '2 Brew St, Charlotte, NC 28205', managedBy: 'Vera', managedRole: 'owner', managedByYou: true, dogPolicy: 'patio', amenities: ['treats', 'pool', 'shade'], eventNote: 'Yappy hour', website: 'https://hops.example/', lastCheckedAt: ago(3), flagged: true, myClaim: 'approved' }
+  const [p] = normalizeCommunity([raw])
+  assert.deepEqual([p.managedBy, p.managedRole, p.managedByYou, p.dogPolicy, p.amenities, p.eventNote, p.website, p.flagged, p.myClaim], ['Vera', 'owner', true, 'patio', ['treats', 'shade'], 'Yappy hour', 'https://hops.example/', true, 'approved'])
+  assert.deepEqual([maintainedLine(p), verifiedTag(p), checkedLine(p, now)], ['Maintained by Vera, owner', 'Owner verified', 'Last checked 3 days ago'])
+  // Anything odd from the server falls back to "nobody, unknown, nothing".
+  const [q] = normalizeCommunity([{ id: 'b', name: 'Odd', at: [1, 2], category: 'park', managedBy: 7, managedByYou: true, dogPolicy: 'cats', amenities: 'treats', website: 'javascript:alert(1)', lastCheckedAt: 'soon', flagged: 'yes', myClaim: 'maybe' }])
+  assert.deepEqual([q.managedBy, q.managedRole, q.managedByYou, q.dogPolicy, q.amenities, q.website, q.lastCheckedAt, q.flagged, q.myClaim], ['', null, false, 'unknown', [], null, null, false, null])
+  assert.deepEqual([maintainedLine(q), verifiedTag(q), checkedLine(q, now)], ['No one maintains this listing yet', '', 'Not checked yet'])
+  assert.equal(normalizeCommunity([{ ...raw, website: 'http://hops.example' }])[0].website, null, 'https only')
+  assert.equal(maintainedLine(normalizeCommunity([{ ...raw, managedRole: 'steward' }])[0]), 'Maintained by Vera, steward')
+  assert.deepEqual([0, 1, 5, 21, 100, 400].map((d) => relativeDate(ago(d), now)), ['today', 'yesterday', '5 days ago', '3 weeks ago', '3 months ago', 'over a year ago'])
+  // Name plus address when there is an address, otherwise the pin. Always the documented search URL, nothing else.
+  assert.equal(googleMapsUrl(p), 'https://www.google.com/maps/search/?api=1&query=Hound%20%26%20Hops%2C%202%20Brew%20St%2C%20Charlotte%2C%20NC%2028205')
+  assert.equal(googleMapsUrl(q), 'https://www.google.com/maps/search/?api=1&query=1.000000%2C2.000000')
+  // On a place that is also on the map, the manager's website wins over the map's.
+  const osm = { id: 'n1', name: 'Hound and Hops', at: [35.2, -80.8], tags: [], website: 'http://old.example', osm: { type: 'node', id: 1 } }
+  assert.equal(mergePlaces([osm], [p])[0].website, 'https://hops.example/')
+  assert.equal(mergePlaces([osm], normalizeCommunity([{ ...raw, website: null }]))[0].website, 'http://old.example')
 })

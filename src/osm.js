@@ -207,9 +207,47 @@ export function normalizeCommunity(list) {
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) continue
     const category = COMMUNITY_CATS.includes(c.category) ? c.category : 'other'
     const curated = c.curated === true, src = typeof c.sourceUrl === 'string' && /^https?:\/\/[^\s]+$/i.test(c.sourceUrl.trim()) ? c.sourceUrl.trim() : null
-    out.push({ id: 'community-' + c.id, cid: c.id, community: true, curated, sourceUrl: curated ? src : null, address: typeof c.address === 'string' && c.address.trim() ? c.address.trim().slice(0, 160) : null, name: c.name.trim().slice(0, 80), category, kind: COMMUNITY_KIND[category] + (curated ? ', from public listings' : ', added by a Trot member'), at: [lat, lng], tags: [], note: typeof c.note === 'string' ? c.note.slice(0, 280) : '', addedBy: typeof c.addedBy === 'string' && c.addedBy.trim() ? c.addedBy.trim().slice(0, 40) : '', confirmations: Math.max(0, Math.floor(Number(c.confirmations)) || 0), confirmed: !!c.confirmed })
+    out.push({ id: 'community-' + c.id, cid: c.id, community: true, curated, sourceUrl: curated ? src : null, address: typeof c.address === 'string' && c.address.trim() ? c.address.trim().slice(0, 160) : null, name: c.name.trim().slice(0, 80), category, kind: COMMUNITY_KIND[category] + (curated ? ', from public listings' : ', added by a Trot member'), at: [lat, lng], tags: [], note: typeof c.note === 'string' ? c.note.slice(0, 280) : '', addedBy: typeof c.addedBy === 'string' && c.addedBy.trim() ? c.addedBy.trim().slice(0, 40) : '', confirmations: Math.max(0, Math.floor(Number(c.confirmations)) || 0), confirmed: !!c.confirmed, ...ownership(c) })
   }
   return out
+}
+// Who maintains a listing and what they keep up to date. The values mirror server/routesPlaces.js.
+export const DOG_POLICY = { inside: 'Dogs welcome inside', patio: 'Dogs on the patio', off_leash: 'Off leash area', leashed: 'Dogs on a leash', unknown: 'Not set yet' }
+export const AMENITY = { water_bowls: 'Water bowls', treats: 'Treats', fenced: 'Fenced', shade: 'Shade', dog_menu: 'Dog menu', waste_bags: 'Waste bags' }
+export const REPORT_REASONS = [['not_dog_friendly', 'Dogs are not welcome here'], ['closed', 'This place has closed'], ['wrong_location', 'The pin is in the wrong spot'], ['other', 'Something else']]
+export const CLAIM_ROLE = { owner: 'I own or manage this business', steward: 'I want to steward this park' }
+export const claimRolesFor = (category) => (category === 'park' ? ['steward'] : category === 'water' || category === 'other' ? ['owner', 'steward'] : ['owner'])
+const httpsOnly = (v) => { try { const u = new URL(String(v)); return u.protocol === 'https:' && String(v).length <= 300 ? u.href : null } catch (e) { return null } }
+function ownership(c) {
+  const role = c.managedRole === 'steward' ? 'steward' : 'owner', by = typeof c.managedBy === 'string' ? c.managedBy.trim().slice(0, 40) : ''
+  const site = typeof c.website === 'string' ? httpsOnly(c.website) : null // the manager's own link; mergePlaces falls back to the map's
+  const checked = typeof c.lastCheckedAt === 'string' && !Number.isNaN(new Date(c.lastCheckedAt).getTime()) ? c.lastCheckedAt : null
+  return {
+    managedBy: by, managedRole: by ? role : null, managedByYou: !!by && c.managedByYou === true, dogPolicy: DOG_POLICY[c.dogPolicy] ? c.dogPolicy : 'unknown',
+    amenities: Array.isArray(c.amenities) ? Object.keys(AMENITY).filter((k) => c.amenities.includes(k)) : [], eventNote: typeof c.eventNote === 'string' ? c.eventNote.trim().slice(0, 140) : '',
+    website: site, ownerSite: site, lastCheckedAt: checked, flagged: c.flagged === true, myClaim: ['pending', 'approved', 'rejected'].includes(c.myClaim) ? c.myClaim : null,
+  }
+}
+export const maintainedLine = (p) => (p.managedBy ? `Maintained by ${p.managedBy}, ${p.managedRole === 'steward' ? 'steward' : 'owner'}` : 'No one maintains this listing yet')
+export const verifiedTag = (p) => (p.managedBy ? (p.managedRole === 'steward' ? 'Steward verified' : 'Owner verified') : '')
+// "today", "yesterday", "5 days ago", "3 weeks ago", "4 months ago", "over a year ago". Whole local days.
+export function relativeDate(iso, now = Date.now()) {
+  const t = new Date(iso).getTime()
+  if (Number.isNaN(t)) return ''
+  const day = (ms) => { const d = new Date(ms); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5 }
+  const n = Math.max(0, day(now) - day(t))
+  if (n === 0) return 'today'
+  if (n === 1) return 'yesterday'
+  if (n < 14) return `${n} days ago`
+  if (n < 60) return `${Math.floor(n / 7)} weeks ago`
+  if (n < 365) return `${Math.floor(n / 30)} months ago`
+  return n < 730 ? 'over a year ago' : `over ${Math.floor(n / 365)} years ago`
+}
+export const checkedLine = (p, now) => (p.lastCheckedAt ? 'Last checked ' + relativeDate(p.lastCheckedAt, now) : 'Not checked yet')
+// A plain link out to Google Maps search. No Google API and no Google data: the query is our own name and address, or the pin.
+export function googleMapsUrl(p) {
+  const q = p.address ? `${p.name}, ${p.address}` : `${Number(p.at[0]).toFixed(6)},${Number(p.at[1]).toFixed(6)}`
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q)
 }
 export function communityLine(p) {
   if (p.curated) return 'From public listings' + (p.confirmations > 0 ? ', confirmed by ' + p.confirmations : '')
@@ -227,7 +265,7 @@ export function mergePlaces(osmPlaces, community) {
     const i = osm.findIndex((o) => haversine(o.at, c.at) <= DEDUPE_MILES && sameName(o.name, c.name))
     if (i < 0) { out.push(c); continue }
     const o = osm.splice(i, 1)[0]
-    out.push({ ...c, tags: o.tags || [], chips: o.chips, details: (o.details || []).filter((d) => !(d.label === 'Address' && c.address)), website: o.website, phone: o.phone, address: c.address || o.address, osm: o.osm })
+    out.push({ ...c, tags: o.tags || [], chips: o.chips, details: (o.details || []).filter((d) => !(d.label === 'Address' && c.address)), website: c.website || o.website, phone: o.phone, address: c.address || o.address, osm: o.osm })
   }
   return osm.concat(out)
 }

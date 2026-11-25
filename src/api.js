@@ -121,6 +121,18 @@ api.places = {
   confirm: (id) => request('POST', `/places/${id}/confirm`, {}),
   unconfirm: (id) => request('DELETE', `/places/${id}/confirm`),
   remove: (id) => request('DELETE', `/places/${id}`),
+  // Ownership: ask to maintain a listing, report a problem, and (for the approved manager) edit it.
+  claim: (id, input) => request('POST', `/places/${id}/claim`, input),
+  report: (id, input) => request('POST', `/places/${id}/report`, input),
+  update: (id, patch) => request('PATCH', `/places/${id}`, patch),
+}
+// Admins only (ADMIN_EMAILS on the server). Everyone else gets a 403.
+api.admin = {
+  claims: (status = 'pending') => request('GET', `/admin/claims${qs({ status })}`),
+  approve: (id) => request('POST', `/admin/claims/${id}/approve`, {}),
+  reject: (id) => request('POST', `/admin/claims/${id}/reject`, {}),
+  reports: () => request('GET', '/admin/reports'),
+  resolve: (id) => request('POST', `/admin/reports/${id}/resolve`, {}),
 }
 api.events = {
   // near is [lat, lng]; from is YYYY-MM-DD. Both optional.

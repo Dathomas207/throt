@@ -175,6 +175,30 @@ const SCHEMA = [
     joined_at TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (dog_id, challenge_key, period_key)
   )`,
+  // A request to maintain a listing: 'owner' for a business, 'steward' for a park. An admin decides each one by hand.
+  `CREATE TABLE IF NOT EXISTS place_claims (
+    id TEXT PRIMARY KEY,
+    place_id TEXT NOT NULL REFERENCES places(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    contact_email TEXT NOT NULL,
+    message TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL,
+    decided_at TIMESTAMPTZ
+  )`,
+  // "Report a problem" on a listing. Open until an admin resolves it.
+  `CREATE TABLE IF NOT EXISTS place_reports (
+    id TEXT PRIMARY KEY,
+    place_id TEXT NOT NULL REFERENCES places(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL,
+    resolved_at TIMESTAMPTZ
+  )`,
+  `CREATE INDEX IF NOT EXISTS place_claims_place ON place_claims (place_id)`,
+  `CREATE INDEX IF NOT EXISTS place_reports_place ON place_reports (place_id)`,
   `CREATE INDEX IF NOT EXISTS documents_dog ON documents (dog_id)`,
   `CREATE INDEX IF NOT EXISTS awards_dog ON awards (dog_id)`,
   `CREATE INDEX IF NOT EXISTS events_starts ON events (starts_on)`,
@@ -211,6 +235,15 @@ const COLUMNS = [
   ['places', 'address', "TEXT NOT NULL DEFAULT ''"],
   ['places', 'source_url', 'TEXT'],
   ['places', 'geocoded_at', 'TIMESTAMPTZ'],
+  // Who maintains the listing (set when an admin approves a claim) and what they keep up to date.
+  // amenities is a JSON list of fixed keys. last_checked_at moves on seeding, a manager's edit or a confirmation.
+  ['places', 'managed_by', 'TEXT'],
+  ['places', 'managed_role', 'TEXT'],
+  ['places', 'dog_policy', 'TEXT'],
+  ['places', 'amenities', 'TEXT'],
+  ['places', 'event_note', "TEXT NOT NULL DEFAULT ''"],
+  ['places', 'website', 'TEXT'],
+  ['places', 'last_checked_at', 'TIMESTAMPTZ'],
   // Performance statistics from the phone carried on the walk. Speeds are in mph. All optional.
   ['walks', 'avg_speed', 'DOUBLE PRECISION'],
   ['walks', 'max_speed', 'DOUBLE PRECISION'],
@@ -223,6 +256,9 @@ const isDuplicateColumn = (e) => e && (e.code === '42701' || /already exists|dup
 // plan the feed's keyset query once this index exists, so only real Postgres gets it.
 const POSTGRES_ONLY = [
   `CREATE INDEX IF NOT EXISTS walks_started ON walks (started_at)`,
+  // One pending claim and one open report per person per place, held even if two requests race.
+  `CREATE UNIQUE INDEX IF NOT EXISTS place_claims_one_pending ON place_claims (place_id, user_id) WHERE status = 'pending'`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS place_reports_one_open ON place_reports (place_id, user_id) WHERE resolved_at IS NULL`,
 ]
 export async function migrate(query, kind = 'postgres') {
   for (const sql of SCHEMA) await query(sql)

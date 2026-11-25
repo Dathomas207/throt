@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Ic, LEVELS, ROLE_LABEL, copyText, firstName } from '../ui.jsx'
 import { DogForm } from './Welcome.jsx'
 import { CONNECTIONS, PEOPLE } from '../data.js'
+import { api } from '../api.js'
+import { COMMUNITY_KIND, REPORT_REASONS, relativeDate } from '../osm.js'
+import '../maps.css'
 
 export const PLANS = [
   { id: 'free', name: 'Free', price: '$0', items: ['One dog', 'Phone tracking', 'Feed and paws', 'Care team of up to three', 'Public dog page', 'Story cards', 'Places map'] },
@@ -12,6 +15,56 @@ export const planName = (id) => (PLANS.find((p) => p.id === id) || PLANS[0]).nam
 
 function Section({ title, children, id }) {
   return <section className="card padc setsec" aria-labelledby={id}><h2 className="eyebrow dark" id={id}>{title}</h2>{children}</section>
+}
+
+// Admins only: claims waiting for a decision and open reports. The server checks ADMIN_EMAILS on every call,
+// so showing this to anyone else would only show errors.
+const REASON = Object.fromEntries(REPORT_REASONS)
+function AdminSection({ setToast }) {
+  const [claims, setClaims] = useState(null)
+  const [reports, setReports] = useState(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState('')
+  const alive = useRef(true)
+  const load = async () => {
+    setError('')
+    try { const [c, r] = await Promise.all([api.admin.claims('pending'), api.admin.reports()]); if (alive.current) { setClaims((c && c.claims) || []); setReports((r && r.reports) || []) } }
+    catch (e) { if (alive.current) setError((e && e.message) || 'The admin lists could not be loaded.') }
+  }
+  useEffect(() => { alive.current = true; load(); return () => { alive.current = false } }, [])
+  const run = async (id, fn, done) => {
+    if (busy) return
+    setBusy(id)
+    try { await fn(); if (alive.current) { done(); } }
+    catch (e) { setToast((e && e.message) || 'That did not save. Try again.'); if (alive.current) load() }
+    if (alive.current) setBusy('')
+  }
+  const decide = (c, yes) => run(c.id, () => (yes ? api.admin.approve(c.id) : api.admin.reject(c.id)), () => { setClaims((l) => l.filter((x) => x.id !== c.id)); setToast(yes ? `${firstName(c.by.name)} now maintains ${c.place.name}` : 'Claim rejected') })
+  const resolve = (r) => run(r.id, () => api.admin.resolve(r.id), () => { setReports((l) => l.filter((x) => x.id !== r.id)); setToast('Report resolved') })
+  const where = (pl) => `${COMMUNITY_KIND[pl.category] || 'Place'}${pl.address ? ' · ' + pl.address : ''}`
+  return (
+    <Section title="ADMIN" id="set-admin">
+      <p className="meta">You see this because your email is on the server's admin list. Approving a claim lets that person edit the listing.</p>
+      {error && <div className="mnote" role="alert"><span className="grow">{error}</span><button onClick={load}>Retry</button></div>}
+      <div className="sl">PENDING CLAIMS{claims ? ` (${claims.length})` : ''}</div>
+      {!claims && !error && <p className="meta" role="status">Loading</p>}
+      {claims && claims.length === 0 && <p className="meta">No claims are waiting.</p>}
+      {claims && claims.map((c) => <div key={c.id} className="arow">
+        <span><b>{c.place.name}</b><small>{where(c.place)}{c.place.managed ? ' · already has a manager, approving replaces them' : ''}</small></span>
+        <small>{c.by.name} asks to be {c.role === 'steward' ? 'steward' : 'owner'} · sent {relativeDate(c.createdAt)}<br />Contact {c.contactEmail} · signed in as {c.by.email}</small>
+        {c.message && <q>{c.message}</q>}
+        <div className="row g8"><button className="cta small" disabled={busy === c.id} aria-label={`Approve the claim on ${c.place.name} by ${c.by.name}`} onClick={() => decide(c, true)}>Approve</button><button className="cta small white bordered" disabled={busy === c.id} aria-label={`Reject the claim on ${c.place.name} by ${c.by.name}`} onClick={() => decide(c, false)}>Reject</button></div>
+      </div>)}
+      <div className="sl">OPEN REPORTS{reports ? ` (${reports.length})` : ''}</div>
+      {reports && reports.length === 0 && <p className="meta">No open reports.</p>}
+      {reports && reports.map((r) => <div key={r.id} className="arow">
+        <span><b>{r.place.name}</b><small>{where(r.place)}{r.place.flagged ? ' · flagged on the map' : ''}</small></span>
+        <small>{REASON[r.reason] || r.reason} · from {r.by || 'a member'}, {relativeDate(r.createdAt)}</small>
+        {r.note && <q>{r.note}</q>}
+        <div className="row g8"><button className="cta small white bordered" disabled={busy === r.id} aria-label={`Resolve the report on ${r.place.name}`} onClick={() => resolve(r)}>Resolve</button></div>
+      </div>)}
+    </Section>
+  )
 }
 
 // One screen for the account, tracking level, connections, plans and, in the demo, the demo tools.
@@ -73,6 +126,8 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
               : <p className="meta">Real pages need the Trot server, which this copy is not connected to.</p>}
           </>}
         </Section>
+
+        {real && real.user.isAdmin && <AdminSection setToast={setToast} />}
 
         {real && <Section title={`${name.toUpperCase()}'S PUBLIC PAGE`} id="set-page">
           {dog.public && <a className="rrow" href={path} target="_blank" rel="noopener"><span className="ricon"><Ic n="link" s={20} c="#1F5AE8" /></span><span className="grow"><b>Open {name}'s public page</b><small>{url.replace(/^https?:\/\//, '')}</small></span></a>}

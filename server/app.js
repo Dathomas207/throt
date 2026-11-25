@@ -191,11 +191,11 @@ function limiter({ windowMs, max }) {
   }
 }
 
-export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = {}, demoOnBoards = process.env.DEMO_ON_LEADERBOARDS !== '0' } = {}) {
+export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = {}, demoOnBoards = process.env.DEMO_ON_LEADERBOARDS !== '0', adminEmails = process.env.ADMIN_EMAILS } = {}) {
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', trustProxy)
-  const R = { sessionMax: 20, sessionWindowMs: 15 * 60e3, writeMax: 120, writeWindowMs: 60e3, readMax: 600, readWindowMs: 60e3, placeMax: 30, placeWindowMs: 3600e3, eventMax: 20, eventWindowMs: 3600e3, ...rate }
+  const R = { sessionMax: 20, sessionWindowMs: 15 * 60e3, writeMax: 120, writeWindowMs: 60e3, readMax: 600, readWindowMs: 60e3, placeMax: 30, placeWindowMs: 3600e3, eventMax: 20, eventWindowMs: 3600e3, claimMax: 10, claimWindowMs: 3600e3, reportMax: 20, reportWindowMs: 3600e3, ...rate }
   const sessionLimit = limiter({ windowMs: R.sessionWindowMs, max: R.sessionMax })
   const writeLimit = limiter({ windowMs: R.writeWindowMs, max: R.writeMax })
   const readLimit = limiter({ windowMs: R.readWindowMs, max: R.readMax })
@@ -282,6 +282,10 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
       [sha(m[1]), iso(Date.now())])
     return rows[0] ? { ...rows[0], tokenHash: sha(m[1]) } : null
   }
+  // Admins are the signed-in people whose email is in ADMIN_EMAILS (comma separated). With it unset there are none.
+  const admins = new Set(String(adminEmails || '').split(',').map((e) => e.trim().toLowerCase()).filter((e) => e && !e.endsWith('.invalid')))
+  const isAdmin = (u) => !!(u && u.email && admins.has(String(u.email).toLowerCase()))
+  const admin = (req, res, next) => { if (!isAdmin(req.user)) throw new HttpError(403, 'Admins only.'); next() }
   const auth = async (req, res, next) => {
     const u = await userFor(req)
     if (!u) throw new HttpError(401, 'Sign in to continue.')
@@ -379,7 +383,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const token = newToken()
     await db.query('DELETE FROM sessions WHERE expires_at < $1', [iso(now)])
     await db.query('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES ($1, $2, $3, $4)', [sha(token), user.id, iso(now), iso(now + SESSION_DAYS * DAY)])
-    res.status(created ? 201 : 200).json({ token, user: { id: user.id, name: user.name, email: user.email }, created })
+    res.status(created ? 201 : 200).json({ token, user: { id: user.id, name: user.name, email: user.email, isAdmin: isAdmin(user) }, created })
   })
   api.delete('/session', auth, async (req, res) => {
     await db.query('DELETE FROM sessions WHERE token_hash = $1', [req.user.tokenHash])
@@ -389,7 +393,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   api.get('/me', auth, async (req, res) => {
     const { rows } = await db.query(
       `SELECT ${DOG_COLS_D}, m.role FROM memberships m JOIN dogs d ON d.id = m.dog_id WHERE m.user_id = $1 ORDER BY m.created_at ASC, d.slug ASC`, [req.user.id])
-    res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email }, dogs: rows.map((d) => dogOut(d, d.role)) })
+    res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email, isAdmin: isAdmin(req.user) }, dogs: rows.map((d) => dogOut(d, d.role)) })
   })
 
   api.patch('/me', auth, async (req, res) => {
@@ -748,7 +752,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     res.set('X-Frame-Options', 'DENY')
     res.type('html')
   }
-  const kit = { api, app, db, auth, userFor, dogFor, memberItem, HttpError, bad, text, number, bool, object, sha, newToken, newId, iso, num, round, firstName, ageLabel, origin, ID_RE, TOKEN_RE, limiter, limited, readLimit, R, pageHeaders, photoUrl, parseRoute, thin, pawCounts, demoOnBoards }
+  const kit = { api, app, db, auth, admin, isAdmin, isUnique, email, userFor, dogFor, memberItem, HttpError, bad, text, number, bool, object, sha, newToken, newId, iso, num, round, firstName, ageLabel, origin, ID_RE, TOKEN_RE, limiter, limited, readLimit, R, pageHeaders, photoUrl, parseRoute, thin, pawCounts, demoOnBoards }
   registerCompete(kit)
   registerDocs(kit)
   registerHealth(kit)
