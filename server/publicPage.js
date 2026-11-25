@@ -64,6 +64,7 @@ h2{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--grey);margin:6
 .demo{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;letter-spacing:.4px;padding:3px 9px;border-radius:9px;background:#2A3A52;color:#fff}
 .award{display:flex;gap:12px;align-items:center}.aw{font-weight:700;font-size:15px;overflow-wrap:anywhere}.rib{width:22px;height:30px;flex-shrink:0;background:var(--blue);clip-path:polygon(0 0,100% 0,100% 100%,50% 76%,0 100%)}
 .empty{padding:22px 16px;text-align:center;font-size:14px;color:var(--grey)}
+.lostb{background:#C62828;color:#fff;border-radius:14px;padding:12px 14px;font-size:15px;font-weight:700;display:flex;flex-direction:column;gap:8px}.lostb p{margin:0;font-weight:500;font-size:14px;line-height:1.45;overflow-wrap:anywhere}.lostb a{color:#fff;font-weight:700;display:inline-flex;align-items:center;min-height:44px}
 .nf{padding:60px 20px;display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;color:#fff;background:var(--ink);flex:1}
 .nf p{color:#D5DBE4;margin:0;font-size:15px;line-height:1.5}
 @media (min-width:480px){.page{margin:16px auto;min-height:calc(100vh - 32px);border-radius:28px;overflow:hidden}}
@@ -138,6 +139,7 @@ ${w.route ? routeSvg(w.route) : ''}
 <header class="prof">
 <a class="logo" href="/">TROT</a>
 <div class="who">${dog.photoUrl ? `<img class="av" src="${esc(dog.photoUrl)}" alt="Photo of ${esc(dog.name)}" width="72" height="72">` : `<div class="av" aria-hidden="true">${esc(initial)}</div>`}<div><h1>${esc(dog.name)}</h1>${dog.breed || dog.city ? `<div class="sub">${esc([dog.breed, dog.city].filter(Boolean).join(' · '))}</div>` : ''}${dog.isDemo ? '<div class="demo">Demo dog</div>' : ''}</div></div>
+${dog.lost ? `<div class="lostb" role="status">Reported lost${dog.lost.note ? `<p>${esc(dog.lost.note)}</p>` : ''}${dog.lost.foundPath ? `<a href="${esc(dog.lost.foundPath)}">I found ${esc(dog.name)}</a>` : ''}</div>` : ''}
 ${dog.bio ? `<p class="bio">${esc(dog.bio)}</p>` : ''}
 <div class="eyebrow">LIFETIME</div>
 <div class="stats">${stat('MILES', fmtMi(life.miles))}${stat('OUTINGS', life.outings)}${stat('TIME OUT', fmtMin(life.minutes))}</div>

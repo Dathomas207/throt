@@ -199,6 +199,50 @@ const SCHEMA = [
   )`,
   `CREATE INDEX IF NOT EXISTS place_claims_place ON place_claims (place_id)`,
   `CREATE INDEX IF NOT EXISTS place_reports_place ON place_reports (place_id)`,
+  // Registration and ID: what the owner typed about the microchip, licence and rabies tag. Care team only, never public.
+  `CREATE TABLE IF NOT EXISTS dog_registrations (
+    dog_id TEXT PRIMARY KEY REFERENCES dogs(id) ON DELETE CASCADE,
+    microchip_number TEXT NOT NULL DEFAULT '',
+    microchip_registry TEXT NOT NULL DEFAULT '',
+    license_jurisdiction TEXT NOT NULL DEFAULT '',
+    license_number TEXT NOT NULL DEFAULT '',
+    license_expires_on TEXT,
+    rabies_tag TEXT NOT NULL DEFAULT '',
+    rabies_due_on TEXT,
+    akc_number TEXT NOT NULL DEFAULT '',
+    altered TEXT NOT NULL DEFAULT 'unknown',
+    updated_by TEXT REFERENCES users(id),
+    updated_at TIMESTAMPTZ NOT NULL
+  )`,
+  // Trot Tags: an unguessable code written to an NFC sticker or shown as a QR code. kind 'link' is the one the public page uses.
+  `CREATE TABLE IF NOT EXISTS dog_tags (
+    id TEXT PRIMARY KEY,
+    dog_id TEXT NOT NULL REFERENCES dogs(id) ON DELETE CASCADE,
+    code TEXT NOT NULL UNIQUE,
+    label TEXT NOT NULL DEFAULT '',
+    kind TEXT NOT NULL DEFAULT 'tag',
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by TEXT NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL,
+    retired_at TIMESTAMPTZ
+  )`,
+  // One row per tag page view ('scan') or "I found this dog" report ('found'). No IP address, and only the device family.
+  `CREATE TABLE IF NOT EXISTS tag_scans (
+    id TEXT PRIMARY KEY,
+    tag_id TEXT NOT NULL REFERENCES dog_tags(id) ON DELETE CASCADE,
+    dog_id TEXT NOT NULL REFERENCES dogs(id) ON DELETE CASCADE,
+    scanned_at TIMESTAMPTZ NOT NULL,
+    kind TEXT NOT NULL,
+    finder_name TEXT NOT NULL DEFAULT '',
+    message TEXT NOT NULL DEFAULT '',
+    contact TEXT NOT NULL DEFAULT '',
+    lat DOUBLE PRECISION,
+    lng DOUBLE PRECISION,
+    agent TEXT NOT NULL DEFAULT '',
+    read_at TIMESTAMPTZ
+  )`,
+  `CREATE INDEX IF NOT EXISTS dog_tags_dog ON dog_tags (dog_id)`,
+  `CREATE INDEX IF NOT EXISTS tag_scans_dog ON tag_scans (dog_id, scanned_at)`,
   `CREATE INDEX IF NOT EXISTS documents_dog ON documents (dog_id)`,
   `CREATE INDEX IF NOT EXISTS awards_dog ON awards (dog_id)`,
   `CREATE INDEX IF NOT EXISTS events_starts ON events (starts_on)`,
@@ -250,6 +294,9 @@ const COLUMNS = [
   ['walks', 'sprints', 'INTEGER'],
   ['walks', 'moving_minutes', 'DOUBLE PRECISION'],
   ['walks', 'run_minutes', 'DOUBLE PRECISION'],
+  // Lost Dog mode. Empty unless the owner or family reported the dog lost.
+  ['dogs', 'lost_since', 'TIMESTAMPTZ'],
+  ['dogs', 'lost_note', "TEXT NOT NULL DEFAULT ''"],
 ]
 const isDuplicateColumn = (e) => e && (e.code === '42701' || /already exists|duplicate column/i.test(e.message || ''))
 // Leaderboards and the pack feed read walks by time across all dogs. pg-mem cannot

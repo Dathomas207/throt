@@ -9,6 +9,7 @@ import { registerPlaces } from './routesPlaces.js'
 import { registerDocs, DOC_LIMITS } from './routesDocs.js'
 import { registerShows } from './routesShows.js'
 import { registerCompete } from './routesCompete.js'
+import { registerRegistration } from './routesRegistration.js'
 
 import { geoRouter } from './geo.js'
 
@@ -758,6 +759,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   registerHealth(kit)
   registerPlaces(kit)
   registerShows(kit)
+  registerRegistration(kit)
   // Read-only lookups, no sign-in. They sit on the API router, so only the per-address read limit applies.
   api.use('/geo', geoRouter(db))
 
@@ -778,7 +780,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     pageHeaders(res)
     if (!r.ok) return res.status(429).set('Retry-After', String(r.retry)).send(renderNotFound())
     let dog = null
-    try { dog = await publicDog(req.params.slug) } catch (e) { console.error(e); return res.status(500).send(renderNotFound()) }
+    try { dog = await publicDog(req.params.slug); if (dog) dog.lost = await kit.publicLost(dog.slug) } catch (e) { console.error(e); return res.status(500).send(renderNotFound()) }
     if (!dog) return res.status(404).set('Cache-Control', 'no-store').send(renderNotFound())
     res.set('Cache-Control', 'public, max-age=60').send(renderDogPage(dog, origin(req)))
   })
@@ -796,7 +798,7 @@ self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) => 
 self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url)
   if (e.request.method !== 'GET' || u.origin !== location.origin) return
-  if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/d/') || u.pathname.startsWith('/vet/') || u.pathname === '/healthz') return
+  if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/d/') || u.pathname.startsWith('/vet/') || u.pathname.startsWith('/t/') || u.pathname === '/healthz') return
   // Cache under the path only, so a one-time invite token in the query never lands in the cache.
   const key = u.pathname
   e.respondWith(fetch(e.request).then((r) => { if (r.ok) { const c = r.clone(); caches.open(CACHE).then((x) => x.put(key, c)) } return r }).catch(() => caches.match(key).then((r) => r || caches.match('/'))))

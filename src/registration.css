@@ -1,0 +1,48 @@
+/* Registration and ID, Trot Tag and Lost Dog mode. Loaded by src/screens/LostDog.jsx. */
+.idsec{padding:12px 12px 0;display:flex;flex-direction:column;gap:10px}
+.idsec.home{padding:0 12px 12px}
+.idsec:empty{display:none}
+.idrow{text-align:left;border:1px solid var(--line)}
+.idrow small{display:block;font-size:12px;color:var(--grey);line-height:1.35}
+.foundbanner{background:#C62828;color:#fff;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.foundone{display:flex;flex-direction:column;gap:6px}
+.foundone+.foundone{border-top:1px solid rgba(255,255,255,.35);padding-top:12px}
+.foundhead{font:italic 800 20px Archivo,Arial,sans-serif;line-height:1.1;overflow-wrap:anywhere}
+.foundmeta{font-size:12.5px;color:#FFE1DC;line-height:1.4}
+.foundbanner p{font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.foundbanner a{color:#fff;font-weight:700}
+.foundbanner .cta.small{color:var(--ink);text-decoration:none;padding:0 16px;gap:6px}
+.foundbanner .cta.small.bordered{border-color:#fff;background:transparent;color:#fff}
+.foundmsg{background:rgba(255,255,255,.14);border-radius:10px;padding:8px 10px}
+.lostnotice{background:#FFD9CB;color:#5C1500;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+.lostnotice b{font-size:15px}
+.duebanner{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--volt);color:var(--ink);border-radius:14px;padding:12px 14px;min-height:52px}
+.duebanner.late{background:#FFD9CB;color:#5C1500}
+.duebanner b{display:block;font-size:14px;font-weight:700}
+.duebanner small{display:block;font-size:12.5px;line-height:1.4;overflow-wrap:anywhere}
+.losttoggle{display:flex;flex-direction:column;gap:8px}
+.losttoggle .cta.small{padding:0 18px}
+.cta.small.lostbtn{background:#fff;color:#C62828;border:2px solid #C62828}
+.confirm .cta.small.lostbtn{background:#C62828;color:#fff}
+.plusnote{font-size:11px;font-weight:700;padding:3px 9px;border-radius:9px;background:#E8EEFD;color:var(--ink);white-space:nowrap}
+.regchip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:9px;white-space:nowrap}
+.regchip.done{background:#DDF3C4;color:#1F4D00}
+.regchip.missing{background:#E3E6EB;color:#0F1B2D}
+.regchip.expiring{background:#FFE7A8;color:#4A3200}
+.regchip.expired{background:#FFD9CB;color:#5C1500}
+.regmeta{font-size:12.5px;color:var(--grey);line-height:1.4;overflow-wrap:anywhere}
+.regnote{font-size:12.5px;line-height:1.45;color:var(--grey)}
+.regtext{font-size:14px;line-height:1.5;color:#3A4250}
+.regtext b{color:var(--ink)}
+.regscreen .field input[readonly]:not(.linkinput){background:var(--bg)}
+.regscreen .field input[type=date]{width:100%;-webkit-appearance:none;appearance:none}
+.regscreen .cta.small{padding:0 16px;text-decoration:none}
+.linkout{text-decoration:none;text-align:center}
+.reglink{align-self:flex-start;min-height:44px;display:inline-flex;align-items:center;font-size:13px;font-weight:600;color:var(--blue);text-decoration:underline}
+.tagcard{gap:8px}
+.qrbox{display:flex;flex-direction:column;align-items:center;gap:8px}
+.qr{width:220px;max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;background:#fff}
+.steps{margin:4px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45;color:#3A4250}
+.actreport{display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.actreport .cta.small.white{border:2px solid var(--ink);text-decoration:none;color:var(--ink);gap:6px}
+.tagcard .cta.small{white-space:nowrap;padding:0 14px;font-size:13px}

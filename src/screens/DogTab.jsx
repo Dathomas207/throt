@@ -4,6 +4,7 @@ import EditDog from './EditDog.jsx'
 import { RealHealth, DemoHealth } from './Health.jsx'
 import { RealDocuments, DemoDocuments } from './Documents.jsx'
 import { RealAwards, DemoAwards } from './Awards.jsx'
+import { DogId, DemoDogId } from './Registration.jsx'
 import { DEMO_DOGS } from '../data.js'
 
 export default function DogTab(props) { return props.real ? <RealDogTab {...props} /> : <DemoDogTab {...props} /> }
@@ -45,6 +46,7 @@ function RealDogTab({ real, pawed, paw, setOpen, setToast, openSettings }) {
           ? <a className="publink" href={path} target="_blank" rel="noopener"><Ic n="link" s={18} c="#C8F031" /><span className="grow"><b>{dog.name}'s public page</b><small>{url.replace(/^https?:\/\//, '')}</small></span></a>
           : <button className="publink off" onClick={openSettings}><Ic n="link" s={18} c="#AEB7C4" /><span className="grow"><b>{dog.name}'s page is private</b><small>{owner ? 'Turn it on in Settings to share it' : 'Only the care team can see it'}</small></span></button>}
       </section>
+      <DogId real={real} setToast={setToast} />
       <Subtabs sub={sub} setSub={setSub} />
       {sub === 'Activity' && <div className="list">
         <WeekBars days={days} title="Last 7 days" meta={`${totals.week.miles.toFixed(1)} mi · ${totals.week.outings} ${totals.week.outings === 1 ? 'outing' : 'outings'}`} />
@@ -74,6 +76,7 @@ function DemoDogTab({ acts, week, todayMin, pawed, paw, setOpen, setToast, openS
         <p className="lightm bio">{DOG.bio}</p>
         <div className="row g20"><Stat light l="FOLLOWERS" v={DOG.followers} big={20} /><Stat light l="LIFETIME" v={DOG.lifetime.toLocaleString() + ' mi'} big={20} /><Stat light l="STREAK" v={DOG.streak + ' d'} big={20} /></div>
       </section>
+      <DemoDogId dd={dd} setToast={setToast} />
       <Subtabs sub={sub} setSub={setSub} />
       {sub === 'Activity' && <div className="list">
         <WeekBars days={days} title="This week" meta={`${week.miles.toFixed(1)} mi · ${week.walks} outings`} />

@@ -8,7 +8,7 @@ import '../maps.css'
 
 export const PLANS = [
   { id: 'free', name: 'Free', price: '$0', items: ['One dog', 'Phone tracking', 'Feed and paws', 'Care team of up to three', 'Public dog page', 'Story cards', 'Places map'] },
-  { id: 'plus', name: 'Trot Plus', price: '$4.99 a month or $39 a year', items: ['Unlimited dogs and care team', 'Lost Dog mode with AirTag link', 'Route builder and saved routes', 'Pace and split analysis', 'Heatmap', 'Recaps', 'Health timeline with vet record upload'] },
+  { id: 'plus', name: 'Trot Plus', price: '$4.99 a month or $39 a year', items: ['Unlimited dogs and care team', 'Lost Dog mode with the Trot Tag found page', 'Route builder and saved routes', 'Pace and split analysis', 'Heatmap', 'Recaps', 'Health timeline with vet record upload'] },
   { id: 'pro', name: 'Trot Pro', price: '$9.99 a month or $79 a year', items: ['Everything in Plus', 'Fitness tracker connections', 'All-day activity and sleep', 'Trend alerts', 'AI coach', 'Shareable vet summary'] },
 ]
 export const planName = (id) => (PLANS.find((p) => p.id === id) || PLANS[0]).name

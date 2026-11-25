@@ -66,7 +66,7 @@ export const PACK = [
 ]
 for (const x of PACK) { if (x.route && ROUTES[x.route]) { x.miles = ROUTES[x.route].miles; x.minutes = ROUTES[x.route].minutes } }
 export const CONNECTIONS = [
-  { id: 'tag', name: 'Trot Tag', group: 'On the collar', what: 'A small Bluetooth tag on Biscuit’s collar. Any phone on the care team that hears it credits the walk to Biscuit, so Pat and Sue never have to pick a dog.', real: 'Needs the native iPhone app and a beacon tag.', on: true },
+  { id: 'tag', name: 'Trot Tag', group: 'On the collar', what: 'A tap tag (NFC) on Biscuit’s collar. Anyone who finds Biscuit can tap it with a phone to open the found page. It does not track location.', real: 'Works today with a blank NFC sticker. Set it up under Registration and ID.', on: true },
   { id: 'airtag', name: 'Apple AirTag', group: 'On the collar', what: 'Apple does not let other apps read an AirTag. Paste the Share Item Location link from Find My and Trot attaches it to a Lost Dog alert.', real: 'Works today with a pasted link.', input: 'Share Item Location link' },
   { id: 'collar', name: 'Fi or Tractive collar', group: 'On the collar', what: 'Imports GPS walks, steps and rest from a smart collar.', real: 'Needs a partner agreement with the collar maker.' },
   { id: 'instagram', name: 'Instagram', group: 'Sharing', what: 'Sends Biscuit’s story card straight to Instagram Stories.', real: 'Uses the phone share sheet; no approval needed.', on: true },
@@ -194,3 +194,25 @@ export const DEMO_DOGS = {
   millie: { key: 'millie', dog: MILLIE, seed: MILLIE_SEED, health: MILLIE_HEALTH, weights: MILLIE_WEIGHTS, weightNote: 'Up 5.2 lb since June. Still growing, and right where the vet expected.', docs: MILLIE_DOCS, awards: MILLIE_AWARDS, people: ['dale', 'pat', 'sue'] },
 }
 export const demoDogByName = (name) => Object.values(DEMO_DOGS).find((d) => d.dog.name === name) || null
+
+// ---- registration and ID, Trot Tag and tag activity samples (appended) -------
+// Every number here is made up and labelled as a sample on screen. None belongs to a real chip, licence or tag.
+// dueIn and expiresIn are days from today, so the demo always shows one item expiring soon.
+export const DEMO_ID = {
+  biscuit: {
+    registration: { microchipNumber: '999000000000123', microchipRegistry: 'Sample Registry', licenseJurisdiction: 'Charlotte-Mecklenburg', licenseNumber: 'SAMPLE-0001', licenseExpiresIn: 18, rabiesTag: 'SAMPLE-4410', rabiesDueIn: 210, akcNumber: 'SAMPLE0001', altered: 'yes' },
+    tags: [{ id: 'bt1', label: 'Collar tag', code: 'SAMPLETAG234', daysAgo: 60 }],
+    scans: [
+      { id: 'bs1', kind: 'scan', daysAgo: 2, tagLabel: 'Collar tag', device: 'Safari on iPhone or iPad' },
+      { id: 'bs2', kind: 'found', daysAgo: 40, tagLabel: 'Collar tag', device: 'Chrome on Android', finderName: 'Sam', message: 'Sample report. Sitting by the park gate with a stick, very polite.', contact: 'sample@example.com', lat: 35.1936, lng: -80.8427, read: true },
+    ],
+  },
+  millie: {
+    registration: { microchipNumber: '999000000000456', microchipRegistry: '', licenseJurisdiction: 'Charlotte-Mecklenburg', licenseNumber: '', licenseExpiresIn: null, rabiesTag: 'SAMPLE-7702', rabiesDueIn: 35, akcNumber: '', altered: 'yes' },
+    tags: [{ id: 'mt1', label: 'Harness tag', code: 'SAMPLETAG567', daysAgo: 21 }],
+    scans: [
+      { id: 'ms1', kind: 'scan', daysAgo: 1, tagLabel: 'Harness tag', device: 'Chrome on Android' },
+      { id: 'ms2', kind: 'scan', daysAgo: 9, tagLabel: 'Harness tag', device: 'Safari on iPhone or iPad' },
+    ],
+  },
+}

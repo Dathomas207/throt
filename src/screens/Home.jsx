@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Ic, Paw, Av, DogAv, Stat, Range, Card, whoName, ptsOf, DogSwitch, Gear, TypeIc, usePhoto } from '../ui.jsx'
 import { api } from '../api.js'
+import { HomeAlerts } from './LostDog.jsx'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine, DEMO_DOGS, demoDogByName } from '../data.js'
 
 export default function Home(props) { return props.real ? <RealHome {...props} /> : <DemoHome {...props} /> }
@@ -20,7 +21,7 @@ function PackCard({ w }) {
 }
 const CompeteCard = ({ open, name }) => <button className="rrow box competecard" onClick={() => open('boards')}><span className="ricon"><Ic n="trophy" s={20} c="#1F5AE8" /></span><span className="grow"><b>Compete</b><small>Leaderboards, challenges and events for {name}</small></span></button>
 
-function RealHome({ real, acts, pawed, paw, setOpen, setTab, openSettings, openCompete, onDog }) {
+function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSettings, openCompete, onDog }) {
   const { dog, dogs, totals, user } = real
   const many = dogs.length > 1
   const [pack, setPack] = useState(null)
@@ -30,6 +31,7 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, openSettings, openC
     <div className="scroll">
       <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Signed in as {user.name}</div><Gear onClick={openSettings} /></div></header>
       <DogSwitch dogs={dogs} active={dog.slug} onPick={real.switchDog} />
+      <HomeAlerts real={real} setToast={setToast} />
       <section className="hero">
         <div className="row g14"><button className="doglink" aria-label={`Open ${dog.name}'s profile`} onClick={() => setTab('dog')}><DogAv name={dog.name} photoUrl={dog.photoUrl} s={56} bg="#C8F031" c="#0F1B2D" /></button><div className="grow"><div className="eyebrow">{dog.name.toUpperCase()}, LAST 7 DAYS</div><div className="row g20"><Stat light l="MILES" v={totals.week.miles.toFixed(1)} /><Stat light l="OUTINGS" v={totals.week.outings} /><Stat light l="TIME OUT" v={fmtTime(totals.week.minutes)} /></div></div></div>
         <button className="cta" onClick={() => setTab('record')}><Paw s={22} c="#0F1B2D" />Walk {dog.name}</button>

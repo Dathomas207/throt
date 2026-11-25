@@ -211,3 +211,20 @@ api.documents = {
     return URL.createObjectURL(await res.blob())
   },
 }
+
+// ---- registration and ID, Trot Tags, Lost Dog mode (appended) ----------------
+// Registration is what the care team typed about the microchip, licence and rabies tag. It is never public.
+api.registration = {
+  get: (slug) => request('GET', `/dogs/${slug}/registration${qs({ tz: tz() })}`),
+  save: (slug, input) => request('PUT', `/dogs/${slug}/registration${qs({ tz: tz() })}`, input),
+}
+// A Trot Tag is a web address for an NFC sticker or QR code. scans() also carries the Lost Dog state.
+api.tags = {
+  list: (slug) => request('GET', `/dogs/${slug}/tags`),
+  create: (slug, label) => request('POST', `/dogs/${slug}/tags`, { label: label || '' }),
+  retire: (slug, id) => request('DELETE', `/dogs/${slug}/tags/${id}`),
+  scans: (slug) => request('GET', `/dogs/${slug}/tags/scans`),
+  markRead: (slug, id) => request('POST', `/dogs/${slug}/tags/scans/${id}/read`, {}),
+  lost: (slug) => request('GET', `/dogs/${slug}/lost`),
+  setLost: (slug, lost, note) => request('PUT', `/dogs/${slug}/lost`, { lost, note: note || '' }),
+}

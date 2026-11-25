@@ -165,3 +165,46 @@ In Xcode: select your team under Signing & Capabilities (a free Apple ID works f
 - Real in both modes: recording with Live GPS, story card image, maps (OpenStreetMap data via CARTO tiles).
 - Demo only: the dog pictures, which are original illustrations drawn in code (`src/portraits.jsx`), not photographs. Biscuit's and Millie's history, people, the pack, park stats, health data, documents, awards, sample boards and challenges, Level 3 tracker cards, route playback at 40x speed, and every connection (Trot Tag, AirTag, Instagram, Strava, Garmin, Apple Health, collars, AllTrails, vet records). Demo walks are kept in the browser.
 - Place coordinates and sample routes are approximate samples around Cambridge, MA.
+
+## Registration and ID, Trot Tag and Lost Dog mode
+
+Each dog has a registration record (microchip, license, rabies tag, AKC number, spayed or neutered), any number of Trot Tags, and a Lost Dog switch. It is all under "Registration and ID" on the dog tab. Code: `server/routesRegistration.js`, `server/tagPage.js`, `src/screens/Registration.jsx`, `src/screens/LostDog.jsx`, `src/qr.js`. Tests: `server/registration.test.js` (loaded by `server/index.js` under `node --test server/`).
+
+| Method | Path | Who | What it does |
+| --- | --- | --- | --- |
+| GET | `/api/dogs/:slug/registration?tz=` | care team | The record, a checklist (microchip, license, rabies: `done`, `missing`, `expiring` within 30 days, `expired`), `canEdit`, and the link-out addresses |
+| PUT | `/api/dogs/:slug/registration` | owner, family | Saves the fields that are sent. A microchip number must be 15 digits, 10 characters of 0-9 and A-F, or 9 digits; spaces and dashes are dropped before it is stored |
+| GET | `/api/dogs/:slug/lost` | care team | Lost Dog state: `on`, `since`, `note` |
+| PUT | `/api/dogs/:slug/lost` | owner, family | `{ lost, note }`. The note is 140 characters at most. Turning it on makes one link for the public page if the dog has none |
+| GET | `/api/dogs/:slug/tags` | owner, family | Tags, working ones first |
+| POST | `/api/dogs/:slug/tags` | owner, family | Makes a tag (`{ label }`) and answers its address, `<origin>/t/<code>`. Ten working tags per dog |
+| DELETE | `/api/dogs/:slug/tags/:id` | owner, family | Retires a tag. The address stops working at once and is never reused |
+| GET | `/api/dogs/:slug/tags/scans` | care team | The last 100 scans and found reports, the unread count and the Lost Dog state |
+| POST | `/api/dogs/:slug/tags/scans/:id/read` | owner, family | Marks a found report as read |
+| GET | `/t/:code` | anyone | The tag page (HTML). Records one scan per visitor per ten minutes |
+| GET | `/t/:code/photo` | anyone | The dog's photo, while the tag works |
+| POST | `/t/:code/found` | anyone, only while the dog is reported lost | A found report: optional first name, message (280), phone or email, and `lat` and `lng`. Form posts get a redirect back to the page, JSON posts get `{ ok: true }` |
+
+Privacy rules. The server-side ones are covered by tests:
+
+- **Registration never leaves the care team.** It lives in its own table. `/d/:slug`, `/t/:code` and every `/api/public` endpoint never read it. Walkers and daycare can read it and cannot change it.
+- **A microchip is not a tracker.** It is a passive chip that holds an ID number, read by a vet or shelter scanner at very close range. It cannot locate a dog and phones cannot read it. The screen says so.
+- **Trot files nothing.** It does not register a chip or license a dog. It stores what the owner types and links to the AAHA Universal Pet Microchip Lookup (which names the registry for a chip number and shows no owner details) and, for Charlotte-Mecklenburg, to PetData, which runs licensing for CMPD Animal Care & Control. No fee amounts are stored or shown.
+- **The tag page shows the dog and nobody else.** Name, photo and breed. No person's name, phone, email or address, no city, no walks or routes. The same holds for the "Reported lost" banner on `/d/:slug`.
+- **Unknown and retired codes look the same.** Both get one identical "No dog on this tag" page.
+- **No IP address is stored.** Repeat views are folded with a salted hash kept in memory only. A scan row holds the time and the family of the device ("Safari on iPhone or iPad"), not the user agent string. Link previews and bots are not counted.
+- **A finder's location is theirs to give.** It is sent only if they tap "Share my location", and they can remove it before sending. The care team gets a plain Google Maps link, with no Google API involved.
+- **Limits.** The tag page is `noindex`, `no-store`, with a strict Content-Security-Policy that allows one fixed script by hash. Found reports are capped at 5 an hour per connection and 30 an hour per tag, the body at 4 KB, and all text is stored as plain text with control characters removed.
+- **Reminders are in the app only.** An expiring or expired license or rabies vaccine shows as a banner on the dog tab. There are no emails and no push notifications, so a found report is seen the next time someone on the care team opens Trot (the screen checks again every minute while it is open).
+- **Lost Dog mode is listed under Trot Plus.** Plans are a preview in this trial, so the switch is not locked.
+
+### Trot Tag for the trial
+
+1. Sign in, open your dog's tab, and tap **Registration and ID**.
+2. Under **Trot Tag**, tap **Make a Trot Tag**. Tap **Copy address**.
+3. Get a blank NFC sticker or collar tag. With an NFC writing app on your phone, write a URL record and paste the address. Tap the sticker to check that the dog's page opens.
+4. No sticker yet? Tap **Show QR code** and scan it with another phone's camera. It holds the same address and is drawn on the device, with no outside service.
+5. To try a found report: tap **Report (name) lost**, confirm, then open the tag address on another phone, fill in "I found (name)" and send. A red banner shows on Home and on the dog tab, with **Open in maps** if a location was shared and **Mark as read**. Tap **(name) is home** when you are done.
+6. Lost a tag? Tap **Retire this tag** and make a new one.
+
+Known gaps: the tag page only offers the found form while the dog is reported lost, so a finder who taps a tag before the owner notices can only be seen as a scan under Tag activity. A deployment needs `PUBLIC_URL` (or Render's own address) set so tag addresses carry the public host. The demo's Settings screen still describes an older idea of "Trot Tag" as a Bluetooth beacon; the tag built here is NFC and QR only.

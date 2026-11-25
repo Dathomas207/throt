@@ -150,7 +150,6 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
     <div className="scroll pad">
       <header className="row g10"><button className="round" aria-label="Close" onClick={() => setTab('home')}><Ic n="x" /></button><h1 className="h1">{T.gps ? `Walk ${dn}` : `${T.label} with ${dn}`}</h1></header>
       <div className="who"><Av t={dn[0]} s={64} bg="#C8F031" c="#0F1B2D" /><div className="plus">+</div><Av t={meP.name[0]} s={44} bg={meP.color} c={meP.ink} /><div><div className="dogname">{dn}</div><div className="meta">going out with {meP.name}</div></div></div>
-      {conn.tag && <div className="hint"><Ic n="tag" s={18} c="#1F5AE8" />Trot Tag heard nearby. {dn} was added automatically.</div>}
       <div className="eyebrow dark">ACTIVITY</div>
       <div className="chips wrap">{TYPES.map((t) => <button key={t.id} className={`chip flat tchip ${type === t.id ? 'on' : ''}`} aria-pressed={type === t.id} onClick={() => setType(t.id)}><TypeIc id={t.id} />{t.label}</button>)}</div>
       {timed && (<>
