@@ -1,21 +1,36 @@
 import React, { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
+import { getConfig, getHeat } from './config.js'
+import { ROUTES } from './data.js'
 const TILES = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+const MB_ATTR = '&copy; <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noopener">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> <a href="https://www.mapbox.com/map-feedback/" target="_blank" rel="noopener">Improve this map</a>'
+// Sample heat for the demo and for static hosting: Biscuit's seeded routes.
+const sampleHeat = () => Object.values(ROUTES).flatMap((r) => r.pts.filter((_, i) => i % 2 === 0).map((p) => [p[0], p[1], 1]))
 const ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'
 // Props added for Explore and Record. All are optional, so <TrotMap route={pts} className="dmap" /> still works.
 //   onMove(bounds, byUser)  bounds is { s, w, n, e, center, zoom }; byUser is false for moves the map made itself
 //   view { at, zoom, n }    recenters whenever n changes
 //   me [lat, lng]           draws the user's location dot
 //   bottom (px)             height of a sheet covering the bottom of the map; keeps attribution and fits clear of it
-export default function TrotMap({ route, upto, pins, onPin, selected, live, className = '', interactive = true, onMove, view, me, bottom = 0 }) {
+export default function TrotMap({ route, upto, pins, onPin, selected, live, className = '', interactive = true, onMove, view, me, bottom = 0, heat = false }) {
   const el = useRef(null), map = useRef(null), layers = useRef(null), prog = useRef(0), fitKey = useRef(null), cb = useRef({})
   cb.current = { onMove, onPin }
   const auto = () => { prog.current = Date.now() }
   useEffect(() => {
     const m = L.map(el.current, { zoomControl: false, attributionControl: true, dragging: interactive, scrollWheelZoom: false, doubleClickZoom: interactive, touchZoom: interactive, boxZoom: false, keyboard: false })
     m.attributionControl.setPrefix(false)
-    const t = L.tileLayer(TILES, { maxZoom: 19, attribution: ATTR }).addTo(m)
-    t.on('tileerror', () => el.current && el.current.classList.add('no-tiles'))
+    let dead = false
+    const carto = () => { const t = L.tileLayer(TILES, { maxZoom: 19, attribution: ATTR }).addTo(m); t.on('tileerror', () => el.current && el.current.classList.add('no-tiles')); return t }
+    // Mapbox style tiles when the server has a public token; CARTO otherwise or if Mapbox refuses the token.
+    getConfig().then((c) => {
+      if (dead) return
+      if (!c || !c.mapboxToken) { carto(); return }
+      const style = c.mapboxStyle || 'mapbox/outdoors-v12'
+      const mb = L.tileLayer(`https://api.mapbox.com/styles/v1/${style}/tiles/512/{z}/{x}/{y}@2x?access_token=${c.mapboxToken}`, { tileSize: 512, zoomOffset: -1, maxZoom: 20, attribution: MB_ATTR }).addTo(m)
+      let failed = false
+      mb.on('tileerror', () => { if (failed || dead) return; failed = true; m.removeLayer(mb); carto() })
+      if (el.current) el.current.classList.add('mapbox')
+    })
     layers.current = L.layerGroup().addTo(m)
     m.setView([42.3852, -71.1492], 14)
     m.on('moveend', () => {
@@ -25,8 +40,22 @@ export default function TrotMap({ route, upto, pins, onPin, selected, live, clas
     })
     map.current = m
     const ro = new ResizeObserver(() => { auto(); m.invalidateSize() }); ro.observe(el.current)
-    return () => { ro.disconnect(); m.remove() }
+    return () => { dead = true; ro.disconnect(); m.remove() }
   }, [])
+  useEffect(() => {
+    const m = map.current; if (!m || !heat) return
+    let layer = null, off = false
+    getHeat().then((pts) => {
+      if (off) return
+      const data = pts && pts.length ? pts : sampleHeat()
+      const max = Math.max(1, ...data.map((p) => p[2] || 1))
+      // A blurred pane of soft dots under the route and pins. Hotter cells are brighter and larger.
+      if (!m.getPane('heat')) { const pane = m.createPane('heat'); pane.style.zIndex = 350; pane.style.filter = 'blur(5px)'; pane.style.pointerEvents = 'none' }
+      const renderer = L.canvas({ pane: 'heat', padding: 0.3 })
+      layer = L.layerGroup(data.map((p) => { const t = (p[2] || 1) / max; return L.circleMarker([p[0], p[1]], { renderer, pane: 'heat', radius: 6 + 5 * t, stroke: false, interactive: false, fillColor: t > 0.66 ? '#FF5A1F' : t > 0.33 ? '#FF8A5B' : '#7B5CFF', fillOpacity: 0.35 + 0.4 * t }) })).addTo(m)
+    })
+    return () => { off = true; if (layer) m.removeLayer(layer) }
+  }, [heat])
   useEffect(() => {
     const m = map.current; if (!m || !view || !view.at) return
     auto(); m.setView(view.at, view.zoom || m.getZoom(), { animate: false })

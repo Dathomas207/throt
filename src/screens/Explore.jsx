@@ -22,6 +22,7 @@ export default function Explore({ setTab, setToast, dogName }) {
   const [moved, setMoved] = useState(false)
   const [origin, setOrigin] = useState(DEFAULT_CENTER)
   const [sel, setSel] = useState(null)
+  const [heat, setHeat] = useState(true)
   const [filter, setFilter] = useState('All')
   const [loop, setLoop] = useState(null)
   const [sheetRef, sheetH] = useHeight()
@@ -92,9 +93,9 @@ export default function Explore({ setTab, setToast, dogName }) {
 
   return (
     <div className="fill">
-      <TrotMap pins={pins} selected={p ? p.id : null} onPin={(x) => pick(x.id)} route={ready ? loop.route.pts : undefined} me={user} view={view} bottom={sheetH} onMove={(b, byUser) => { bounds.current = b; if (byUser) setMoved(true) }} className="abs" />
+      <TrotMap heat={heat} pins={pins} selected={p ? p.id : null} onPin={(x) => pick(x.id)} route={ready ? loop.route.pts : undefined} me={user} view={view} bottom={sheetH} onMove={(b, byUser) => { bounds.current = b; if (byUser) setMoved(true) }} className="abs" />
       <div className="over topbar">
-        <div className="chips">{FILTERS.map((f) => <button key={f} className={`chip ${filter === f ? 'on' : ''}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>{f}</button>)}</div>
+        <div className="chips"><button className={`chip ${heat ? 'on' : ''}`} aria-pressed={heat} onClick={() => setHeat(!heat)}>Heatmap</button>{FILTERS.map((f) => <button key={f} className={`chip ${filter === f ? 'on' : ''}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>{f}</button>)}</div>
         <div className="mbar">
           {moved && !loading && <button className="mbtn" onClick={searchHere}>Search this area</button>}
           <button className="mbtn light end" onClick={nearMe} disabled={locating}>{locating ? <span className="spin" aria-hidden="true" /> : <Target />}Near me</button>

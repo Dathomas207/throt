@@ -239,7 +239,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
             <button className={`tab ${tab === 'dog' ? 'on' : ''}`} onClick={() => setTab('dog')}><Av t={initial} s={24} bg={tab === 'dog' ? '#0F1B2D' : '#5B6472'} c="#fff" /><span className="tabname">{dog.name}</span></button>
           </nav>
         )}
-        {open && <Detail a={open} {...ctx} close={() => setOpen(null)} />}
+        {open && <Detail a={open} {...ctx} dogName={dog.name} close={() => setOpen(null)} />}
         {toast && <div className="toast" role="status">{toast}</div>}
       </div>
     </RangeOff.Provider>

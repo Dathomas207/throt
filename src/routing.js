@@ -1,3 +1,4 @@
+import { getConfig } from './config.js'
 // Real walking routes from the public OSRM foot profile, with a geometric fallback.
 // Parsing and geometry are pure functions so they can be tested without the network.
 import { haversine } from './data.js'
@@ -47,14 +48,14 @@ export function geometricLoop(start, miles, bearingDeg = 45, n = 72) {
   return { pts, miles: Math.round(len * 100) / 100, minutes: Math.max(1, Math.round(len * PACE_MIN_PER_MILE)), approximate: true }
 }
 
-async function osrm(points, opts) {
+async function osrmVia(url, points, opts) {
   const fetchImpl = opts.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
   if (!fetchImpl) throw new Error('fetch is not available')
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), opts.timeoutMs || TIMEOUT_MS)
   const onOuter = () => ctl.abort()
   if (opts.signal) { if (opts.signal.aborted) ctl.abort(); else opts.signal.addEventListener('abort', onOuter) }
   try {
-    const res = await fetchImpl(osrmUrl(points), { signal: ctl.signal })
+    const res = await fetchImpl(url, { signal: ctl.signal })
     let json = null
     try { json = await res.json() } catch (e) {}
     if (!res.ok && !(json && json.code)) { const err = new Error('OSRM HTTP ' + res.status); err.service = true; throw err }
@@ -64,6 +65,19 @@ async function osrm(points, opts) {
     if (!/^OSRM: /.test(String(e && e.message))) e.service = true
     throw e
   } finally { clearTimeout(timer); if (opts.signal) opts.signal.removeEventListener('abort', onOuter) }
+}
+
+export function mapboxUrl(points, token) {
+  return 'https://api.mapbox.com/directions/v5/mapbox/walking/' + points.map((p) => `${p[1].toFixed(5)},${p[0].toFixed(5)}`).join(';') + '?overview=full&geometries=geojson&access_token=' + encodeURIComponent(token)
+}
+// Mapbox walking directions when a token is configured, the public OSRM server otherwise or on failure.
+async function osrm(points, opts) {
+  if (!opts.fetchImpl) {
+    let token = ''
+    try { token = ((await getConfig()) || {}).mapboxToken || '' } catch (e) {}
+    if (token) { try { return await osrmVia(mapboxUrl(points, token), points, opts) } catch (e) { if (!e.service) throw e } }
+  }
+  return osrmVia(osrmUrl(points), points, opts)
 }
 
 // Loop of roughly `miles` that starts and ends at `start`.

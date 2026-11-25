@@ -86,3 +86,6 @@ textarea:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid va
 .switch input{width:24px;height:24px;margin:10px 10px 10px 0;flex-shrink:0;accent-color:var(--blue)}
 .linkinput{font-size:13px!important;text-overflow:ellipsis}.rrow.box.line{border:1px solid var(--line)}
 .rrow small{overflow-wrap:anywhere}
+
+.doglink{display:inline-flex;align-items:center;min-height:44px;text-decoration:underline;text-decoration-color:#C9CFD8;text-underline-offset:4px}
+button.doglink:has(.av){text-decoration:none}

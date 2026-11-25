@@ -155,7 +155,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
 
   app.use((req, res, next) => {
     res.set('X-Content-Type-Options', 'nosniff')
-    res.set('Referrer-Policy', 'same-origin')
+    res.set('Referrer-Policy', 'strict-origin-when-cross-origin')
     next()
   })
 
@@ -175,6 +175,43 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   // The client uses this to tell a real Trot API from static hosting, where any
   // path answers with index.html.
   api.get('/health', (req, res) => res.json({ ok: true, service: 'trot' }))
+
+  // Public runtime settings for the map. Only a public (pk.) Mapbox token is ever sent to browsers.
+  api.get('/config', (req, res) => {
+    const t = (process.env.MAPBOX || process.env.MAPBOX_TOKEN || process.env.MAPBOX_ACCESS_TOKEN || '').trim()
+    const style = (process.env.MAPBOX_STYLE || '').trim().replace(/^mapbox:\/\/styles\//, '')
+    res.json({ mapboxToken: /^pk\.[\w.-]+$/.test(t) ? t : '', mapboxStyle: /^[\w-]+\/[\w-]+$/.test(style) ? style : '' })
+  })
+
+  // Anonymous heatmap of where dogs walk: counts per ~11 m cell from walks of public dogs.
+  // The first and last 150 m of every walk are dropped so homes are not revealed, and no dog or person is identified.
+  api.get('/heat', async (req, res, next) => {
+    try {
+      const num = (k) => { const v = Number(req.query[k]); return Number.isFinite(v) ? v : null }
+      const box = { s: num('s'), w: num('w'), n: num('n'), e: num('e') }
+      const hasBox = Object.values(box).every((v) => v !== null)
+      const { rows } = await db.query('SELECT w.route FROM walks w JOIN dogs d ON d.id = w.dog_id WHERE d.is_public = TRUE AND w.route IS NOT NULL ORDER BY w.started_at DESC LIMIT 500')
+      const cells = new Map()
+      const m = (a, b) => { const r = Math.PI / 180, x = (b[1] - a[1]) * r * Math.cos(((a[0] + b[0]) / 2) * r), y = (b[0] - a[0]) * r; return Math.sqrt(x * x + y * y) * 6371000 }
+      for (const row of rows) {
+        let pts; try { pts = JSON.parse(row.route) } catch (e) { continue }
+        if (!Array.isArray(pts) || pts.length < 4) continue
+        const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + m(pts[i - 1], pts[i]))
+        const total = cum[cum.length - 1]; if (total < 450) continue
+        const seen = new Set()
+        for (let i = 0; i < pts.length; i++) {
+          if (cum[i] < 150 || cum[i] > total - 150) continue
+          const la = pts[i][0], lo = pts[i][1]
+          if (hasBox && (la < box.s || la > box.n || lo < box.w || lo > box.e)) continue
+          const k = la.toFixed(4) + ',' + lo.toFixed(4)
+          if (seen.has(k)) continue
+          seen.add(k); cells.set(k, (cells.get(k) || 0) + 1)
+        }
+      }
+      const points = [...cells.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6000).map(([k, c]) => { const [la, lo] = k.split(','); return [Number(la), Number(lo), c] })
+      res.json({ points })
+    } catch (e) { next(e) }
+  })
 
   async function userFor(req) {
     const h = req.get('authorization') || ''
