@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import WelcomeHero from './WelcomeHero.jsx'
 import { Paw } from '../ui.jsx'
 import { api, setToken, pendingInvite, clearInvite } from '../api.js'
 
@@ -81,6 +82,7 @@ export default function Welcome({ user, onDemo, onReady, notice }) {
   return (
     <div className="welcome scroll">
       <div className="wbrand"><div className="wlogo">TROT</div><p className="wtag">Every walk counts.</p></div>
+      {step === 'start' && <WelcomeHero />}
       {step === 'start' && (
         <div className="wform">
           {token && inv && inv.dead && <p className="formerr" role="alert">This invite link has expired or was already used. Ask for a new one.</p>}
