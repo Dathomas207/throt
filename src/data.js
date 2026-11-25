@@ -59,6 +59,7 @@ export const SEED = [
 ]
 for (const a of SEED) { if (a.route && ROUTES[a.route] && a.type !== 'Daycare') { a.miles = ROUTES[a.route].miles; a.minutes = ROUTES[a.route].minutes } }
 export const PACK = [
+  { id: 'p0', dog: 'Millie', breed: 'Bernedoodle', byName: 'Dale', type: 'Play time', title: 'Backyard zoomies before dinner', daysAgo: 0, time: '4:10 PM', place: 'Home', route: null, miles: 0, minutes: 35, sniffs: 0, paws: 41, comments: 6, color: '#0F1B2D', ink: '#C8F031', note: 'Three laps of the yard, one stolen glove, zero regrets.' },
   { id: 'p1', dog: 'Moose', breed: 'Bernese Mountain Dog', byName: 'Priya', type: 'Walk', title: 'Ninth pond lap this week', daysAgo: 0, time: '6:40 AM', place: 'Fresh Pond', route: 'pond', miles: 2.4, minutes: 55, sniffs: 21, paws: 18, comments: 3, color: '#1F5AE8', ink: '#FFFFFF' },
   { id: 'p2', dog: 'Juno', breed: 'Border Collie', byName: 'Pat', type: 'Walk', title: 'Pack walk, four dogs deep', daysAgo: 0, time: '12:30 PM', place: 'Danehy Park', route: 'danehy', miles: 1.8, minutes: 41, sniffs: 9, paws: 27, comments: 4, color: '#0F1B2D', ink: '#C8F031' },
   { id: 'p3', dog: 'Pickle', breed: 'Dachshund', byName: 'Marco', type: 'Walk', title: 'Short legs, long loop', daysAgo: 1, time: '5:50 PM', place: 'Pacific Street', route: 'meadow', miles: 1.0, minutes: 31, sniffs: 24, paws: 35, comments: 7, color: '#FF8A5B', ink: '#0F1B2D' },
