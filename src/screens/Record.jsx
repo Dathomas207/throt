@@ -123,7 +123,7 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
   )
   return (
     <div className="fill navy">
-      <TrotMap route={live ? gps : r.pts} upto={live ? null : idx} live bottom={panelH} className="abs" interactive={false} />
+      <TrotMap route={live ? gps : r.pts} upto={live ? null : idx} live bottom={panelH} className="abs" />
       <div className="over topbar row g8">
         <div className="pill"><Av t={dn[0]} s={30} />{dn}{conn.tag && <Ic n="tag" s={16} c="#1F5AE8" />}</div>
         <div className="pill">with {meP.name}</div>

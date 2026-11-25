@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import { getConfig, getHeat } from './config.js'
 import { ROUTES } from './data.js'
+import './zoom.css'
 const TILES = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
 const MB_ATTR = '&copy; <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noopener">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> <a href="https://www.mapbox.com/map-feedback/" target="_blank" rel="noopener">Improve this map</a>'
 // Sample heat for the demo and for static hosting: Biscuit's seeded routes.
@@ -17,8 +18,9 @@ export default function TrotMap({ route, upto, pins, onPin, selected, live, clas
   cb.current = { onMove, onPin }
   const auto = () => { prog.current = Date.now() }
   useEffect(() => {
-    const m = L.map(el.current, { zoomControl: false, attributionControl: true, dragging: interactive, scrollWheelZoom: false, doubleClickZoom: interactive, touchZoom: interactive, boxZoom: false, keyboard: false })
+    const m = L.map(el.current, { zoomControl: false, attributionControl: true, dragging: interactive, scrollWheelZoom: interactive, doubleClickZoom: interactive, touchZoom: interactive, boxZoom: false, keyboard: false })
     m.attributionControl.setPrefix(false)
+    if (interactive) L.control.zoom({ position: 'topleft', zoomInTitle: 'Zoom in', zoomOutTitle: 'Zoom out' }).addTo(m)
     let dead = false
     const carto = () => { const t = L.tileLayer(TILES, { maxZoom: 19, attribution: ATTR }).addTo(m); t.on('tileerror', () => el.current && el.current.classList.add('no-tiles')); return t }
     // Mapbox style tiles when the server has a public token; CARTO otherwise or if Mapbox refuses the token.
