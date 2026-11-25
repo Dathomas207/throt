@@ -49,7 +49,7 @@ export const DEMO_DOGS = [
   { slug: 'juno', name: 'Juno', breed: 'Border Collie', weight: 41, bio: 'Herds joggers, squirrels and the occasional leaf.', at: 'boston', owner: 'Hollis', team: [['Pat', 'walker'], ['Wren', 'family']], weeks: 5, level: 3, mix: ['Run', 'Run', 'Walk', 'Agility', 'Fetch', 'Training'], base: 3.1 },
   { slug: 'pickle', name: 'Pickle', breed: 'Dachshund', weight: 11, bio: 'Short legs, long opinions.', at: 'boston', owner: 'Marco', team: [], weeks: 5, level: 1, mix: ['Walk', 'Walk', 'Play time', 'Dog park'], base: 1.0 },
   { slug: 'tansy', name: 'Tansy', breed: 'Whippet', weight: 29, bio: 'Two speeds: asleep and gone.', at: 'boston', owner: 'Imani', team: [['Theo', 'family']], weeks: 4, level: 1, mix: ['Run', 'Walk', 'Fetch', 'Play time'], base: 2.0 },
-  { slug: 'millie', name: 'Millie', breed: 'Bernedoodle', weight: 55, bio: 'Fluffy, bouncy, and first to the door.', at: 'boston', owner: 'Nora', team: [['Sue', 'family']], weeks: 5, level: 1, mix: ['Play time', 'Play time', 'Walk', 'Walk', 'Hike'], base: 1.9 },
+  { slug: 'millie', name: 'Millie', breed: 'Bernedoodle', weight: 55, bio: 'Fluffy, bouncy, and first to the door.', at: 'boston', owner: 'Dale', team: [['Sue', 'family'], ['Pat', 'walker']], weeks: 6, level: 2, mix: ['Play time', 'Play time', 'Walk', 'Walk', 'Hike', 'Training', 'Fetch'], base: 1.9 },
   { slug: 'waffles', name: 'Waffles', breed: 'Beagle', weight: 24, bio: 'Nose first, questions later.', at: 'charlotte', owner: 'Renata', team: [['Calvin', 'walker']], weeks: 6, level: 1, mix: ['Walk', 'Walk', 'Walk', 'Dog park', 'Training'], base: 1.6 },
   { slug: 'otis', name: 'Otis', breed: 'Labrador Retriever', weight: 78, bio: 'Has never met a puddle he did not sit in.', at: 'charlotte', owner: 'Josie', team: [['Calvin', 'walker'], ['Mabel', 'family']], weeks: 6, level: 2, mix: ['Walk', 'Walk', 'Swim', 'Fetch', 'Hike', 'Run'], base: 2.6 },
   { slug: 'clementine', name: 'Clementine', breed: 'Australian Shepherd', weight: 48, bio: 'Learns the trick before you finish explaining it.', at: 'charlotte', owner: 'Odette', team: [['Mabel', 'family']], weeks: 5, level: 1, mix: ['Agility', 'Run', 'Walk', 'Training', 'Hike'], base: 2.8 },
@@ -100,7 +100,25 @@ export function demoWalks(dog, now) {
   return out
 }
 
+// Health records and documents for Dale's dogs. Day numbers are offsets from the day of seeding.
+const RECORDS = {
+  biscuit: { goal: 75, docs: [['Rabies certificate (sample)', 'vaccination'], ['Annual exam summary (sample)', 'vet']], entries: [
+    { kind: 'weight', value: 70.1, unit: 'lb', on: -150 }, { kind: 'weight', value: 69, unit: 'lb', on: -90 }, { kind: 'weight', value: 68.4, unit: 'lb', on: -41 }, { kind: 'weight', value: 68, unit: 'lb', on: -6 },
+    { kind: 'vaccine', title: 'Rabies vaccine (3 year)', on: -980, due: 115, doc: 0 }, { kind: 'vaccine', title: 'Bordetella', on: -310, due: 55 }, { kind: 'vaccine', title: 'Flea and tick dose', on: -24, due: 6 },
+    { kind: 'medication', title: 'Fish oil', detail: '1,000 mg capsule', schedule: 'Once a day with breakfast', on: -150 },
+    { kind: 'vet_visit', title: 'Annual exam', detail: 'Sample Animal Hospital', on: -41, notes: 'Weight 68.4 lb. Keep trimming toward 68.', doc: 1 },
+    { kind: 'condition', title: 'Chicken allergy', notes: 'Itchy paws within a day. Fish and lamb are fine.' }, { kind: 'note', notes: 'Dry both ears after every swim.' },
+  ] },
+  millie: { goal: 60, docs: [['Rabies certificate (sample)', 'vaccination'], ['Microchip registration (sample)', 'licence']], entries: [
+    { kind: 'weight', value: 49.8, unit: 'lb', on: -150 }, { kind: 'weight', value: 52.5, unit: 'lb', on: -90 }, { kind: 'weight', value: 54.2, unit: 'lb', on: -30 }, { kind: 'weight', value: 55, unit: 'lb', on: -4 },
+    { kind: 'vaccine', title: 'Rabies vaccine (1 year)', on: -330, due: 35, doc: 0 }, { kind: 'vaccine', title: 'Bordetella', on: -200, due: 165 }, { kind: 'vaccine', title: 'Heartworm preventive', on: -33, due: -3 },
+    { kind: 'medication', title: 'Probiotic powder', detail: 'One scoop', schedule: 'Once a day on dinner', on: -60 },
+    { kind: 'vet_visit', title: 'One-year checkup', detail: 'Sample Animal Hospital', on: -75, notes: 'Healthy. Coat needs brushing three times a week.' },
+    { kind: 'condition', title: 'Sensitive stomach', notes: 'No rich treats.' }, { kind: 'note', notes: 'Scared of the vacuum. Walk her before cleaning day.' },
+  ] },
+}
 const AWARDS = [
+  ['millie', 'Puppy class graduate (sample)', 'certificate', 'Sample entry, not a real class', '', 300],
   ['biscuit', 'Novice trick dog (sample)', 'trick', 'Sample entry, not a real title', '', 40],
   ['pickle', 'Fastest short legs (sample)', 'ribbon', 'Sample entry, not a real event', 'First', 25],
   ['clementine', 'Clean agility run (sample)', 'certificate', 'Sample entry, not a real event', '', 12],
@@ -134,6 +152,10 @@ export async function seedDemo(db, { now = Date.now(), photoDir = '' } = {}) {
     }
     const photo = photoOf(dog.slug)
     if (photo) await db.query('UPDATE dogs SET photo = $1, photo_v = $2 WHERE id = $3', [photo.data, photo.v, id])
+    // The team is exactly what the list above says, so a change there (such as a new owner) takes effect on the next start.
+    await db.query('UPDATE dogs SET created_by = $1 WHERE id = $2', [uid(dog.owner), id])
+    const all = USERS.map(uid)
+    await db.query(`DELETE FROM memberships WHERE dog_id = $1 AND user_id IN (${all.map((_, i) => `$${i + 2}`).join(', ')})`, [id, ...all])
     for (const [name, role] of [[dog.owner, 'owner'], ...dog.team]) {
       await db.query('INSERT INTO memberships (user_id, dog_id, role, created_at) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, dog_id) DO NOTHING', [uid(name), id, role, at])
     }
@@ -168,6 +190,21 @@ export async function seedDemo(db, { now = Date.now(), photoDir = '' } = {}) {
     const dog = DEMO_DOGS.find((d) => d.slug === slug)
     await db.query('INSERT INTO awards (id, dog_id, title, kind, event_name, placement, awarded_on, notes, is_public, created_by, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, $9, $10) ON CONFLICT (id) DO NOTHING',
       [demoId('award:' + slug), demoId('dog:' + slug), title, kind, event, placement, new Date(now - daysAgo * DAY).toISOString().slice(0, 10), 'Made up for the demo.', uid(dog.owner), at])
+  }
+  // Dale's two dogs, Biscuit and Millie, also get health records and a couple of documents.
+  for (const [slug, h] of Object.entries(RECORDS)) {
+    const dogId = demoId('dog:' + slug), by = uid('Dale'), day = (off) => new Date(now + off * DAY).toISOString().slice(0, 10)
+    const docIds = {}
+    for (const [i, d] of h.docs.entries()) {
+      const pdf = Buffer.from(`%PDF-1.4\n% Trot demo document: ${d[0]}. Made up for the demo.\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n`)
+      docIds[i] = demoId(`doc:${slug}:${i}`)
+      await db.query('INSERT INTO documents (id, dog_id, name, category, content_type, size_bytes, data, notes, uploaded_by, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO NOTHING', [docIds[i], dogId, d[0], d[1], 'application/pdf', pdf.length, pdf.toString('base64'), 'Sample file made for the demo.', by, at])
+    }
+    for (const [i, e] of h.entries.entries()) {
+      await db.query('INSERT INTO health_entries (id, dog_id, kind, title, value, unit, occurred_on, due_on, detail, schedule, notes, document_id, created_by, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) ON CONFLICT (id) DO NOTHING',
+        [demoId(`health:${slug}:${i}`), dogId, e.kind, e.title || '', e.value == null ? null : e.value, e.unit || null, e.on == null ? null : day(e.on), e.due == null ? null : day(e.due), e.detail || '', e.schedule || '', e.notes || '', e.doc == null ? null : docIds[e.doc], by, at])
+    }
+    await db.query('UPDATE dogs SET goal_minutes = $1 WHERE id = $2 AND goal_minutes IS NULL', [h.goal, dogId])
   }
   return { users: USERS.length, dogs: DEMO_DOGS.length, walks }
 }

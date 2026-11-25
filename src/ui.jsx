@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { RouteThumb } from './Map.jsx'
-import { ROUTES, DOG, PEOPLE, dayLabel, fmtTime, activityType } from './data.js'
+import { ROUTES, DOG as BISCUIT, PEOPLE, dayLabel, fmtTime, activityType } from './data.js'
 import { loadPhoto, peekPhoto } from './api.js'
 import { Portrait, hasPortrait, DemoPhoto, hasDemoPhoto } from './portraits.jsx'
 
@@ -53,8 +53,9 @@ export const ptsOf = (a) => a.pts || (a.route && ROUTES[a.route] ? ROUTES[a.rout
 // The 60 to 90 minute range is a sample set for Biscuit. Signed-in mode turns it
 // off for real dogs through this context, so every screen that shows it agrees.
 export const RangeOff = createContext(false)
-export function Range({ min, light }) {
+export function Range({ min, light, dog }) {
   if (useContext(RangeOff)) return null
+  const DOG = dog || BISCUIT
   const pct = Math.min(100, Math.round((min / DOG.rangeMax) * 100))
   const msg = min < DOG.rangeMin ? `${DOG.rangeMin - Math.round(min)} min to go` : min <= DOG.rangeMax ? 'In the sweet spot' : 'Plenty for today. Time to rest.'
   return (
@@ -65,16 +66,21 @@ export function Range({ min, light }) {
   )
 }
 
-export function Card({ a, pawed, paw, setOpen }) {
+export function Card({ a, pawed, paw, setOpen, onDog }) {
   const p = a.real ? { name: a.byName || '?', color: a.byColor, ink: a.byInk } : PEOPLE[a.by], pts = ptsOf(a), n = a.paws + (pawed[a.id] ? 1 : 0)
   return (
     <article className="card">
+      {onDog && <button className="cardhead" onClick={() => onDog(a)} aria-label={`Open ${a.dog}'s profile`}>
+        <DogAv name={a.dog} photoUrl={a.dogPhoto} demo={!a.real} bg={a.color || '#0F1B2D'} c={a.ink || '#C8F031'} />
+        <span className="grow"><span className="dogname">{a.dog}</span><span className="meta">{a.type === 'Daycare' ? 'at' : 'with'} <b>{whoName(a)}</b> · {whenOf(a)}{a.place ? ` · ${a.place}` : ''}</span></span>
+        {p && <Av t={p.name[0]} s={28} bg={p.color} c={p.ink} />}
+      </button>}
       <button className="cardtop" onClick={() => setOpen(a)}>
-        <div className="row g10">
+        {!onDog && <div className="row g10">
           <DogAv name={a.dog} photoUrl={a.dogPhoto} demo={!a.real} bg={a.color || '#0F1B2D'} c={a.ink || '#C8F031'} />
           <div className="grow"><div className="dogname">{a.dog}</div><div className="meta">{a.type === 'Daycare' ? 'at' : 'with'} <b>{whoName(a)}</b> · {whenOf(a)}{a.place ? ` · ${a.place}` : ''}</div></div>
           {p && <Av t={p.name[0]} s={28} bg={p.color} c={p.ink} />}
-        </div>
+        </div>}
         <div className="title"><TypeIc t={a.type} />{a.title}{a.dogDemo && <span className="tagx">Demo dog</span>}</div>
         <div className="row g28 wraprow">{statsOf(a).slice(0, 4).map(([l, v]) => <Stat key={l} l={l} v={v} />)}</div>
         {a.note && <p className="note">{a.note}</p>}

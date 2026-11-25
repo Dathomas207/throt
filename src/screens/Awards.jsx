@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useId, useState } from 'react'
 import { Ic, Confirm } from '../ui.jsx'
 import { api } from '../api.js'
-import { DEMO_AWARDS, DOG } from '../data.js'
 
 const KINDS = [['ribbon', 'Ribbon'], ['title', 'Title'], ['certificate', 'Certificate'], ['trick', 'Trick'], ['other', 'Other']]
 const date = (s) => new Date(s + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
@@ -25,13 +24,14 @@ function Badge({ b }) {
 }
 const AwardRow = ({ a, children, sample }) => <div className="hentry"><div className="row g12"><AwardArt kind={a.kind} /><div className="grow"><div className="hb">{a.title}{sample && <span className="tagx">Sample</span>}{a.public && <span className="tagx">On public page</span>}</div><div className="meta">{[a.placement, a.eventName, a.awardedOn && date(a.awardedOn)].filter(Boolean).join(' · ')}</div></div></div>{children}</div>
 
-export function DemoAwards({ acts }) {
+export function DemoAwards({ acts, dd }) {
+  const DOG = dd.dog
   const w = acts.filter((a) => a.type !== 'Daycare'), mi = Math.round(w.reduce((s, a) => s + a.miles, 0) * 10) / 10
   const b = (name, how, progress, target, unit) => ({ id: name, name, how, progress: Math.min(progress, target), target, unit, earned: progress >= target })
   const badges = [b('First walk', 'Save one walk.', w.length, 1, 'walk'), b('7-day streak', 'Walk 7 days in a row.', DOG.streak, 7, 'days'), b('25 miles', 'Cover 25 miles in all.', DOG.lifetime, 25, 'mi'), b('5 places', 'Walk in 5 different places.', new Set(w.map((a) => a.place).filter(Boolean)).size, 5, 'places'), b('3 walkers', 'Get walked by 3 different people.', new Set(w.map((a) => a.by)).size, 3, 'people'), b('2,000 miles', 'Cover 2,000 miles in all.', DOG.lifetime, 2000, 'mi')]
   return <section className="card padc" aria-label="Awards and badges">
     <b>Awards</b>
-    {DEMO_AWARDS.map((a) => <AwardRow key={a.id} sample a={{ ...a, awardedOn: new Date(Date.now() - a.daysAgo * 864e5).toISOString().slice(0, 10) }} />)}
+    {dd.awards.map((a) => <AwardRow key={a.id} sample a={{ ...a, awardedOn: new Date(Date.now() - a.daysAgo * 864e5).toISOString().slice(0, 10) }} />)}
     <div className="sl">TROT BADGES, EARNED FROM WALKS</div>
     <ul className="tbadges">{badges.map((x) => <Badge key={x.id} b={x} />)}</ul>
   </section>

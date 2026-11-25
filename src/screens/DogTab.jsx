@@ -4,7 +4,7 @@ import EditDog from './EditDog.jsx'
 import { RealHealth, DemoHealth } from './Health.jsx'
 import { RealDocuments, DemoDocuments } from './Documents.jsx'
 import { RealAwards, DemoAwards } from './Awards.jsx'
-import { DOG } from '../data.js'
+import { DEMO_DOGS } from '../data.js'
 
 export default function DogTab(props) { return props.real ? <RealDogTab {...props} /> : <DemoDogTab {...props} /> }
 
@@ -60,7 +60,8 @@ function RealDogTab({ real, pawed, paw, setOpen, setToast, openSettings }) {
   )
 }
 
-function DemoDogTab({ acts, week, todayMin, pawed, paw, setOpen, setToast, openSettings, level }) {
+function DemoDogTab({ acts, week, todayMin, pawed, paw, setOpen, setToast, openSettings, level, dd, setDk }) {
+  const DOG = dd.dog
   const [sub, setSub] = useState('Activity')
   const [type, setType] = useState('')
   const days = [...Array(7)].map((_, i) => { const d = 6 - i; return { d, ...dayOf(d), min: acts.filter((a) => a.daysAgo === d && a.type !== 'Daycare').reduce((s, a) => s + a.minutes, 0) } })
@@ -68,19 +69,20 @@ function DemoDogTab({ acts, week, todayMin, pawed, paw, setOpen, setToast, openS
   return (
     <div className="scroll">
       <section className="prof">
-        <div className="row g16 top"><DogAv name="Biscuit" demo s={92} ring /><div className="grow"><div className="bigname">BISCUIT</div><div className="lightm">{DOG.breed} · {DOG.age} · {DOG.weight} lb</div><div className="lightm">{DOG.home}</div><LevelBadge n={level} /></div><Gear light onClick={openSettings} /></div>
+        <div className="dogswitch inprof" role="group" aria-label="Switch dog">{Object.values(DEMO_DOGS).map((d) => <button key={d.key} className={`chip flat ${d.key === dd.key ? 'on' : ''}`} aria-pressed={d.key === dd.key} onClick={() => setDk(d.key)}>{d.dog.name}</button>)}</div>
+        <div className="row g16 top"><DogAv name={DOG.name} demo s={92} ring /><div className="grow"><div className="bigname">{DOG.name.toUpperCase()}</div><div className="lightm">{DOG.breed} · {DOG.age} · {DOG.weight} lb</div><div className="lightm">{DOG.home}</div><LevelBadge n={level} /></div><Gear light onClick={openSettings} /></div>
         <p className="lightm bio">{DOG.bio}</p>
         <div className="row g20"><Stat light l="FOLLOWERS" v={DOG.followers} big={20} /><Stat light l="LIFETIME" v={DOG.lifetime.toLocaleString() + ' mi'} big={20} /><Stat light l="STREAK" v={DOG.streak + ' d'} big={20} /></div>
       </section>
       <Subtabs sub={sub} setSub={setSub} />
       {sub === 'Activity' && <div className="list">
         <WeekBars days={days} title="This week" meta={`${week.miles.toFixed(1)} mi · ${week.walks} outings`} />
-        <DemoAwards acts={acts} />
+        <DemoAwards acts={acts} dd={dd} />
         <TypeFilter acts={acts} type={type} setType={setType} />
         {shown.map((a) => <Card key={a.id} a={a} pawed={pawed} paw={paw} setOpen={setOpen} />)}
       </div>}
-      {sub === 'Health' && <DemoHealth acts={acts} todayMin={todayMin} level={level} setToast={setToast} />}
-      {sub === 'Documents' && <DemoDocuments />}
+      {sub === 'Health' && <DemoHealth acts={acts} todayMin={todayMin} level={level} setToast={setToast} dd={dd} />}
+      {sub === 'Documents' && <DemoDocuments dd={dd} />}
     </div>
   )
 }

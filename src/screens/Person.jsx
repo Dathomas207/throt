@@ -6,11 +6,11 @@ import { PEOPLE, fmtTime } from '../data.js'
 const ROLES = [['walker', 'Dog walker'], ['family', 'Family'], ['daycare', 'Daycare']]
 // One person's time with the dog. Signed in it comes from the API, with no email anywhere.
 // In the demo it is worked out from the demo walks.
-export default function Person({ person, close, real, acts, week, pawed, paw, setOpen, setToast }) {
+export default function Person({ person, close, real, acts, week, pawed, paw, setOpen, setToast, demoName = 'Biscuit', onDog }) {
   const back = useRef(null)
   useEffect(() => { if (back.current) back.current.focus() }, [])
   const [data, setData] = useState(null), [err, setErr] = useState(''), [ask, setAsk] = useState(null), [role, setRole] = useState(person.role), [busy, setBusy] = useState(false)
-  const dogName = real ? real.dog.name : 'Biscuit'
+  const dogName = real ? real.dog.name : demoName
   useEffect(() => {
     if (!real) return
     let on = true
@@ -54,7 +54,7 @@ export default function Person({ person, close, real, acts, week, pawed, paw, se
             </div>}
             <div className="eyebrow dark padx">OUTINGS WITH {dogName.toUpperCase()}</div>
             {list.length === 0 && <div className="card empty"><b>No outings yet</b><p>{firstName(m.name)}'s walks with {dogName} will be listed here.</p></div>}
-            {list.map((a) => <Card key={a.id} a={a} pawed={pawed} paw={paw} setOpen={setOpen} />)}
+            {list.map((a) => <Card key={a.id} a={a} pawed={pawed} paw={paw} setOpen={setOpen} onDog={onDog ? (x) => { close(); onDog(x) } : undefined} />)}
           </div>
         </>}
       </div>

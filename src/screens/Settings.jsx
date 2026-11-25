@@ -16,13 +16,13 @@ function Section({ title, children, id }) {
 
 // One screen for the account, tracking level, connections, plans and, in the demo, the demo tools.
 // `real` is set when signed in. Everything else is the demo's local state.
-export default function Settings({ close, real, setToast, plan, setPlan, level, setLevel, conn, setConn, me, setMe, reset, leaveDemo, signedIn }) {
+export default function Settings({ close, real, setToast, plan, setPlan, level, setLevel, conn, setConn, me, setMe, reset, leaveDemo, signedIn, demoName = 'Biscuit' }) {
   const back = useRef(null)
   useEffect(() => { if (back.current) back.current.focus() }, [])
   useEffect(() => { const k = (e) => { if (e.key === 'Escape') close() }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [close])
   const dog = real ? real.dog : null
   const owner = !!dog && dog.role === 'owner'
-  const name = dog ? dog.name : 'Biscuit'
+  const name = dog ? dog.name : demoName
   const cur = real ? dog.trackingLevel || 1 : level
   const [busy, setBusy] = useState('')
   const [sheet, setSheet] = useState(null)

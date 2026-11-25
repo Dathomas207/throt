@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useId, useState } from 'react'
 import { Ic, Confirm, copyText, TypeIc, SPEED_NOTE } from '../ui.jsx'
 import { api } from '../api.js'
-import { DOG, WEIGHTS, DEMO_HEALTH } from '../data.js'
 import { Range } from '../ui.jsx'
 
 const today = (off = 0) => { const d = new Date(Date.now() + off * 864e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
@@ -134,7 +133,7 @@ export function RealHealth({ real, setToast }) {
   const wrap = (fn, done) => async (...a) => { try { await fn(...a); await load(); if (done) setToast(done); return {} } catch (e) { return { error: e.message } } }
   const act = {
     add: wrap((b) => api.health.add(dog.slug, b), 'Saved'), update: wrap((e, b) => api.health.update(e.id, b), 'Saved'), remove: wrap((e) => api.health.remove(e.id), 'Entry deleted'),
-    openDoc: async (d) => { try { window.open(await api.documents.open(d.id), '_blank', 'noopener') } catch (e) { setToast(e.message) } },
+    openDoc: async (d) => { try { await api.documents.view(d.id) } catch (e) { setToast(e.message) } },
   }
   // goal
   const [goal, setGoal] = useState(null)
@@ -233,9 +232,9 @@ export function RealHealth({ real, setToast }) {
 }
 
 // ---- demo: Biscuit's sample health records ------------------------------------
-export function DemoHealth({ acts, todayMin, level, setToast }) {
+export function DemoHealth({ acts, todayMin, level, setToast, dd }) {
   const [vet, setVet] = useState(false)
-  const H = DEMO_HEALTH
+  const H = dd.health, DOG = dd.dog, WEIGHTS = dd.weights
   const week = acts.filter((a) => a.daysAgo <= 6 && a.type !== 'Daycare')
   const min = Math.round(week.reduce((s, a) => s + a.minutes, 0)), mi = week.reduce((s, a) => s + a.miles, 0)
   const avg = Math.round(H.weeks.slice(-4).reduce((s, v) => s + v, 0) / 4), pct = Math.round(((min - avg) / avg) * 100)
@@ -259,7 +258,7 @@ export function DemoHealth({ acts, todayMin, level, setToast }) {
         <TypeTable byType={Object.entries(types).map(([type, minutes]) => ({ type, minutes })).sort((a, b) => b.minutes - a.minutes)} caption="Minutes this week by activity type" />
         <p className="meta">{SPEED_NOTE}</p>
       </section>
-      <div className="card padc"><Range min={todayMin} /><p className="meta">Range is a sample set from breed, age and weight. It is not veterinary advice.</p></div>
+      <div className="card padc"><Range min={todayMin} dog={DOG} /><p className="meta">Range is a sample set from breed, age and weight. It is not veterinary advice.</p></div>
       {level === 3 && <section className="card padc" aria-label="Fitness tracker, sample data">
         <div className="row between"><b>From the collar</b><span className="tagx">Sample data</span></div>
         <div className="tiles"><Tile l="STEPS TODAY" v={T.steps.toLocaleString()} /><Tile l="REST, LAST 24 HOURS" v={`${T.restHours} h`} /></div>
@@ -268,14 +267,14 @@ export function DemoHealth({ acts, todayMin, level, setToast }) {
         <p className="meta">This is what Level 3 adds once a real collar is connected. No tracker is connected, so these numbers are made up.</p>
       </section>}
       <div className="card padc"><div className="row between"><b>Weight</b><span className="num">{DOG.weight} lb</span></div>
-        <svg viewBox="0 0 320 90" className="chart" role="img" aria-label="Weight over six months, down from 70.1 to 68.0 pounds"><polyline fill="none" stroke="#1F5AE8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" points={WEIGHTS.map((w, i) => `${20 + i * 56},${12 + (1 - (w[1] - lo) / (hi - lo)) * 50}`).join(' ')} />{WEIGHTS.map((w, i) => <g key={w[0]}><circle cx={20 + i * 56} cy={12 + (1 - (w[1] - lo) / (hi - lo)) * 50} r="4" fill="#fff" stroke="#1F5AE8" strokeWidth="2.5" /><text x={20 + i * 56} y="86" textAnchor="middle" fontSize="11" fill="#5B6472">{w[0]}</text></g>)}</svg>
-        <p className="meta">Down 2.1 lb since June, on track for the target the vet set.</p></div>
+        <svg viewBox="0 0 320 90" className="chart" role="img" aria-label={`Weight over six months, from ${WEIGHTS[0][1]} to ${WEIGHTS[WEIGHTS.length - 1][1]} pounds`}><polyline fill="none" stroke="#1F5AE8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" points={WEIGHTS.map((w, i) => `${20 + i * 56},${12 + (1 - (w[1] - lo) / (hi - lo)) * 50}`).join(' ')} />{WEIGHTS.map((w, i) => <g key={w[0]}><circle cx={20 + i * 56} cy={12 + (1 - (w[1] - lo) / (hi - lo)) * 50} r="4" fill="#fff" stroke="#1F5AE8" strokeWidth="2.5" /><text x={20 + i * 56} y="86" textAnchor="middle" fontSize="11" fill="#5B6472">{w[0]}</text></g>)}</svg>
+        <p className="meta">{dd.weightNote}</p></div>
       <div className="card padc"><div className="row between"><b>Vaccines and preventives</b><span className="tagx">Sample</span></div>
         {H.vaccines.slice().sort((a, b) => a.due - b.due).map((v) => <div key={v.t} className="hentry"><div className="row between g8"><span className="hb">{v.t}</span>{status(v.due) && <span className={`flag ${DUE[status(v.due)][1]}`}>{DUE[status(v.due)][0]}</span>}</div><div className="meta">Given {fmtDay(today(v.given))} · Next due {fmtDay(today(v.due))}</div></div>)}</div>
       <div className="card padc"><div className="row between"><b>Medications</b><span className="tagx">Sample</span></div>
         {H.meds.map((m) => <div key={m.t} className="hentry"><span className="hb">{m.t}</span><div className="meta">{m.dose} · {m.schedule}</div><div className="meta">From {fmtDay(today(m.start))}{m.end ? ` until ${fmtDay(today(m.end))}` : ''}</div></div>)}</div>
       <div className="card padc"><div className="row between"><b>Vet visits</b><span className="tagx">Sample</span></div>
-        {[...(vet ? [{ on: 0, clinic: 'Uploaded record', reason: 'Wellness visit', notes: 'Weight 68.0 lb, 2 vaccines read (sample).' }] : []), ...H.visits].map((v) => <div key={v.reason + v.on} className="hentry"><div className="row between g8"><span className="hb">{v.reason}</span><span className="meta">{fmtDay(today(v.on))}</span></div><div className="meta">{v.clinic}</div><p className="note">{v.notes}</p></div>)}
+        {[...(vet ? [{ on: 0, clinic: 'Uploaded record', reason: 'Wellness visit', notes: `Weight ${DOG.weight}.0 lb, 2 vaccines read (sample).` }] : []), ...H.visits].map((v) => <div key={v.reason + v.on} className="hentry"><div className="row between g8"><span className="hb">{v.reason}</span><span className="meta">{fmtDay(today(v.on))}</span></div><div className="meta">{v.clinic}</div><p className="note">{v.notes}</p></div>)}
         <label className="upload"><Ic n="plus" s={18} />Upload a vet record<input type="file" accept=".pdf,image/*" onChange={() => { setVet(true); setToast('Sample record added. Real extraction comes later.') }} /></label></div>
       <div className="card padc"><div className="row between"><b>Conditions and allergies</b><span className="tagx">Sample</span></div>{H.conditions.map((c) => <div key={c.t} className="hentry"><span className="hb">{c.t}</span><p className="note">{c.notes}</p></div>)}</div>
       <div className="card padc"><div className="row between"><b>Notes</b><span className="tagx">Sample</span></div>{H.notes.map((n) => <p key={n} className="note">{n}</p>)}</div>

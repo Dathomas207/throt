@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useId, useState } from 'react'
 import { Ic, Confirm } from '../ui.jsx'
 import { api } from '../api.js'
-import { DEMO_DOCS } from '../data.js'
 
 export const DOC_CATS = [['vet', 'Vet records'], ['vaccination', 'Vaccination certificates'], ['registration', 'Registration and pedigree'], ['licence', 'Licence and microchip'], ['insurance', 'Insurance'], ['show', 'Show entries and certificates'], ['other', 'Other']]
 const TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
@@ -14,10 +13,10 @@ function Group({ docs, render }) {
   return DOC_CATS.filter(([k]) => docs.some((d) => d.category === k)).map(([k, l]) => <section key={k} className="card padc" aria-label={l}><div className="eyebrow dark">{l.toUpperCase()}</div>{docs.filter((d) => d.category === k).map(render)}</section>)
 }
 
-export function DemoDocuments() {
+export function DemoDocuments({ dd }) {
   return <div className="list">
-    <p className="meta padx">Sample documents for Biscuit. They show what the list looks like and do not open.</p>
-    <Group docs={DEMO_DOCS} render={(d) => <div key={d.id} className="hentry"><div className="row between g8"><span className="hb row g8"><Ic n="file" s={18} c="#1F5AE8" />{d.name}</span><span className="tagx">Sample</span></div><div className="meta">{size(d.size)} · {date(Date.now() - d.daysAgo * 864e5)}</div></div>} />
+    <p className="meta padx">Sample documents for {dd.dog.name}. They show what the list looks like and do not open.</p>
+    <Group docs={dd.docs} render={(d) => <div key={d.id} className="hentry"><div className="row between g8"><span className="hb row g8"><Ic n="file" s={18} c="#1F5AE8" />{d.name}</span><span className="tagx">Sample</span></div><div className="meta">{size(d.size)} · {date(Date.now() - d.daysAgo * 864e5)}</div></div>} />
   </div>
 }
 
@@ -50,7 +49,7 @@ export function RealDocuments({ real, setToast }) {
     } catch (x) { setFerr(x.message) }
     setPct(null)
   }
-  const open = async (d) => { try { window.open(await api.documents.open(d.id), '_blank', 'noopener') } catch (x) { setToast(x.message) } }
+  const open = async (d) => { try { await api.documents.view(d.id) } catch (x) { setToast(x.message) } }
   const save = async (e) => { e.preventDefault(); if (!edit.name.trim()) { setEdit({ ...edit, error: 'Give the document a name.' }); return } try { await api.documents.update(edit.id, { name: edit.name.trim(), category: edit.category }); setEdit(null); await load(); setToast('Document updated') } catch (x) { setEdit({ ...edit, error: x.message }) } }
   const vet = async (d, on) => { try { await api.documents.update(d.id, { inVetSummary: on }); await load(); setToast(on ? 'Listed on the vet summary' : 'Taken off the vet summary') } catch (x) { setToast(x.message) } }
   const del = async (d) => { setAsk({ id: d.id, busy: true }); try { await api.documents.remove(d.id); setAsk(null); await load(); setToast('Document deleted') } catch (x) { setAsk({ id: d.id, busy: false, error: x.message }) } }

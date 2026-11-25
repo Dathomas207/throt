@@ -155,3 +155,42 @@ export const DEMO_CHALLENGES = [
   { key: 'explorer-5', name: 'Explorer', description: 'Walk in 5 different places this month.', unit: 'places', target: 5, daysLeft: 6, base: 0 },
   { key: 'team-3', name: 'Whole team', description: 'Get walked by 3 different people this month.', unit: 'people', target: 3, daysLeft: 6, base: 0 },
 ]
+
+// ---- Millie, the demo's second dog (appended) --------------------------------
+// Dale's other dog. Her pack entry p0 above is listed here as one of her own activities.
+export const MILLIE = { id: 'millie', name: 'Millie', breed: 'Bernedoodle', age: '2 yrs', weight: 55, home: 'Cambridge, MA', bio: 'Fluffy, bouncy, and first to the door. Believes every glove is a toy.', followers: 96, lifetime: 412, streak: 5, rangeMin: 60, rangeMax: 100 }
+const perf = (a, avg, max, sprints) => ({ ...a, avgSpeed: avg, maxSpeed: max, sprints, movingMinutes: Math.round(a.minutes * 0.88), sniffs: 0 })
+export const MILLIE_SEED = [
+  perf({ ...PACK.find((x) => x.id === 'p0'), by: 'dale', byName: undefined, color: undefined, ink: undefined }, 0, 0, 8),
+  perf({ id: 'm2', dog: 'Millie', by: 'pat', type: 'Walk', title: 'Lunch loop with Pat', daysAgo: 1, time: '12:40 PM', place: 'Danehy Park', route: 'danehy', miles: ROUTES.danehy.miles, minutes: ROUTES.danehy.minutes, paws: 12, comments: 1 }, 3.0, 6.9, 2),
+  perf({ id: 'm3', dog: 'Millie', by: 'dale', type: 'Play time', title: 'Tug of war, best of five', daysAgo: 2, time: '6:30 PM', place: 'Home', route: null, miles: 0, minutes: 25, paws: 18, comments: 2, note: 'Won three. Claims she won five.' }, 0, 0, 6),
+  perf({ id: 'm4', dog: 'Millie', by: 'sue', type: 'Hike', title: 'Fells loop with Sue', daysAgo: 3, time: '9:10 AM', place: 'Middlesex Fells', route: 'fells', miles: ROUTES.fells.miles, minutes: ROUTES.fells.minutes, paws: 33, comments: 4, note: 'First real hill. Carried a stick the whole way down.' }, 2.5, 7.8, 1),
+  perf({ id: 'm5', dog: 'Millie', by: 'dale', type: 'Walk', title: 'Meadow out and back', daysAgo: 4, time: '7:20 AM', place: 'Lusitania Meadow', route: 'meadow', miles: ROUTES.meadow.miles, minutes: ROUTES.meadow.minutes, paws: 9, comments: 0 }, 2.9, 6.4, 2),
+  perf({ id: 'm6', dog: 'Millie', by: 'dale', type: 'Training', title: 'Leave it, with gloves', daysAgo: 5, time: '5:45 PM', place: 'Home', route: null, miles: 0, minutes: 20, paws: 14, comments: 3, note: 'Two gloves survived.' }, 0, 0, 0),
+  perf({ id: 'm7', dog: 'Millie', by: 'pat', type: 'Walk', title: 'Pond loop with Pat', daysAgo: 6, time: '12:20 PM', place: 'Fresh Pond', route: 'pond', miles: ROUTES.pond.miles, minutes: ROUTES.pond.minutes, paws: 11, comments: 1 }, 3.0, 7.1, 3),
+]
+const MILLIE_HEALTH = {
+  weeks: [262, 281, 250, 296, 270, 288, 301],
+  vaccines: [{ t: 'Flea and tick dose', given: -12, due: 18 }, { t: 'Bordetella', given: -200, due: 165 }, { t: 'Rabies vaccine (1 year)', given: -330, due: 35 }, { t: 'Heartworm preventive', given: -33, due: -3 }],
+  meds: [{ t: 'Probiotic powder', dose: 'One scoop', schedule: 'Once a day on dinner', start: -60 }],
+  visits: [{ on: -75, clinic: 'Sample Animal Hospital', reason: 'One-year checkup', notes: 'Weight 54.2 lb. Healthy. Coat needs brushing three times a week.' }, { on: -180, clinic: 'Sample Animal Hospital', reason: 'Ate a glove', notes: 'Passed it on her own. Keep gloves off the floor.' }],
+  conditions: [{ t: 'Sensitive stomach', notes: 'No rich treats. Plain kibble for training rewards.' }],
+  notes: ['Scared of the vacuum. Walk her before cleaning day.'],
+  tracker: { steps: 9460, restHours: 14.5, days: [8100, 10300, 7600, 12800, 9900, 8700, 9460] },
+}
+const MILLIE_WEIGHTS = [['Jun', 49.8], ['Jul', 51.2], ['Aug', 52.5], ['Sep', 53.4], ['Oct', 54.2], ['Nov', 55.0]]
+const MILLIE_DOCS = [
+  { id: 'md1', name: 'Rabies certificate 2026', category: 'vaccination', size: 171000, daysAgo: 330 },
+  { id: 'md2', name: 'One-year checkup summary', category: 'vet', size: 388000, daysAgo: 75 },
+  { id: 'md3', name: 'Microchip registration', category: 'licence', size: 88000, daysAgo: 600 },
+]
+const MILLIE_AWARDS = [
+  { id: 'ma1', title: 'Puppy class graduate', kind: 'certificate', eventName: 'Sample entry, not a real class', placement: '', daysAgo: 420 },
+  { id: 'ma2', title: 'Best sit-stay', kind: 'ribbon', eventName: 'Sample entry, not a real event', placement: 'Second', daysAgo: 60 },
+]
+// Everything the demo screens need for one dog, so each screen can show whichever dog is selected.
+export const DEMO_DOGS = {
+  biscuit: { key: 'biscuit', dog: DOG, seed: SEED, health: DEMO_HEALTH, weights: WEIGHTS, weightNote: 'Down 2.1 lb since June, on track for the target the vet set.', docs: DEMO_DOCS, awards: DEMO_AWARDS, people: ['dale', 'pat', 'sue', 'tails'] },
+  millie: { key: 'millie', dog: MILLIE, seed: MILLIE_SEED, health: MILLIE_HEALTH, weights: MILLIE_WEIGHTS, weightNote: 'Up 5.2 lb since June. Still growing, and right where the vet expected.', docs: MILLIE_DOCS, awards: MILLIE_AWARDS, people: ['dale', 'pat', 'sue'] },
+}
+export const demoDogByName = (name) => Object.values(DEMO_DOGS).find((d) => d.dog.name === name) || null

@@ -179,6 +179,18 @@ api.documents = {
     }
     x.send(JSON.stringify(input))
   }),
+  // Opens a document in a new tab. The tab is opened first, while the tap still counts as a
+  // user action (Safari blocks it otherwise), and is pointed at the file once it has arrived.
+  view: async (id) => {
+    let w = null
+    try { w = window.open('', '_blank') } catch (e) {}
+    try {
+      const url = await api.documents.open(id)
+      if (w) w.location.href = url
+      else { const l = document.createElement('a'); l.href = url; l.target = '_blank'; l.rel = 'noopener'; document.body.appendChild(l); l.click(); l.remove() }
+      setTimeout(() => { try { URL.revokeObjectURL(url) } catch (e) {} }, 120000)
+    } catch (e) { if (w) { try { w.close() } catch (e2) {} } throw e }
+  },
   // The file endpoint needs the token, so the bytes are fetched here and handed back as a blob URL.
   open: async (id) => {
     let res

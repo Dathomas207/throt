@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Ic, Paw, Av, DogAv, Stat, Range, Card, whoName, ptsOf, DogSwitch, Gear, TypeIc, usePhoto } from '../ui.jsx'
 import { api } from '../api.js'
-import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine } from '../data.js'
+import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine, DEMO_DOGS, demoDogByName } from '../data.js'
 
 export default function Home(props) { return props.real ? <RealHome {...props} /> : <DemoHome {...props} /> }
 
@@ -20,7 +20,7 @@ function PackCard({ w }) {
 }
 const CompeteCard = ({ open, name }) => <button className="rrow box competecard" onClick={() => open('boards')}><span className="ricon"><Ic n="trophy" s={20} c="#1F5AE8" /></span><span className="grow"><b>Compete</b><small>Leaderboards, challenges and events for {name}</small></span></button>
 
-function RealHome({ real, acts, pawed, paw, setOpen, setTab, openSettings, openCompete }) {
+function RealHome({ real, acts, pawed, paw, setOpen, setTab, openSettings, openCompete, onDog }) {
   const { dog, dogs, totals, user } = real
   const many = dogs.length > 1
   const [pack, setPack] = useState(null)
@@ -31,7 +31,7 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, openSettings, openC
       <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Signed in as {user.name}</div><Gear onClick={openSettings} /></div></header>
       <DogSwitch dogs={dogs} active={dog.slug} onPick={real.switchDog} />
       <section className="hero">
-        <div className="row g14"><DogAv name={dog.name} photoUrl={dog.photoUrl} s={56} bg="#C8F031" c="#0F1B2D" /><div className="grow"><div className="eyebrow">{dog.name.toUpperCase()}, LAST 7 DAYS</div><div className="row g20"><Stat light l="MILES" v={totals.week.miles.toFixed(1)} /><Stat light l="OUTINGS" v={totals.week.outings} /><Stat light l="TIME OUT" v={fmtTime(totals.week.minutes)} /></div></div></div>
+        <div className="row g14"><button className="doglink" aria-label={`Open ${dog.name}'s profile`} onClick={() => setTab('dog')}><DogAv name={dog.name} photoUrl={dog.photoUrl} s={56} bg="#C8F031" c="#0F1B2D" /></button><div className="grow"><div className="eyebrow">{dog.name.toUpperCase()}, LAST 7 DAYS</div><div className="row g20"><Stat light l="MILES" v={totals.week.miles.toFixed(1)} /><Stat light l="OUTINGS" v={totals.week.outings} /><Stat light l="TIME OUT" v={fmtTime(totals.week.minutes)} /></div></div></div>
         <button className="cta" onClick={() => setTab('record')}><Paw s={22} c="#0F1B2D" />Walk {dog.name}</button>
       </section>
       <CompeteCard open={openCompete} name={dog.name} />
@@ -43,27 +43,32 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, openSettings, openC
         {pack && pack.map((w) => <PackCard key={w.id} w={w} />)}
       </div> : <div className="list">
         {acts.length === 0 && <div className="card empty"><b>No outings yet</b><p>{dog.name}'s first walk will show up here. Tap Walk {dog.name} to record one.</p></div>}
-        {acts.map((a) => <Card key={a.id} a={a} pawed={pawed} paw={paw} setOpen={setOpen} />)}
+        {acts.map((a) => <Card key={a.id} a={a} pawed={pawed} paw={paw} setOpen={setOpen} onDog={onDog} />)}
         {real.hasMore && <button className="cta white bordered" onClick={real.more} disabled={real.loadingMore}>{real.loadingMore ? 'Loading' : 'Show older outings'}</button>}
       </div>}
     </div>
   )
 }
 
-function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, me, openSettings, openCompete }) {
+const DemoSwitch = ({ dd, setDk }) => <div className="dogswitch" role="group" aria-label="Switch dog">{Object.values(DEMO_DOGS).map((d) => <button key={d.key} className={`chip flat ${d.key === dd.key ? 'on' : ''}`} aria-pressed={d.key === dd.key} onClick={() => setDk(d.key)}>{d.dog.name}</button>)}</div>
+
+function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, me, openSettings, openCompete, dd, setDk, onDog }) {
   const [feed, setFeed] = useState('biscuit')
-  const list = feed === 'biscuit' ? acts : [...PACK, ...acts].sort((a, b) => a.daysAgo - b.daysAgo)
+  const D = dd.dog
+  // Dale's own dogs are never in "the pack".
+  const list = feed === 'biscuit' ? acts : [...PACK.filter((x) => !demoDogByName(x.dog)), ...acts].sort((a, b) => a.daysAgo - b.daysAgo)
   return (
     <div className="scroll">
       <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Demo, viewing as {PEOPLE[me].name}</div><Gear onClick={openSettings} /></div></header>
+      <DemoSwitch dd={dd} setDk={setDk} />
       <section className="hero">
-        <div className="row g14"><DogAv name="Biscuit" demo s={56} bg="#C8F031" c="#0F1B2D" /><div className="grow"><div className="eyebrow">BISCUIT THIS WEEK</div><div className="row g20"><Stat light l="MILES" v={week.miles.toFixed(1)} /><Stat light l="OUTINGS" v={week.walks} /><Stat light l="STREAK" v={DOG.streak + ' d'} /></div></div></div>
-        <Range min={todayMin} light />
-        <button className="cta" onClick={() => setTab('record')}><Paw s={22} c="#0F1B2D" />Walk Biscuit</button>
+        <div className="row g14"><button className="doglink" aria-label={`Open ${D.name}'s profile`} onClick={() => setTab('dog')}><DogAv name={D.name} demo s={56} bg="#C8F031" c="#0F1B2D" /></button><div className="grow"><div className="eyebrow">{D.name.toUpperCase()} THIS WEEK</div><div className="row g20"><Stat light l="MILES" v={week.miles.toFixed(1)} /><Stat light l="OUTINGS" v={week.walks} /><Stat light l="STREAK" v={D.streak + ' d'} /></div></div></div>
+        <Range min={todayMin} light dog={D} />
+        <button className="cta" onClick={() => setTab('record')}><Paw s={22} c="#0F1B2D" />Walk {D.name}</button>
       </section>
-      <CompeteCard open={openCompete} name="Biscuit" />
-      <div className="seg" role="tablist"><button role="tab" aria-selected={feed === 'biscuit'} className={feed === 'biscuit' ? 'on' : ''} onClick={() => setFeed('biscuit')}>Biscuit</button><button role="tab" aria-selected={feed === 'pack'} className={feed === 'pack' ? 'on' : ''} onClick={() => setFeed('pack')}>The pack</button></div>
-      <div className="list">{list.map((a) => <Card key={a.id} a={a} pawed={pawed} paw={paw} setOpen={setOpen} />)}</div>
+      <CompeteCard open={openCompete} name={D.name} />
+      <div className="seg" role="tablist"><button role="tab" aria-selected={feed === 'biscuit'} className={feed === 'biscuit' ? 'on' : ''} onClick={() => setFeed('biscuit')}>{D.name}</button><button role="tab" aria-selected={feed === 'pack'} className={feed === 'pack' ? 'on' : ''} onClick={() => setFeed('pack')}>The pack</button></div>
+      <div className="list">{list.map((a) => <Card key={a.id} a={a} pawed={pawed} paw={paw} setOpen={setOpen} onDog={onDog} />)}</div>
     </div>
   )
 }

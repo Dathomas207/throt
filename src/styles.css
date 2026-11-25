@@ -132,3 +132,6 @@ img.av{object-fit:cover;display:block}.av.avart{overflow:hidden}.av.avart svg{wi
 .pbtn{width:100%;text-align:left}.herobtn{display:flex;flex-direction:column;gap:14px;width:100%;color:inherit;border-radius:10px}.herobtn:focus-visible{outline-color:var(--volt)}.herolink{font-size:13px;font-weight:700;color:var(--volt);text-decoration:underline;text-underline-offset:3px}
 .bigname.small{font-size:26px}button.publink{width:100%;text-align:left}
 .detail .subtabs{position:static;flex-shrink:0}
+.cardhead{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:12px 16px 0}.cardhead .dogname,.cardhead .meta{display:block}.cardhead+.cardtop{padding-top:8px}
+.dogswitch.inprof{padding:0}.dogswitch.inprof .chip{background:#18294A;color:#fff;border-color:#2A3A52}.dogswitch.inprof .chip.on{background:var(--volt);color:var(--ink);border-color:var(--volt)}.dogswitch.inprof .chip:focus-visible{outline-color:var(--volt)}
+button.brow{width:100%;text-align:left}

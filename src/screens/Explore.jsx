@@ -556,7 +556,7 @@ export default function Explore({ setTab, setToast, dogName }) {
           <div className="row between top"><div><h2>{listHead}</h2>{listMeta && <div className="meta">{listMeta}</div>}</div></div>
           {places.slice(0, MAX_PINS).map((x) => (
             <div key={x.id} className={`prow ${hi === x.id ? 'hi' : ''}`} ref={(n) => { if (n) rows.current.set(x.id, n); else rows.current.delete(x.id) }}>
-              <button className="rrow" aria-pressed={hi === x.id} onClick={() => rowTap(x)}><CatDot c={x.category} community={x.community && !x.curated} /><span className="grow"><b>{x.name}</b><small>{x.community ? communityLine(x) : x.kind + (x.tags.length ? ' · ' + x.tags.slice(0, 2).join(' · ') : '')}</small></span>{x.d != null && <span className="num">{fmtDist(x.d)}</span>}</button>
+              <button className="rrow" aria-pressed={hi === x.id} onClick={() => rowTap(x)}><CatDot c={x.category} community={x.community && !x.curated} /><span className="grow"><b>{x.name}</b><small>{x.community ? communityLine(x) : x.kind + (x.tags.length ? ' · ' + x.tags.slice(0, 2).join(' · ') : '')}</small>{x.curated && x.note && <small className="rnote">{x.note}</small>}{x.curated && x.address && <small className="rnote dim">{String(x.address).replace(/, NC \d{5}$/, '')}</small>}</span>{x.d != null && <span className="num">{fmtDist(x.d)}</span>}</button>
               {hi === x.id && <button className="cta bordered small" onClick={() => openPlace(x.id)}>Details</button>}
             </div>
           ))}

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Ic, Av, DogAv, Confirm, usePhoto } from '../ui.jsx'
 import { api } from '../api.js'
-import { DEMO_BOARD, DEMO_CHALLENGES } from '../data.js'
+import { DEMO_BOARD, DEMO_CHALLENGES, demoDogByName } from '../data.js'
 
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 const day = (s) => new Date(s + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -14,7 +14,7 @@ function BoardAv({ r }) { const src = usePhoto(r.photoUrl); return <Av t={(r.nam
 
 // One hub for leaderboards, challenges and events. Signed in it reads the API. In the demo the boards
 // and challenges are samples built from the demo walks, and the events are the real curated list.
-export default function Compete({ close, real, acts, setToast, start = 'boards', hasApi }) {
+export default function Compete({ close, real, acts, setToast, start = 'boards', hasApi, demoName = 'Biscuit', onDog }) {
   const back = useRef(null)
   const [tab, setTab] = useState(start)
   useEffect(() => { if (back.current) back.current.focus() }, [])
@@ -24,18 +24,18 @@ export default function Compete({ close, real, acts, setToast, start = 'boards',
       <header className="dhead"><button ref={back} className="round flat" aria-label="Back" onClick={close}><Ic n="back" /></button><b>Compete</b><span className="round flat" aria-hidden="true" /></header>
       <div className="subtabs" role="tablist">{[['boards', 'Leaderboards'], ['challenges', 'Challenges'], ['events', 'Events']].map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
       <div className="scroll">
-        {tab === 'boards' && (real ? <RealBoards real={real} /> : <DemoBoards acts={acts} />)}
-        {tab === 'challenges' && (real ? <RealChallenges real={real} setToast={setToast} /> : <DemoChallenges acts={acts} setToast={setToast} />)}
+        {tab === 'boards' && (real ? <RealBoards real={real} /> : <DemoBoards acts={acts} name={demoName} onDog={onDog} />)}
+        {tab === 'challenges' && (real ? <RealChallenges real={real} setToast={setToast} /> : <DemoChallenges acts={acts} setToast={setToast} name={demoName} />)}
         {tab === 'events' && <Events real={real} setToast={setToast} hasApi={real ? true : hasApi} />}
       </div>
     </div>
   )
 }
 
-function Rows({ rows, metric, link }) {
+function Rows({ rows, metric, link, onDog }) {
   return <ol className="board">{rows.map((r) => {
     const inner = <><span className="rk num">{r.rank}</span>{link ? <BoardAv r={r} /> : <DogAv name={r.name} demo s={36} />}<span className="grow"><b>{r.name}{r.you && <span className="you">Your dog</span>}{r.isDemo && <span className="tagx">Demo dog</span>}</b><small>{r.breed}</small></span><span className="num">{fmtVal(r.value, metric)}</span></>
-    return <li key={r.slug || r.name} className={r.you ? 'me' : ''}>{link ? <a className="brow" href={`/d/${r.slug}`} target="_blank" rel="noopener" aria-label={`${r.name}, rank ${r.rank}, ${fmtVal(r.value, metric)}. Opens the public page`}>{inner}</a> : <div className="brow">{inner}</div>}</li>
+    return <li key={r.slug || r.name} className={r.you ? 'me' : ''}>{link ? <a className="brow" href={`/d/${r.slug}`} target="_blank" rel="noopener" aria-label={`${r.name}, rank ${r.rank}, ${fmtVal(r.value, metric)}. Opens the public page`}>{inner}</a> : onDog ? <button className="brow" onClick={() => onDog(r.name)} aria-label={`${r.name}, rank ${r.rank}, ${fmtVal(r.value, metric)}. Opens the profile`}>{inner}</button> : <div className="brow">{inner}</div>}</li>
   })}</ol>
 }
 
@@ -69,16 +69,17 @@ function RealBoards({ real }) {
     </div>}
   </div>
 }
-function DemoBoards({ acts }) {
+function DemoBoards({ acts, name, onDog }) {
   const [metric, setMetric] = useState('miles')
   const w = acts.filter((a) => a.daysAgo <= 6 && a.type !== 'Daycare')
-  const mine = { name: 'Biscuit', breed: 'Golden Retriever', you: true, miles: Math.round(w.reduce((s, a) => s + a.miles, 0) * 10) / 10, minutes: Math.round(w.reduce((s, a) => s + a.minutes, 0)), outings: w.length, top_speed: Math.max(0, ...w.map((a) => a.maxSpeed || 0)) }
-  const sorted = [mine, ...DEMO_BOARD].map((d) => ({ ...d, value: d[metric] })).sort((a, b) => b.value - a.value)
+  const me = demoDogByName(name)
+  const mine = { name, breed: me ? me.dog.breed : '', you: true, miles: Math.round(w.reduce((s, a) => s + a.miles, 0) * 10) / 10, minutes: Math.round(w.reduce((s, a) => s + a.minutes, 0)), outings: w.length, top_speed: Math.max(0, ...w.map((a) => a.maxSpeed || 0)) }
+  const sorted = [mine, ...DEMO_BOARD.filter((d) => d.name !== name)].map((d) => ({ ...d, value: d[metric] })).sort((a, b) => b.value - a.value)
   const rows = sorted.map((r, i) => ({ ...r, rank: sorted.findIndex((x) => x.value === r.value) + 1 }))
   return <div className="list">
     <div className="card padc"><Seg label="Metric" value={metric} set={setMetric} options={METRICS.map(([k, l]) => [k, l])} /></div>
-    <div className="card padc"><div className="row between g8"><b>This week</b><span className="tagx">Sample</span></div><Rows rows={rows} metric={metric} />
-      <p className="meta">A sample board. Biscuit's number comes from the demo walks, and the other dogs are made up.</p></div>
+    <div className="card padc"><div className="row between g8"><b>This week</b><span className="tagx">Sample</span></div><Rows rows={rows} metric={metric} onDog={onDog} />
+      <p className="meta">A sample board. {name}'s number comes from the demo walks, and the other dogs are made up.</p></div>
   </div>
 }
 
@@ -106,14 +107,14 @@ function RealChallenges({ real, setToast }) {
     {list && <p className="meta padx">Progress is worked out from {dog.name}'s saved walks inside each window (UTC) and is never stored. Finishing a challenge you joined earns its badge.</p>}
   </div>
 }
-function DemoChallenges({ acts, setToast }) {
+function DemoChallenges({ acts, setToast, name }) {
   const [joined, setJoined] = useState(() => { try { return JSON.parse(localStorage.getItem('trot-demo-joins')) || { 'month-25': true } } catch (e) { return { 'month-25': true } } })
   useEffect(() => { try { localStorage.setItem('trot-demo-joins', JSON.stringify(joined)) } catch (e) {} }, [joined])
   const w = acts.filter((a) => a.type !== 'Daycare')
   const prog = { 'month-25': Math.round((DEMO_CHALLENGES[0].base + w.reduce((s, a) => s + a.miles, 0)) * 10) / 10, 'explorer-5': new Set(w.map((a) => a.place).filter(Boolean)).size, 'team-3': new Set(w.map((a) => a.by)).size }
   return <div className="list">
-    {DEMO_CHALLENGES.map((d) => { const c = { ...d, progress: Math.min(prog[d.key], 999), joined: !!joined[d.key], completed: prog[d.key] >= d.target }; return <ChallengeCard key={d.key} c={c} name="Biscuit" sample onJoin={() => { setJoined((j) => ({ ...j, [d.key]: true })); setToast(`Biscuit is in: ${d.name} (demo)`) }} onLeave={() => { setJoined((j) => ({ ...j, [d.key]: false })); setToast(`Biscuit left ${d.name} (demo)`) }} /> })}
-    <p className="meta padx">Sample challenges. Biscuit's progress comes from the demo walks, and joining is kept in this browser only.</p>
+    {DEMO_CHALLENGES.map((d) => { const c = { ...d, progress: Math.min(prog[d.key], 999), joined: !!joined[d.key], completed: prog[d.key] >= d.target }; return <ChallengeCard key={d.key} c={c} name={name} sample onJoin={() => { setJoined((j) => ({ ...j, [d.key]: true })); setToast(`${name} is in: ${d.name} (demo)`) }} onLeave={() => { setJoined((j) => ({ ...j, [d.key]: false })); setToast(`${name} left ${d.name} (demo)`) }} /> })}
+    <p className="meta padx">Sample challenges. {name}'s progress comes from the demo walks, and joining is kept in this browser only.</p>
   </div>
 }
 

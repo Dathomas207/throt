@@ -1737,3 +1737,29 @@ test('curated places: seeded once, geocoded once, hidden until they have coordin
     assert.equal((await mem.query('SELECT COUNT(*) AS n FROM places WHERE curated = TRUE')).rows[0].n * 1, 3 + n)
   } finally { await new Promise((r) => l.s.close(r)); await mem.close() }
 })
+
+test('demo seed: Dale owns Biscuit and Millie, and both have photos, health records, documents and awards', async () => {
+  const mem = await createDb('')
+  const l = await listen(createApp({ db: mem }))
+  try {
+    await seedDemo(mem, { photoDir: path.resolve('public') }); await seedDemo(mem, { photoDir: path.resolve('public') })
+    const dogs = (await mem.query('SELECT d.slug, d.tracking_level, d.goal_minutes, d.photo_v FROM memberships m JOIN dogs d ON d.id = m.dog_id JOIN users u ON u.id = m.user_id WHERE u.name = $1 AND m.role = $2 ORDER BY d.slug', ['Dale', 'owner'])).rows
+    assert.deepEqual(dogs.map((d) => d.slug), ['biscuit', 'millie'], 'one demo person owns both')
+    assert.ok(dogs.every((d) => d.tracking_level === 2 && d.goal_minutes > 0))
+    const team = (await mem.query('SELECT u.name, m.role FROM memberships m JOIN users u ON u.id = m.user_id JOIN dogs d ON d.id = m.dog_id WHERE d.slug = $1 ORDER BY u.name', ['millie'])).rows
+    assert.deepEqual(team.map((t) => [t.name, t.role]), [['Dale', 'owner'], ['Pat', 'walker'], ['Sue', 'family']])
+    for (const slug of ['biscuit', 'millie']) {
+      const n = async (t) => (await mem.query(`SELECT COUNT(*) AS n FROM ${t} x JOIN dogs d ON d.id = x.dog_id WHERE d.slug = $1`, [slug])).rows[0].n * 1
+      assert.equal(await n('health_entries'), 11, `${slug}: health entries, not doubled by a second seed`)
+      assert.equal(await n('documents'), 2)
+      assert.ok((await n('awards')) >= 1)
+      assert.ok((await mem.query('SELECT COUNT(DISTINCT type) AS n FROM walks w JOIN dogs d ON d.id = w.dog_id WHERE d.slug = $1 AND w.max_speed IS NOT NULL', [slug])).rows[0].n * 1 >= 2, 'several activity types with speed stats')
+      const page = await call('GET', `/d/${slug}`, { from: l.url })
+      assert.equal(page.status, 200)
+      assert.ok(page.text.includes('Demo dog') && page.text.includes('AWARDS') && page.text.includes(`/api/public/dogs/${slug}/photo`), `${slug}: public page with photo and awards`)
+      const photo = await fetch(`${l.url}/api/public/dogs/${slug}/photo`)
+      assert.deepEqual([photo.status, photo.headers.get('content-type')], [200, 'image/jpeg'])
+      assert.ok(!page.text.includes('certificate (sample)'), 'documents are not public')
+    }
+  } finally { await new Promise((r) => l.s.close(r)); await mem.close() }
+})
