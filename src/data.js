@@ -87,7 +87,7 @@ export function fmtTime(min) { const m = Math.floor(min), s = Math.round((min - 
 export function haversine(a, b) { const R = 3958.8, r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r; const x = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)) }
 
 // Pace statistics for the demo walks. Speeds come from the phone carried on the walk, in miles per hour.
-const BURST = { Walk: [1.9, 2], Hike: [1.7, 1], Run: [1.6, 6], Swim: [1.5, 0], Fetch: [2.6, 9], Training: [1.8, 3], 'Dog park': [2.4, 7], Daycare: [0, 0] }
+const BURST = { 'Play time': [2.6, 8], Agility: [2.4, 10], Walk: [1.9, 2], Hike: [1.7, 1], Run: [1.6, 6], Swim: [1.5, 0], Fetch: [2.6, 9], Training: [1.8, 3], 'Dog park': [2.4, 7], Daycare: [0, 0] }
 for (const a of [...SEED, ...PACK]) {
   const hrs = a.minutes / 60, avg = a.miles > 0 && hrs > 0 ? a.miles / hrs : 0, b = BURST[a.type] || BURST.Walk
   a.avgSpeed = Math.round(avg * 10) / 10
@@ -95,3 +95,18 @@ for (const a of [...SEED, ...PACK]) {
   a.sprints = avg ? b[1] : 0
   a.movingMinutes = Math.round(a.minutes * 0.88)
 }
+
+// Activity types. `gps` types record a route; the others are timed sessions. `stats` lists what to show first.
+export const ACTIVITY_TYPES = [
+  { id: 'Walk', label: 'Walk', gps: true, stats: ['distance', 'time', 'maxSpeed'] },
+  { id: 'Run', label: 'Run', gps: true, stats: ['distance', 'pace', 'maxSpeed', 'sprints'] },
+  { id: 'Hike', label: 'Hike', gps: true, stats: ['distance', 'time', 'maxSpeed'] },
+  { id: 'Play time', label: 'Play time', gps: false, stats: ['time', 'sprints'] },
+  { id: 'Fetch', label: 'Fetch', gps: true, stats: ['time', 'sprints', 'maxSpeed'] },
+  { id: 'Dog park', label: 'Dog park', gps: true, stats: ['time', 'sprints', 'maxSpeed'] },
+  { id: 'Swim', label: 'Swim', gps: false, stats: ['time'] },
+  { id: 'Training', label: 'Training', gps: false, stats: ['time'] },
+  { id: 'Agility', label: 'Agility', gps: false, stats: ['time', 'sprints'] },
+  { id: 'Daycare', label: 'Daycare', gps: false, stats: ['time'] },
+]
+export const activityType = (id) => ACTIVITY_TYPES.find((t) => t.id === id) || ACTIVITY_TYPES[0]
