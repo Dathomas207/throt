@@ -159,12 +159,22 @@ const demoMem = new Map(), demoBusy = new Map()
 const seededRoute = (key) => { const r = ROUTES[key]; return r ? { pts: r.pts, miles: r.miles, minutes: r.minutes, approximate: true } : null }
 const okLine = (v) => v && Array.isArray(v.pts) && v.pts.length > 1 && v.pts.every((p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1])) && v.miles > 0
 // What is known right now, without the network: the routed loop if it is cached, the seeded line otherwise. Null for an unknown key.
+// Waypoints for a seeded route: its own, or a handful taken evenly from its sketched line so the router can put it on real paths.
+function viaOf(r) {
+  if (Array.isArray(r.via) && r.via.length > 1) return r.via
+  const pts = Array.isArray(r.pts) ? r.pts : []
+  if (pts.length < 8) return null
+  const n = 7, out = []
+  for (let i = 0; i < n; i++) out.push(pts[Math.floor((i * (pts.length - 1)) / n)])
+  return out
+}
 export function peekDemoRoute(key) {
   if (demoMem.has(key)) return demoMem.get(key)
   const r = ROUTES[key]
   if (!r) return null
-  if (Array.isArray(r.via) && r.via.length > 1) {
-    try { const v = JSON.parse(localStorage.getItem(DEMO_KEY + key)); if (okLine(v) && v.n === r.via.length) { const out = { pts: v.pts, miles: v.miles, minutes: v.minutes, approximate: false }; demoMem.set(key, out); return out } } catch (e) {}
+  const via0 = viaOf(r)
+  if (via0) {
+    try { const v = JSON.parse(localStorage.getItem(DEMO_KEY + key)); if (okLine(v) && v.n === via0.length) { const out = { pts: v.pts, miles: v.miles, minutes: v.minutes, approximate: false }; demoMem.set(key, out); return out } } catch (e) {}
   }
   return seededRoute(key)
 }
@@ -173,14 +183,15 @@ export function resolveDemoRoute(key, opts = {}) {
   const r = ROUTES[key]
   if (!r) return Promise.resolve(null)
   const known = peekDemoRoute(key)
-  if (!known.approximate || !Array.isArray(r.via) || r.via.length < 2) return Promise.resolve(known)
+  const via = viaOf(r)
+  if (!known.approximate || !via) return Promise.resolve(known)
   if (demoBusy.has(key)) return demoBusy.get(key)
-  const p = routeThrough([...r.via, r.via[0]], opts).then((rt) => {
+  const p = routeThrough([...via, via[0]], opts).then((rt) => {
     demoBusy.delete(key)
     if (rt.approximate || !okLine(rt)) return seededRoute(key)
     const out = { pts: rt.pts, miles: rt.miles, minutes: rt.minutes, approximate: false }
     demoMem.set(key, out)
-    try { localStorage.setItem(DEMO_KEY + key, JSON.stringify({ ...out, n: r.via.length })) } catch (e) {}
+    try { localStorage.setItem(DEMO_KEY + key, JSON.stringify({ ...out, n: via.length })) } catch (e) {}
     return out
   }, () => { demoBusy.delete(key); return seededRoute(key) })
   demoBusy.set(key, p)

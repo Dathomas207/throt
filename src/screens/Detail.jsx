@@ -4,6 +4,7 @@ import { drawCard, shareCard } from '../share.js'
 import { Ic, Paw, Av, DogAv, Stat, Range, Card, whoName, ptsOf, whenOf, Confirm, statsOf, SPEED_NOTE, TypeIc } from '../ui.jsx'
 import { DemoPhoto, hasDemoPhoto } from '../portraits.jsx'
 import { api } from '../api.js'
+import { peekDemoRoute, resolveDemoRoute } from '../routing.js'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine } from '../data.js'
 
 export default function Detail({ a, close, pawed, paw, conn, setToast, setTab, dogName, real }) {
@@ -17,7 +18,12 @@ export default function Detail({ a, close, pawed, paw, conn, setToast, setTab, d
     api.get(`/walks/${a.id}`).then((r) => { if (on && r.walk.route && r.walk.route.length > 1) setFull(r.walk.route) }, () => {})
     return () => { on = false }
   }, [a.id, a.real])
-  const pts = full || ptsOf(a)
+  // Demo activities carry a sketched line. It is swapped for one on real paths when the router answers.
+  const demoKey = typeof a.route === 'string' && ROUTES[a.route] ? a.route : null
+  const [routed, setRouted] = useState(() => (demoKey ? peekDemoRoute(demoKey) : null))
+  useEffect(() => { if (!demoKey) return; let on = true; resolveDemoRoute(demoKey).then((v) => { if (on && v) setRouted(v) }); return () => { on = false } }, [demoKey])
+  const pts = full || (routed && !routed.approximate ? routed.pts : ptsOf(a))
+  const sketch = !!demoKey && !full && (!routed || routed.approximate)
   const mine = !!setTab && a.dog === (dogName || 'Biscuit')
   const [img, setImg] = useState('')
   // The person who logged the outing can delete it, and so can the dog's owner.
@@ -35,12 +41,12 @@ export default function Detail({ a, close, pawed, paw, conn, setToast, setTab, d
     <div className="detail" role="dialog" aria-label={a.title}>
       <header className="dhead"><button className="round flat" aria-label="Back" onClick={close}><Ic n="back" /></button><b className="row g8"><TypeIc t={a.type} c="#0F1B2D" />{a.type}</b><button className="round flat" aria-label="Share" onClick={share}><Ic n="share" /></button></header>
       <div className="scroll">
-        {pts ? <TrotMap route={pts} className="dmap" /> : <div className="dmap nomap">No route for this one. {a.dog} was busy playing.</div>}
+        {pts ? <><TrotMap route={pts} className="dmap" />{sketch && <div className="sketchnote">Sample route, drawn as an approximate line. It is not a recorded walk.</div>}</> : <div className="dmap nomap">No route for this one. {a.dog} was busy playing.</div>}
         <div className="list">
           <div className="padx"><div className="row g10">{mine ? <button className="doglink" aria-label={`Open ${a.dog}'s profile`} onClick={() => { close(); setTab('dog') }}>{av}</button> : av}<div>{mine ? <button className="dogname big doglink" onClick={() => { close(); setTab('dog') }}>{a.dog}</button> : <div className="dogname big">{a.dog}</div>}<div className="meta">{a.type === 'Daycare' ? 'at' : 'with'} <b>{whoName(a)}</b>{p ? ` · ${p.role}` : ''}</div></div></div>
             <h1 className="dtitle">{a.title}</h1><div className="meta">{whenOf(a)}{a.place ? ` · ${a.place}` : ''}</div>{a.note && <p className="note">{a.note}</p>}</div>
           {!a.real && hasDemoPhoto(a.id) && <div className="card"><DemoPhoto id={a.id} /></div>}
-          <div className="card padc grid3">{statsOf(a, true).map(([l, v]) => <Stat key={l} l={l} v={v} />)}<Stat l="PAWS" v={a.paws + (pawed[a.id] ? 1 : 0)} />{!a.real && <Stat l="OF DAILY RANGE" v={Math.round((a.minutes / DOG.rangeMax) * 100) + '%'} />}</div>
+          <div className="card padc grid3">{statsOf(routed && !routed.approximate && !full && a.miles > 0 ? { ...a, miles: routed.miles, avgSpeed: a.minutes > 0 ? routed.miles / (a.minutes / 60) : a.avgSpeed } : a, true).map(([l, v]) => <Stat key={l} l={l} v={v} />)}<Stat l="PAWS" v={a.paws + (pawed[a.id] ? 1 : 0)} />{!a.real && <Stat l="OF DAILY RANGE" v={Math.round((a.minutes / DOG.rangeMax) * 100) + '%'} />}</div>
           {(a.maxSpeed > 0 || a.avgSpeed > 0) && a.type !== 'Daycare' && <p className="meta padx">{SPEED_NOTE}</p>}
           <button className={`cta ${pawed[a.id] ? 'white bordered' : ''}`} onClick={() => paw(a.id)}><Paw s={20} c="#0F1B2D" f={pawed[a.id] ? '#0F1B2D' : 'none'} />{pawed[a.id] ? 'Paw given' : 'Give a paw'}</button>
           <div className="storycard">{img ? <img src={img} alt={`Story card for ${a.title}`} /> : <div className="ph" />}<div><b>Story card ready</b><p>Sized for Instagram Stories, with the route, who {a.dog} went with, and the stats.</p><button className="cta small" onClick={share}>{conn.instagram ? 'Share to Instagram' : 'Save story card'}</button></div></div>

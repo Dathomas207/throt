@@ -135,3 +135,5 @@ img.av{object-fit:cover;display:block}.av.avart{overflow:hidden}.av.avart svg{wi
 .cardhead{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:12px 16px 0}.cardhead .dogname,.cardhead .meta{display:block}.cardhead+.cardtop{padding-top:8px}
 .dogswitch.inprof{padding:0}.dogswitch.inprof .chip{background:#18294A;color:#fff;border-color:#2A3A52}.dogswitch.inprof .chip.on{background:var(--volt);color:var(--ink);border-color:var(--volt)}.dogswitch.inprof .chip:focus-visible{outline-color:var(--volt)}
 button.brow{width:100%;text-align:left}
+
+.sketchnote{font-size:12px;color:#5B6472;padding:6px 16px 0}
