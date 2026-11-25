@@ -74,7 +74,7 @@ function DachshundHead() {
 }
 
 const PORTRAITS = {
-  Biscuit: { Head: GoldenHead, bg: '#C8F031', label: 'Illustration of Biscuit, a golden retriever' },
+  Biscuit: { Head: GoldenHead, bg: '#C8F031', photo: 'biscuit.jpg', label: 'Biscuit, a golden retriever, smiling on the grass' },
   Moose: { Head: BerneseHead, bg: '#C6D4F7', label: 'Illustration of Moose, a Bernese mountain dog' },
   Juno: { Head: CollieHead, bg: '#FFD9CB', label: 'Illustration of Juno, a border collie' },
   Pickle: { Head: DachshundHead, bg: '#1F5AE8', label: 'Illustration of Pickle, a dachshund' },
@@ -83,18 +83,20 @@ export const hasPortrait = (name) => Object.prototype.hasOwnProperty.call(PORTRA
 export function Portrait({ name }) {
   const p = hasPortrait(name) ? PORTRAITS[name] : null
   if (!p) return null
+  if (p.photo) return <img src={import.meta.env.BASE_URL + p.photo} alt={p.label} style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
   return <svg viewBox="0 0 96 96" role="img" aria-label={p.label}><rect width="96" height="96" fill={p.bg} /><p.Head /></svg>
 }
 
 // Illustrated stand-ins for the photo slot on two demo outings.
 const SCENES = {
-  s1: 'Illustration: Biscuit by the pond, holding a stick',
+  s1: 'Biscuit lying on the grass after the walk',
   s4: 'Illustration: Biscuit asleep on a mat at daycare',
 }
 export const hasDemoPhoto = (id) => Object.prototype.hasOwnProperty.call(SCENES, id)
 export function DemoPhoto({ id }) {
   if (!hasDemoPhoto(id)) return null
-  if (id === 's1') return (
+  if (id === 's1') return <img className="demophoto" src={import.meta.env.BASE_URL + 'biscuit-wide.jpg'} alt={SCENES.s1} style={{ display: 'block', width: '100%', aspectRatio: '358 / 170', objectFit: 'cover', objectPosition: '50% 35%' }} />
+  if (id === 's1-illustration') return (
     <svg className="demophoto" viewBox="0 0 358 170" role="img" aria-label={SCENES.s1}>
       <rect width="358" height="170" fill="#C6D4F7" />
       <circle cx="300" cy="38" r="20" fill="#FFE9A8" />
