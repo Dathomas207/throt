@@ -40,7 +40,7 @@ const app = createApp({ db, staticDir, baseUrl, trustProxy })
 const server = app.listen(port, () => {
   console.log(`Trot is listening on port ${port} (${db.kind}), serving ${staticDir}`)
   // Fill the shared map data cache for the launch area (Eastover and central Charlotte) so the first visitor does not wait.
-  if (process.env.WARM_GEO !== '0') (async () => {
+  if (process.env.WARM_GEO === '1') (async () => {
     let ok = 0, bad = 0
     for (const kind of ['parks', 'more']) for (const [x, y] of [[1128, 1619], [1127, 1619], [1128, 1618], [1127, 1618], [1129, 1619], [1128, 1620]]) {
       try { const r = await fetch(`http://127.0.0.1:${port}/api/geo/${kind}/12/${x}/${y}`); r.ok ? ok++ : bad++; await r.arrayBuffer() } catch (e) { bad++ }

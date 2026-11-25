@@ -31,13 +31,6 @@
    "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
   },
   {
-   "name": "Shuffletown Dog Park",
-   "category": "park",
-   "address": "9500 Belhaven Boulevard, Charlotte, NC 28216",
-   "note": "County dog park in Shuffletown Park, about 4.6 acres, fenced.",
-   "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
-  },
-  {
    "name": "Swaney Pointe K-9 Park",
    "category": "park",
    "address": "18441 Nantz Road, Cornelius, NC 28031",
@@ -155,6 +148,265 @@
    "address": "2911 Griffith Street, Charlotte, NC 28203",
    "note": "South End restaurant and brewery listed with a dog-friendly patio.",
    "source_url": "https://www.sydnicolephotography.com/blog/the-best-pet-friendly-restaurants-breweries-in-charlotte-nc/"
+  },
+  {
+   "name": "Sycamore Brewing",
+   "category": "bar",
+   "address": "2151 Hawkins Street, Charlotte, NC 28203",
+   "note": "South End brewery on the Rail Trail, listed with a dog-friendly beer garden.",
+   "source_url": "https://www.sydnicolephotography.com/blog/the-best-pet-friendly-restaurants-breweries-in-charlotte-nc/"
+  },
+  {
+   "name": "Wooden Robot Brewery",
+   "category": "bar",
+   "address": "1440 South Tryon Street, Charlotte, NC 28203",
+   "note": "South End brewery listed with a dog-friendly patio. Dogs stay outside at this location.",
+   "source_url": "https://www.keendogtraining.com/blog/dog-friendly-breweries"
+  },
+  {
+   "name": "The Chamber by Wooden Robot",
+   "category": "bar",
+   "address": "416 East 36th Street, Charlotte, NC 28205",
+   "note": "NoDa taproom. Listed as allowing dogs inside and on the downstairs patio, not on the rooftop.",
+   "source_url": "https://dogclt.com/eat-drink/charlotte-dog-friendly-brewery-guide-noda-villa-heights/"
+  },
+  {
+   "name": "Resident Culture Brewing Company",
+   "category": "bar",
+   "address": "2101 Central Avenue, Charlotte, NC 28205",
+   "note": "Plaza Midwood brewery listed as dog friendly.",
+   "source_url": "https://www.tripswithpets.com/pet-friendly-activities/breweries/united-states/North-carolina/charlotte"
+  },
+  {
+   "name": "Sugar Creek Brewing Company",
+   "category": "bar",
+   "address": "215 Southside Drive, Charlotte, NC 28217",
+   "note": "Brewery listed as dog friendly, with a patio.",
+   "source_url": "https://www.tripswithpets.com/pet-friendly-activities/breweries/united-states/North-carolina/charlotte"
+  },
+  {
+   "name": "Triple C Brewing Company",
+   "category": "bar",
+   "address": "2900 Griffith Street, Charlotte, NC 28203",
+   "note": "South End brewery listed as dog friendly, with a patio.",
+   "source_url": "https://www.gopetfriendly.com/activities/breweries-wineries/nc/charlotte/"
+  },
+  {
+   "name": "Legion Brewing, Plaza Midwood",
+   "category": "bar",
+   "address": "1906 Commonwealth Avenue, Charlotte, NC 28205",
+   "note": "Brewery listed as dog friendly.",
+   "source_url": "https://www.tripswithpets.com/pet-friendly-activities/breweries/united-states/North-carolina/charlotte"
+  },
+  {
+   "name": "Heist Brewery",
+   "category": "bar",
+   "address": "2909 North Davidson Street, Charlotte, NC 28205",
+   "note": "NoDa brewery and restaurant listed as dog friendly.",
+   "source_url": "https://www.tripswithpets.com/pet-friendly-activities/breweries/united-states/North-carolina/charlotte"
+  },
+  {
+   "name": "Trolley Barn Fermentory",
+   "category": "bar",
+   "address": "2104 South Boulevard, Charlotte, NC 28203",
+   "note": "Listed among Charlotte patios for kids and dogs. Ask before bringing a dog inside.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Mac's Speed Shop",
+   "category": "cafe",
+   "address": "2511 South Boulevard, Charlotte, NC 28203",
+   "note": "Listed among Charlotte patios for kids and dogs, with a large patio.",
+   "source_url": "https://www.scoopcharlotte.com/2023/06/16/best-kid-dog-friendly-patios-around-charlotte-for-2023/"
+  },
+  {
+   "name": "RuRu's Tacos and Tequila",
+   "category": "cafe",
+   "address": "715 Providence Road, Charlotte, NC 28207",
+   "note": "Listed among Charlotte patios for kids and dogs. Ask before bringing a dog inside.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Dilworth Neighborhood Grille",
+   "category": "cafe",
+   "address": "911 East Morehead Street, Charlotte, NC 28204",
+   "note": "Listed among Charlotte patios for kids and dogs. Ask before bringing a dog inside.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Kid Cashew",
+   "category": "cafe",
+   "address": "1608 East Boulevard, Charlotte, NC 28203",
+   "note": "Dilworth restaurant listed with a spacious patio that suits dog owners.",
+   "source_url": "https://www.keendogtraining.com/blog/dog-friendly-charlotte-restaurants"
+  },
+  {
+   "name": "The Penguin",
+   "category": "cafe",
+   "address": "1531 East Boulevard, Charlotte, NC 28203",
+   "note": "Listed among Charlotte patios for kids and dogs. Ask before bringing a dog inside.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Inizio Pizza Napoletana",
+   "category": "cafe",
+   "address": "2230 Park Road, Charlotte, NC 28203",
+   "note": "Listed among Charlotte patios for kids and dogs. Ask before bringing a dog inside.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Rosemont Market and Wine Bar",
+   "category": "cafe",
+   "address": "1942 East 7th Street, Charlotte, NC 28204",
+   "note": "Listed among Charlotte patios for kids and dogs. Ask before bringing a dog inside.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Milkbread",
+   "category": "cafe",
+   "address": "1431 Central Avenue, Charlotte, NC 28205",
+   "note": "Listed among Charlotte patios for kids and dogs. Ask before bringing a dog inside.",
+   "source_url": "https://www.scoopcharlotte.com/2025/05/04/best-patios-for-kids-dogs/"
+  },
+  {
+   "name": "Moo and Brew",
+   "category": "cafe",
+   "address": "1300 Central Avenue, Charlotte, NC 28205",
+   "note": "Listed as dog friendly on the outdoor patio.",
+   "source_url": "https://www.yahoo.com/news/restaurants-charlotte-dog-friendly-where-100000122.html"
+  },
+  {
+   "name": "JackBeagle's",
+   "category": "cafe",
+   "address": "3213 North Davidson Street, Charlotte, NC 28205",
+   "note": "NoDa restaurant listed as dog friendly.",
+   "source_url": "https://www.yahoo.com/news/restaurants-charlotte-dog-friendly-where-100000122.html"
+  },
+  {
+   "name": "The Goodyear House",
+   "category": "cafe",
+   "address": "3032 North Davidson Street, Charlotte, NC 28205",
+   "note": "NoDa restaurant listed with a spacious, shaded outdoor patio for dogs.",
+   "source_url": "https://www.keendogtraining.com/blog/dog-friendly-charlotte-restaurants"
+  },
+  {
+   "name": "Woof Gang Bakery and Grooming, Dilworth",
+   "category": "shop",
+   "address": "1721 Kenilworth Avenue, Charlotte, NC 28203",
+   "note": "Pet supply store with dog grooming.",
+   "source_url": "https://shop.woofgangbakery.com/202974/page/home-page"
+  },
+  {
+   "name": "Woof Gang Bakery and Grooming, Plaza Midwood",
+   "category": "shop",
+   "address": "1311 Pecan Avenue, Charlotte, NC 28205",
+   "note": "Pet supply store with dog grooming.",
+   "source_url": "https://frommfamily.com/pet-stores/NC/Charlotte"
+  },
+  {
+   "name": "Woof Gang Bakery and Grooming, SouthPark",
+   "category": "shop",
+   "address": "4810 Ashley Park Lane, Charlotte, NC 28210",
+   "note": "Pet supply store with dog grooming.",
+   "source_url": "https://frommfamily.com/pet-stores/NC/Charlotte"
+  },
+  {
+   "name": "Four Dogs Pet Supplies",
+   "category": "shop",
+   "address": "2630 North Davidson Street, Charlotte, NC 28205",
+   "note": "Independent pet supply shop in NoDa.",
+   "source_url": "https://frommfamily.com/pet-stores/NC/Charlotte"
+  },
+  {
+   "name": "Hollywood Feed",
+   "category": "shop",
+   "address": "2400 Park Road, Charlotte, NC 28203",
+   "note": "Pet food and supplies.",
+   "source_url": "https://frommfamily.com/pet-stores/NC/Charlotte"
+  },
+  {
+   "name": "Pet Supplies Plus, Elizabeth",
+   "category": "shop",
+   "address": "2001 East 7th Street, Charlotte, NC 28204",
+   "note": "Pet food and supplies.",
+   "source_url": "https://frommfamily.com/pet-stores/NC/Charlotte"
+  },
+  {
+   "name": "Pet Wants, South End",
+   "category": "shop",
+   "address": "1700 Camden Road, Charlotte, NC 28203",
+   "note": "Dog food and treats shop.",
+   "source_url": "https://www.yelp.com/search?find_desc=Dog+Food+Store&find_loc=Charlotte%2C+NC"
+  },
+  {
+   "name": "Pet Supermarket, Dilworth",
+   "category": "shop",
+   "address": "1408 East Boulevard, Charlotte, NC 28203",
+   "note": "Pet food, supplies and toys.",
+   "source_url": "https://yelp.com/search?cflt=petstore&find_loc=Dilworth%2C+Charlotte%2C+NC+28203"
+  },
+  {
+   "name": "Petco, Metropolitan",
+   "category": "shop",
+   "address": "900 Metropolitan Avenue, Charlotte, NC 28204",
+   "note": "Pet food and supplies.",
+   "source_url": "https://www.yelp.com/search?find_desc=Pet+Stores+That+Sell+Dogs&find_loc=Plaza+Midwood%2C+Charlotte%2C+NC"
+  },
+  {
+   "name": "Dilworth Animal Hospital",
+   "category": "vet",
+   "address": "820 East Boulevard, Charlotte, NC 28203",
+   "note": "Veterinary hospital in Dilworth.",
+   "source_url": "https://dilworthanimalhospital.com/area-emergency-services"
+  },
+  {
+   "name": "GoodVets Myers Park",
+   "category": "vet",
+   "address": "1057 Providence Road, Charlotte, NC 28207",
+   "note": "Veterinary clinic for dogs and cats.",
+   "source_url": "https://goodvets.com/locations/charlotte/myers-park"
+  },
+  {
+   "name": "Charlotte Animal Referral and Emergency (CARE)",
+   "category": "vet",
+   "address": "3726 Latrobe Drive, Charlotte, NC 28211",
+   "note": "Emergency vet, listed as open 24 hours.",
+   "source_url": "https://dilworthanimalhospital.com/area-emergency-services"
+  },
+  {
+   "name": "Veterinary Emergency Group, Sharon Corners",
+   "category": "vet",
+   "address": "4716 Sharon Road, Charlotte, NC 28210",
+   "note": "Emergency vet, listed as open 24 hours.",
+   "source_url": "https://dilworthanimalhospital.com/area-emergency-services"
+  },
+  {
+   "name": "Carolina Veterinary emergency hospital, Township Road",
+   "category": "vet",
+   "address": "2225 Township Road, Charlotte, NC 28273",
+   "note": "Emergency vet, listed as open 24 hours.",
+   "source_url": "https://dilworthanimalhospital.com/area-emergency-services"
+  },
+  {
+   "name": "South End Veterinary Clinic",
+   "category": "vet",
+   "address": "2135 Southend Drive, Charlotte, NC 28203",
+   "note": "Veterinary clinic in South End.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "Pet Palace Charlotte",
+   "category": "care",
+   "address": "2320 Wilkinson Boulevard, Charlotte, NC 28208",
+   "note": "Dog boarding, daycare and grooming.",
+   "source_url": "https://www.petpalaceresort.com/locations/pet-palace-charlotte/"
+  },
+  {
+   "name": "Shuffletown Dog Park",
+   "category": "park",
+   "address": "Shuffletown Park, Belhaven Boulevard, Charlotte, NC",
+   "note": "County dog park in Shuffletown Park, about 4.6 acres, fenced.",
+   "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
   }
  ]
 }
