@@ -26,7 +26,7 @@ const TYPE_ICON = {
   Agility: 'M5 21V7M19 21V7M5 10.500h14M5 15h14M8 5c2.500-2.500 6-2.500 8.500 .5M16.500 2.500v3h-3',
 }
 const TypeIc = ({ id, s = 18, c = 'currentColor' }) => <svg aria-hidden="true" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={TYPE_ICON[id] || TYPE_ICON.Walk} /></svg>
-const lastViewCenter = () => { try { const v = JSON.parse(localStorage.getItem('trot-view')); if (v && Array.isArray(v.at) && Number.isFinite(v.at[0]) && Number.isFinite(v.at[1])) return v.at } catch (e) {} return null }
+const lastViewCenter = () => { try { const v = JSON.parse(localStorage.getItem('trot-view-v2')); if (v && Array.isArray(v.at) && Number.isFinite(v.at[0]) && Number.isFinite(v.at[1])) return v.at } catch (e) {} return null }
 const mph = (v) => (Number(v) || 0).toFixed(1) + ' mph'
 
 export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast, meName, dogName }) {

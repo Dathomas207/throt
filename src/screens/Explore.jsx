@@ -19,7 +19,8 @@ const DEBOUNCE_MS = 350
 const BUILD_ZOOM = 15
 const LOCATE_MOVE_MS = 2000 // a location that arrives later than this only adds the dot; the view is left alone
 const MOVED_FRACTION = 0.3 // how far the view has to move, as a share of the screen, before "Search this area" is offered
-const VIEW_KEY = 'trot-view', LAYERS_KEY = 'trot-layers-v2'
+const HOME = [35.186, -80.812] // Eastover, Charlotte: the launch area, where the listed places are
+const VIEW_KEY = 'trot-view-v2', LAYERS_KEY = 'trot-layers-v2'
 const LAYER_DEFAULTS = { places: true, trails: false, heat: false, community: true, saved: false }
 const LAYER_LABELS = [['places', 'Places'], ['trails', 'Trails'], ['heat', 'Heatmap'], ['community', 'Community places'], ['saved', 'Saved routes']]
 const SNAPS = ['peek', 'half', 'full']
@@ -97,8 +98,8 @@ export default function Explore({ setTab, setToast, dogName }) {
   const t0 = useRef(performance.now()).current
   const first = useRef(readView()).current // the last area looked at, so the first paint is already there
   const [user, setUser] = useState(null)
-  const [view, setView] = useState(() => ({ at: first ? first.at : DEFAULT_CENTER, zoom: first ? first.zoom : 13, n: 1 }))
-  const [origin, setOrigin] = useState(first ? first.at : DEFAULT_CENTER)
+  const [view, setView] = useState(() => ({ at: first ? first.at : HOME, zoom: first ? first.zoom : 13, n: 1 }))
+  const [origin, setOrigin] = useState(first ? first.at : HOME)
   const [areaLabel, setAreaLabel] = useState('')
   const [parks, setParks] = useState(NO_GROUP) // dog parks and dog-tagged parks: the small first request
   const [more, setMore] = useState(NO_GROUP) // everything else, loaded after the first paint or when a chip needs it
@@ -149,7 +150,8 @@ export default function Explore({ setTab, setToast, dogName }) {
     const l = lastLoad.current
     if (!l || id !== req.current || commFor.current === id || !communityOn()) return
     commFor.current = id
-    const { s, w, n, e } = l.bbox, key = bboxKey(snapBbox(l.bbox))
+    // Listed places are few, so they are asked for across a wider area than the map data: about 6 miles each way.
+    const key = bboxKey(snapBbox(l.bbox)), s = l.bbox.s - 0.09, n = l.bbox.n + 0.09, w = l.bbox.w - 0.11, e = l.bbox.e + 0.11
     const kept = readJSON(COMM_KEY)
     if (kept && kept.key === key) setComm(normalizeCommunity(kept.places))
     Promise.resolve().then(() => api.places.list({ s, w, n, e })).then((r) => { if (!alive.current || id !== req.current) return; perfMark('first-listed-places', t0); setComm(normalizeCommunity(r && r.places)); writeJSON(COMM_KEY, { key, places: (r && r.places) || [] }) }, () => {})
@@ -180,18 +182,14 @@ export default function Explore({ setTab, setToast, dogName }) {
       perfMark('first-places', t0)
       if (!r.failed) setParks({ status: 'done', places: r.places, updating: false, clamped: r.clamped })
       else if (c1) setParks({ status: 'done', places: c1.places, updating: false, old: c1.old, refreshFailed: true })
-      else if (!opts.stay && !touched.current) {
-        // Nothing cached and no live data on a first visit: show the labelled sample places, which are around Cambridge.
-        // The center sits south of them so the pins land above the sheet.
-        setParks({ status: 'done', places: samplePlaces(), updating: false, sample: true }); setOrigin(DEFAULT_CENTER); goTo([42.3, -71.128], 11)
-      } else setParks({ status: 'done', places: [], updating: false, failed: true })
+      else setParks({ status: 'done', places: [], updating: false, failed: true })
       idle(() => { if (!alive.current || id !== req.current) return; loadMore(id); if (layersRef.current.trails) loadTrails(id) })
     })
   }
   useEffect(() => {
     alive.current = true
     perfMark('explore-mounted', t0)
-    const c0 = first ? first.at : DEFAULT_CENTER
+    const c0 = first ? first.at : HOME
     load(bboxAround(c0, 2), c0, { stay: !!first })
     // Location never holds up the screen. If it comes quickly and the map has not been touched, the map goes there.
     // After that it only adds the dot.
@@ -549,7 +547,7 @@ export default function Explore({ setTab, setToast, dogName }) {
         {!b.on && !add && !dk && filter !== 'trails' && (<>
           {(summary || updating) && <div className="asum">{summary && <span>{summary}</span>}{updating && <Updating />}</div>}
           {parks.sample && <div className="mnote"><span className="grow"><b>Showing sample places.</b> Live map data could not be loaded, so these are demo places around Cambridge, MA.</span><button onClick={retry}>Retry</button></div>}
-          {parks.failed && <div className="mnote"><span className="grow"><b>Places could not be loaded.</b> The map data service did not answer for this area. Nothing is shown rather than guessed.</span><button onClick={retry}>Retry</button></div>}
+          {parks.failed && <div className={places.length ? 'mnote info' : 'mnote'}><span className="grow">{places.length ? <>Showing listed places. More from OpenStreetMap could not be loaded just now.</> : <><b>Places could not be loaded.</b> The map data service did not answer for this area. Nothing is shown rather than guessed.</>}</span><button onClick={retry}>Retry</button></div>}
           {(parks.refreshFailed || more.refreshFailed) && <div className="mnote info"><span className="grow">Showing places saved from an earlier visit. They could not be refreshed just now.</span><button onClick={retry}>Retry</button></div>}
           {more.failed && !parks.failed && !parks.sample && <div className="mnote info"><span className="grow">Bars, cafes, shops and vets could not be loaded just now. Parks are shown.</span><button onClick={() => { moreFor.current = 0; loadMore(req.current) }}>Retry</button></div>}
           {parks.clamped && <div className="mnote info"><span className="grow">That is a big area. Showing places near the middle of the map. Zoom in to search more closely.</span></div>}
