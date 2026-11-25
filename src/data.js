@@ -1,5 +1,5 @@
 // Demo data. Places and coordinates are approximate samples around Cambridge, MA.
-const C = [42.3852, -71.1492]
+const C = [42.3850, -71.1492]
 function loop(center, rLat, rLng, n = 90, phase = 0) {
   const pts = []
   for (let i = 0; i <= n; i++) {
@@ -7,6 +7,13 @@ function loop(center, rLat, rLng, n = 90, phase = 0) {
     const w = 1 + 0.12 * Math.sin(3 * t) + 0.06 * Math.cos(5 * t)
     pts.push([center[0] + rLat * w * Math.sin(t), center[1] + rLng * w * Math.cos(t)])
   }
+  return pts
+}
+// A plain ellipse sized to sit outside the pond's shoreline. It is still an approximation:
+// `via` lists points around the pond so the walking router can replace it with the real path.
+function ring(center, rLat, rLng, n = 96, phase = 0) {
+  const pts = []
+  for (let i = 0; i <= n; i++) { const t = (i / n) * Math.PI * 2 + phase; pts.push([center[0] + rLat * Math.sin(t), center[1] + rLng * Math.cos(t)]) }
   return pts
 }
 function path(a, b, n = 40, bend = 0.0012) {
@@ -18,7 +25,7 @@ function path(a, b, n = 40, bend = 0.0012) {
   return pts
 }
 export const ROUTES = {
-  pond: { name: 'Pond perimeter loop', miles: 2.4, minutes: 48, note: 'Flat · mostly shaded · water access', pts: loop(C, 0.0036, 0.0052, 90, -2.2) },
+  pond: { name: 'Pond perimeter loop', miles: 2.4, minutes: 48, note: 'Flat · mostly shaded · water access', pts: ring(C, 0.0055, 0.0082, 96, -2.2), via: [[42.3905, -71.1490], [42.3890, -71.1425], [42.3850, -71.1408], [42.3800, -71.1455], [42.3805, -71.1535], [42.3850, -71.1576], [42.3893, -71.1548]] },
   meadow: { name: 'Lusitania Meadow out and back', miles: 1.1, minutes: 24, note: 'Easy · off-leash stretch', pts: path([42.3829, -71.1440], [42.3868, -71.1408]).concat(path([42.3868, -71.1408], [42.3829, -71.1440]).slice(1)) },
   danehy: { name: 'Danehy Park lap', miles: 1.8, minutes: 41, note: 'Open fields · fenced dog run', pts: loop([42.3889, -71.1370], 0.0022, 0.0034, 70, 1) },
   fells: { name: 'Sheepfold and Skyline', miles: 5.9, minutes: 142, note: 'Hilly · off-leash meadow · rocky', pts: loop([42.4530, -71.1090], 0.0085, 0.011, 110, 0.4) },
