@@ -39,6 +39,14 @@ try {
 const app = createApp({ db, staticDir, baseUrl, trustProxy })
 const server = app.listen(port, () => {
   console.log(`Trot is listening on port ${port} (${db.kind}), serving ${staticDir}`)
+  // Fill the shared map data cache for the launch area (Eastover and central Charlotte) so the first visitor does not wait.
+  if (process.env.WARM_GEO !== '0') (async () => {
+    let ok = 0, bad = 0
+    for (const kind of ['parks', 'more']) for (const [x, y] of [[1128, 1619], [1127, 1619], [1128, 1618], [1127, 1618], [1129, 1619], [1128, 1620]]) {
+      try { const r = await fetch(`http://127.0.0.1:${port}/api/geo/${kind}/12/${x}/${y}`); r.ok ? ok++ : bad++; await r.arrayBuffer() } catch (e) { bad++ }
+    }
+    console.log(`Map data warmed for Charlotte: ${ok} tiles ready, ${bad} failed`)
+  })()
   // One lookup a second, in the background, so startup never waits on it. GEOCODE=0 turns it off.
   if (process.env.GEOCODE !== '0') geocodePlaces(db).then((r) => { if (r.found || r.failed) console.log(`Curated places geocoded: ${r.found} found, ${r.failed} to retry at the next start`) }, (e) => console.error('Geocoding stopped:', e.message))
 })

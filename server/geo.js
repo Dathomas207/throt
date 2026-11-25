@@ -92,7 +92,7 @@ export function geoRouter(db, opts = {}) {
       try {
         const query = queryFor(t.kind, t.z, t.x, t.y)
         let elements = null, err = null
-        for (const url of endpoints) { try { elements = await ask(url, query); break } catch (e) { err = e } }
+        for (const url of endpoints) { try { elements = await ask(url, query); break } catch (e) { err = e; if (!opts.quiet) console.warn(`Map data: ${new URL(url).host} failed for ${t.key}: ${(e && e.message) || e}`) } }
         if (!elements) throw err || new Error('Overpass did not answer')
         const entry = { body: JSON.stringify(elements), fetchedAt: now() }
         // Very large answers are passed through but not stored.
