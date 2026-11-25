@@ -132,10 +132,12 @@ ${w.route ? routeSvg(w.route) : ''}
   const KIND = { title: 'Title', ribbon: 'Ribbon', certificate: 'Certificate', trick: 'Trick', other: 'Award' }
   // Recorded by the owner, who chose to show them here. Trot does not check them.
   const awards = (dog.awards || []).map((a) => `<div class="award"><span class="rib" aria-hidden="true"></span><div><div class="aw">${esc(a.title)}</div><div class="meta">${esc([KIND[a.kind] || 'Award', a.placement, a.eventName, a.awardedOn ? fmtDate(a.awardedOn + 'T00:00:00Z') : ''].filter(Boolean).join(' · '))}</div></div></div>`).join('')
+  const ROLE = { owner: 'Owner', family: 'Family', walker: 'Dog walker', daycare: 'Daycare' }
+  const team = (dog.team || []).map((m) => `<div class="award"><div><div class="aw">${esc(m.name)}</div><div class="meta">${esc(ROLE[m.role] || 'Care team')}</div></div></div>`).join('')
   const body = `
 <header class="prof">
 <a class="logo" href="/">TROT</a>
-<div class="who">${dog.photoUrl ? `<img class="av" src="${esc(dog.photoUrl)}" alt="Photo of ${esc(dog.name)}" width="72" height="72">` : `<div class="av" aria-hidden="true">${esc(initial)}</div>`}<div><h1>${esc(dog.name)}</h1>${dog.breed ? `<div class="sub">${esc(dog.breed)}</div>` : ''}${dog.isDemo ? '<div class="demo">Demo dog</div>' : ''}</div></div>
+<div class="who">${dog.photoUrl ? `<img class="av" src="${esc(dog.photoUrl)}" alt="Photo of ${esc(dog.name)}" width="72" height="72">` : `<div class="av" aria-hidden="true">${esc(initial)}</div>`}<div><h1>${esc(dog.name)}</h1>${dog.breed || dog.city ? `<div class="sub">${esc([dog.breed, dog.city].filter(Boolean).join(' · '))}</div>` : ''}${dog.isDemo ? '<div class="demo">Demo dog</div>' : ''}</div></div>
 ${dog.bio ? `<p class="bio">${esc(dog.bio)}</p>` : ''}
 <div class="eyebrow">LIFETIME</div>
 <div class="stats">${stat('MILES', fmtMi(life.miles))}${stat('OUTINGS', life.outings)}${stat('TIME OUT', fmtMin(life.minutes))}</div>
@@ -144,6 +146,7 @@ ${dog.bio ? `<p class="bio">${esc(dog.bio)}</p>` : ''}
 <a class="cta" href="/">Open Trot</a>
 </header>
 <main class="list">
+${team ? `<h2>CARE TEAM</h2><div class="card pad">${team}</div>` : ''}
 ${awards ? `<h2>AWARDS</h2><div class="card pad">${awards}</div>` : ''}
 <h2>RECENT OUTINGS</h2>
 ${walks || `<div class="card empty">No outings yet. ${esc(dog.name)}'s first walk will show up here.</div>`}

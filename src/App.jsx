@@ -116,8 +116,8 @@ function DemoApp({ leaveDemo, signedIn, hasApi }) {
     <div className="shell">
       <main className="screen">
         {tab === 'home' && <Home {...ctx} />}
-        {tab === 'explore' && <Explore {...ctx} />}
-        {tab === 'record' && <Record {...ctx} />}
+        {tab === 'explore' && <Explore {...ctx} dogName={dd.dog.name} />}
+        {tab === 'record' && <Record {...ctx} dogName={dd.dog.name} />}
         {tab === 'people' && <People {...ctx} />}
         {tab === 'dog' && <DogTab {...ctx} />}
       </main>

@@ -1,16 +1,22 @@
 # Trot on Render: one Node web service (API, public dog pages and the built app)
-# plus a Postgres database. This replaces the earlier static site.
+# plus a Postgres database. DATABASE_URL comes straight from the database, so the
+# password never has to be copied by hand.
 services:
   - type: web
-    name: trot
+    name: trot-app
     runtime: node
     plan: free
+    region: virginia
+    branch: main
+    autoDeploy: true
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:
       - key: NODE_VERSION
         value: "22"
+      - key: MAPBOX
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: trot-db
@@ -19,3 +25,7 @@ services:
 databases:
   - name: trot-db
     plan: free
+    region: virginia
+    databaseName: trot_db
+    user: trot_db_user
+    postgresMajorVersion: "16"

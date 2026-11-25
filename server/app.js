@@ -696,7 +696,15 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const { counts } = await pawCounts(w.rows.map((r) => r.id), null)
     // Only the awards the owner chose to show.
     const aw = await db.query('SELECT title, kind, event_name, placement, awarded_on FROM awards WHERE dog_id = $1 AND is_public = TRUE ORDER BY awarded_on DESC, created_at DESC LIMIT 50', [dog.id])
+    // The care team is shown for demo dogs only. Real dogs keep it private until there is a setting for it.
+    let team = []
+    if (dog.is_demo) {
+      const t = await db.query('SELECT u.name, m.role FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.dog_id = $1 ORDER BY m.created_at, u.name', [dog.id])
+      const rank = { owner: 0, family: 1, walker: 2, daycare: 3 }
+      team = t.rows.map((r) => ({ name: r.role === 'daycare' ? r.name : firstName(r.name), role: r.role })).sort((a, b) => (rank[a.role] ?? 9) - (rank[b.role] ?? 9))
+    }
     return {
+      team, city: dog.city || '',
       slug: dog.slug, name: dog.name, breed: dog.breed, bio: dog.bio, shareRoutes: !!dog.share_routes, photoUrl: photoUrl(dog.slug, dog.photo_v, true), isDemo: !!dog.is_demo,
       awards: aw.rows.map((r) => ({ title: r.title, kind: r.kind, eventName: r.event_name, placement: r.placement, awardedOn: r.awarded_on || null })),
       totals: { lifetime: await totals(dog.id), week: await totals(dog.id, since) },
