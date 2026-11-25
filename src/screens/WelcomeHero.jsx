@@ -69,7 +69,7 @@ export default function WelcomeHero() {
       <div className="wstats">
         <div><span>DISTANCE</span><b>{(2.4 * t).toFixed(1)} mi</b></div>
         <div><span>TIME</span><b>{mm}:{ss}</b></div>
-        <div><span>SNIFF STOPS</span><b>{stops.filter((s) => t >= s.s).length}</b></div>
+        <div><span>TOP SPEED</span><b>{(t > 0.02 ? 3.1 + 3.4 * Math.min(1, t * 2.2) : 0).toFixed(1)} mph</b></div>
         <div aria-live="polite"><span>PAWS</span><b>{paws}</b></div>
       </div>
       <p className="whint">Tap Biscuit to give a paw.</p>

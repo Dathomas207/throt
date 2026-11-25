@@ -9,7 +9,7 @@
 .wplus{position:absolute;left:50%;top:-6px;font:italic 800 16px Archivo,Arial,sans-serif;color:#C8F031;pointer-events:none;animation:wfloat .9s ease-out forwards}
 .wstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:14px 14px 4px}
 .wstats span{display:block;font-size:10px;font-weight:600;letter-spacing:.5px;color:#AEB7C4}
-.wstats b{font:italic 800 20px Archivo,Arial,sans-serif;color:#fff;font-variant-numeric:tabular-nums}
+.wstats b{font:italic 800 17px Archivo,Arial,sans-serif;color:#fff;font-variant-numeric:tabular-nums}
 .whint{font-size:12px;color:#AEB7C4;padding:2px 14px 14px;margin:0}
 .welcome .wlogo{animation:wrise .5s ease-out both}
 @keyframes wtrot{from{transform:translateY(0) rotate(-5deg)}to{transform:translateY(-3px) rotate(5deg)}}

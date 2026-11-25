@@ -85,3 +85,13 @@ export const HEALTH = [
 export function dayLabel(d) { return d === 0 ? 'Today' : d === 1 ? 'Yesterday' : new Date(Date.now() - d * 864e5).toLocaleDateString('en-US', { weekday: 'long' }) }
 export function fmtTime(min) { const m = Math.floor(min), s = Math.round((min - m) * 60); return m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m` : `${m}:${String(s).padStart(2, '0')}` }
 export function haversine(a, b) { const R = 3958.8, r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r; const x = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)) }
+
+// Pace statistics for the demo walks. Speeds come from the phone carried on the walk, in miles per hour.
+const BURST = { Walk: [1.9, 2], Hike: [1.7, 1], Run: [1.6, 6], Swim: [1.5, 0], Fetch: [2.6, 9], Training: [1.8, 3], 'Dog park': [2.4, 7], Daycare: [0, 0] }
+for (const a of [...SEED, ...PACK]) {
+  const hrs = a.minutes / 60, avg = a.miles > 0 && hrs > 0 ? a.miles / hrs : 0, b = BURST[a.type] || BURST.Walk
+  a.avgSpeed = Math.round(avg * 10) / 10
+  a.maxSpeed = avg ? Math.round(Math.min(14, avg * b[0] + 1.2) * 10) / 10 : 0
+  a.sprints = avg ? b[1] : 0
+  a.movingMinutes = Math.round(a.minutes * 0.88)
+}
