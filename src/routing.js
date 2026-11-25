@@ -4,7 +4,7 @@ import { getConfig } from './config.js'
 // Parsing and geometry are pure functions so they can be tested without the network.
 import { haversine, ROUTES } from './data.js'
 
-export const DEFAULT_CENTER = [42.3852, -71.1492] // Cambridge, MA
+export const DEFAULT_CENTER = [35.186, -80.812] // Eastover, Charlotte
 export const OSRM_BASE = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/'
 export const PACE_MIN_PER_MILE = 20
 const TIMEOUT_MS = 10000
@@ -154,7 +154,7 @@ export async function routeThrough(points, opts = {}) {
 // Seeded demo routes are drawn shapes. One that carries `via` (points around the real place) is resolved once
 // through the walking router as a closed loop, so the demo follows mapped paths. The answer is kept in memory
 // and in localStorage. Until it resolves, or when routing fails, the seeded line is returned marked approximate.
-const DEMO_KEY = 'trot-demo-route1:'
+const DEMO_KEY = 'clt-trot-demo-route1:'
 const demoMem = new Map(), demoBusy = new Map()
 const seededRoute = (key) => { const r = ROUTES[key]; return r ? { pts: r.pts, miles: r.miles, minutes: r.minutes, approximate: true } : null }
 const okLine = (v) => v && Array.isArray(v.pts) && v.pts.length > 1 && v.pts.every((p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1])) && v.miles > 0

@@ -150,13 +150,6 @@
    "source_url": "https://www.sydnicolephotography.com/blog/the-best-pet-friendly-restaurants-breweries-in-charlotte-nc/"
   },
   {
-   "name": "Sycamore Brewing",
-   "category": "bar",
-   "address": "2151 Hawkins Street, Charlotte, NC 28203",
-   "note": "South End brewery on the Rail Trail, listed with a dog-friendly beer garden.",
-   "source_url": "https://www.sydnicolephotography.com/blog/the-best-pet-friendly-restaurants-breweries-in-charlotte-nc/"
-  },
-  {
    "name": "Wooden Robot Brewery",
    "category": "bar",
    "address": "1440 South Tryon Street, Charlotte, NC 28203",
@@ -196,13 +189,6 @@
    "category": "bar",
    "address": "1906 Commonwealth Avenue, Charlotte, NC 28205",
    "note": "Brewery listed as dog friendly.",
-   "source_url": "https://www.tripswithpets.com/pet-friendly-activities/breweries/united-states/North-carolina/charlotte"
-  },
-  {
-   "name": "Heist Brewery",
-   "category": "bar",
-   "address": "2909 North Davidson Street, Charlotte, NC 28205",
-   "note": "NoDa brewery and restaurant listed as dog friendly.",
    "source_url": "https://www.tripswithpets.com/pet-friendly-activities/breweries/united-states/North-carolina/charlotte"
   },
   {
@@ -404,7 +390,7 @@
   {
    "name": "Shuffletown Dog Park",
    "category": "park",
-   "address": "Shuffletown Park, Belhaven Boulevard, Charlotte, NC",
+   "address": "9500 Bellhaven Boulevard, Charlotte, NC 28214",
    "note": "County dog park in Shuffletown Park, about 4.6 acres, fenced.",
    "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
   },
@@ -1023,6 +1009,391 @@
    "address": "303 South Church Street, Charlotte, NC 28202",
    "note": "Uptown hotel next to Romare Bearden Park. Listed as welcoming pets of all sizes.",
    "source_url": "https://www.visitnc.com/itinerary/2-days-4-paws-dog-friendly-charlotte-escape"
+  },
+  {
+   "name": "Romare Bearden Park",
+   "category": "park",
+   "address": "300 South Church Street, Charlotte, NC",
+   "note": "Uptown park with lawns, gardens and a waterfall across from Truist Field. A dog park directory lists leashed pets as welcome throughout the grounds; there is no off-leash area.",
+   "source_url": "https://en.wikipedia.org/wiki/Romare_Bearden_Park"
+  },
+  {
+   "name": "Independence Park",
+   "category": "park",
+   "address": "300 Hawthorne Lane, Charlotte, NC",
+   "note": "Charlotte's oldest public park, at the western edge of Elizabeth, with paths that connect to the Little Sugar Creek Greenway. Keep dogs leashed.",
+   "source_url": "https://en.wikipedia.org/wiki/Independence_Park_(Charlotte,_North_Carolina)"
+  },
+  {
+   "name": "First Ward Park",
+   "category": "park",
+   "address": "301 East 7th Street, Charlotte, NC 28202",
+   "note": "Four acre Uptown park by the light rail with a lawn and fountain. The county says leashed dogs are welcome at its summer concerts here.",
+   "source_url": "https://uptowncharlotte.com/go/first-ward-park"
+  },
+  {
+   "name": "Colonel Francis Beatty Park",
+   "category": "park",
+   "address": "4330 Weddington Road, Matthews, NC",
+   "note": "Large county park with wooded trails, a lake and sports fields. A dog travel directory lists it as allowing dogs on the trails; keep dogs leashed and watch for mountain bikes.",
+   "source_url": "https://engage.mecknc.gov/g8706"
+  },
+  {
+   "name": "Renaissance Dog Park",
+   "category": "park",
+   "address": "1536 West Tyvola Road, Charlotte, NC 28217",
+   "note": "County off-leash dog park inside Renaissance Park. Listings describe separate areas for small and large dogs.",
+   "source_url": "https://www.sniffspot.com/listings/charlotte-nc/renaissance-dog-park-336980"
+  },
+  {
+   "name": "Summit Coffee, Eastover",
+   "category": "cafe",
+   "address": "343 Providence Road, Charlotte, NC 28207",
+   "note": "Coffee shop on Providence Road with umbrella tables outside. The shop's page says dogs are welcome on the patio, and only service animals inside.",
+   "source_url": "https://www.summitcoffee.com/eastover"
+  },
+  {
+   "name": "Smelly Cat Coffeehouse",
+   "category": "cafe",
+   "address": "514 East 36th Street, Charlotte, NC 28205",
+   "note": "NoDa coffeehouse and roaster with a wraparound patio. Listed as welcoming dogs at the outdoor tables.",
+   "source_url": "https://clture.org/charlotte-coffee-shops/"
+  },
+  {
+   "name": "Central Coffee Co., Louise Avenue",
+   "category": "cafe",
+   "address": "719 Louise Avenue, Charlotte, NC 28204",
+   "note": "Neighborhood coffee shop between Plaza Midwood and Elizabeth. A dog travel directory lists dogs as welcome at the outdoor seating; order inside.",
+   "source_url": "https://clture.org/charlotte-coffee-shops/"
+  },
+  {
+   "name": "The Giddy Goat Coffee Roasters",
+   "category": "cafe",
+   "address": "1217 The Plaza, Charlotte, NC",
+   "note": "Plaza Midwood coffee roaster with outdoor picnic tables. Recommended in a local list of dog friendly spots for its outdoor seating.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/03/top-charlotte-coffee-shops-to-work-from"
+  },
+  {
+   "name": "Rhino Market and Deli, South End",
+   "category": "cafe",
+   "address": "1414 South Tryon Street, Charlotte, NC",
+   "note": "Deli, market and coffee counter with outdoor seating. Local guides say Rhino Market has dog friendly patios at all locations.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/03/top-charlotte-coffee-shops-to-work-from"
+  },
+  {
+   "name": "Sunflour Baking Company, NoDa",
+   "category": "cafe",
+   "address": "515 Jordan Place, Charlotte, NC",
+   "note": "Bakery and coffee shop in NoDa. A local trainer's guide lists Sunflour's patios as dog friendly.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/05/03/top-charlotte-coffee-shops-to-work-from"
+  },
+  {
+   "name": "Pizza Peel, Plaza Midwood",
+   "category": "cafe",
+   "address": "1600 Central Avenue, Charlotte, NC 28205",
+   "note": "Pizza restaurant on Central Avenue, listed in a local dog ownership guide among restaurants with dog friendly patios. The guide is several years old, so check first.",
+   "source_url": "https://www.axios.com/local/charlotte/2017/08/31/agenda-guide-dog-ownership-charlotte-101251"
+  },
+  {
+   "name": "Brazwell's Premium Pub",
+   "category": "bar",
+   "address": "1627 Montford Drive, Charlotte, NC 28209",
+   "note": "Montford Drive pub. Listed by the city tourism site and a local guide as welcoming dogs in its outdoor space.",
+   "source_url": "https://www.axios.com/local/charlotte/2017/08/31/agenda-guide-dog-ownership-charlotte-101251"
+  },
+  {
+   "name": "Thomas Street Tavern",
+   "category": "bar",
+   "address": "1218 Thomas Avenue, Charlotte, NC 28205",
+   "note": "Plaza Midwood tavern with a large patio. Listed as dog friendly on the patio, where staff bring water for dogs.",
+   "source_url": "https://www.axios.com/local/charlotte/2017/08/31/agenda-guide-dog-ownership-charlotte-101251"
+  },
+  {
+   "name": "Canine Cafe",
+   "category": "shop",
+   "address": "125 Remount Road, Charlotte, NC 28203",
+   "note": "Dog bakery and supply shop near South End that bakes treats and custom cakes for dogs on site and sells food, collars and grooming supplies.",
+   "source_url": "https://vetster.com/en-us/city/charlotte/top-locally-owned-pet-shops-in-charlotte"
+  },
+  {
+   "name": "Woof 'n Hoof",
+   "category": "shop",
+   "address": "7710 Matthews-Mint Hill Road, Mint Hill, NC 28227",
+   "note": "Locally owned pet supply store in Mint Hill selling dog food, treats and leashes.",
+   "source_url": "https://vetster.com/en-us/city/charlotte/top-locally-owned-pet-shops-in-charlotte"
+  },
+  {
+   "name": "Last Place on Earth Pet Shop",
+   "category": "shop",
+   "address": "5655 North Tryon Street, Charlotte, NC",
+   "note": "Long-running family owned pet shop with supplies for dogs, fish, birds, reptiles and small animals.",
+   "source_url": "https://www.petpalaceresort.com/?p=2143"
+  },
+  {
+   "name": "Bubbly Paws",
+   "category": "care",
+   "address": "141 New Bern Street, Charlotte, NC",
+   "note": "Dog wash and grooming salon in South End with self-service bath stations, professional grooming and nail trims.",
+   "source_url": "https://www.axios.com/local/charlotte/2023/02/01/self-service-dog-salon-called-bubbly-paws-to-open-in-south-end-319608"
+  },
+  {
+   "name": "Animal Medical Hospital and Urgent Care",
+   "category": "vet",
+   "address": "3832 Monroe Road, Charlotte, NC 28205",
+   "note": "Veterinary hospital on Monroe Road listed as open 24 hours every day for urgent care. Call ahead in an emergency.",
+   "source_url": "https://www.petsbest.com/veterinarians/NC/Charlotte/animal-medical-hospital-and-urgent-care-42754"
+  },
+  {
+   "name": "Carolina Veterinary Specialists, Matthews",
+   "category": "vet",
+   "address": "4099 Campus Ridge Road, Matthews, NC 28104",
+   "note": "Emergency and specialty veterinary hospital, listed as a 24 hour emergency option by a Charlotte general practice.",
+   "source_url": "https://dilworthanimalhospital.com/area-emergency-services"
+  },
+  {
+   "name": "Carolina Veterinary Specialists, Huntersville",
+   "category": "vet",
+   "address": "12117 Statesville Road, Huntersville, NC 28078",
+   "note": "Emergency and specialty veterinary hospital, listed as a 24 hour emergency option by a Charlotte general practice.",
+   "source_url": "https://dilworthanimalhospital.com/area-emergency-services"
+  },
+  {
+   "name": "Petfolk SouthPark",
+   "category": "vet",
+   "address": "4914 Old Sardis Road, Charlotte, NC 28211",
+   "note": "Veterinary clinic in the Strawberry Hill shopping center offering wellness exams, sick and urgent care, vaccinations, dental care and surgery.",
+   "source_url": "https://petfolk.com/south-park-vet-clinic"
+  },
+  {
+   "name": "Petfolk Ballantyne",
+   "category": "vet",
+   "address": "5335 Ballantyne Commons Parkway, Charlotte, NC 28277",
+   "note": "Veterinary clinic in Ballantyne offering primary care, urgent care, vaccinations and dental care.",
+   "source_url": "https://petfolk.com/south-park-vet-clinic"
+  },
+  {
+   "name": "Petfolk Huntersville",
+   "category": "vet",
+   "address": "14227 Boren Street, Huntersville, NC 28078",
+   "note": "Veterinary clinic in Huntersville offering primary care, urgent care, vaccinations and dental care.",
+   "source_url": "https://petfolk.com/south-park-vet-clinic"
+  },
+  {
+   "name": "CityVet Charlotte Uptown",
+   "category": "vet",
+   "address": "650 East Brooklyn Village Avenue, Charlotte, NC 28202",
+   "note": "Veterinary clinic and urgent care in Uptown, per its directory listing.",
+   "source_url": "https://www.yellowpages.com/char-nc/pet-stores"
+  },
+  {
+   "name": "Long Animal Hospital",
+   "category": "vet",
+   "address": "2523 South Boulevard, Charlotte, NC 28203",
+   "note": "General practice veterinary hospital in South End, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "Cotswold Animal Hospital",
+   "category": "vet",
+   "address": "401 South Sharon Amity Road, Charlotte, NC",
+   "note": "General practice veterinary hospital in Cotswold, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "South Park Animal Hospital",
+   "category": "vet",
+   "address": "5240 Park Road, Charlotte, NC",
+   "note": "General practice veterinary hospital near SouthPark, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "Commonwealth Animal Hospital",
+   "category": "vet",
+   "address": "1909 Commonwealth Avenue, Charlotte, NC 28205",
+   "note": "General practice veterinary hospital in Plaza Midwood, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "Monroe Road Animal Hospital",
+   "category": "vet",
+   "address": "3736 Monroe Road, Charlotte, NC 28205",
+   "note": "General practice veterinary hospital east of Elizabeth, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "Mallard Creek Animal Hospital",
+   "category": "vet",
+   "address": "2110 Ben Craig Drive, Charlotte, NC",
+   "note": "General practice veterinary hospital in University City, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "Quail Hollow Veterinary Hospital",
+   "category": "vet",
+   "address": "8408 Park Road, Charlotte, NC",
+   "note": "General practice veterinary hospital in south Charlotte, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "St. Francis Hospital for Animals",
+   "category": "vet",
+   "address": "10709 Kettering Drive, Charlotte, NC",
+   "note": "General practice veterinary hospital in south Charlotte, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "Archdale Animal Hospital",
+   "category": "vet",
+   "address": "1319 Archdale Drive, Charlotte, NC",
+   "note": "General practice veterinary hospital in southwest Charlotte, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "The Carolinas Animal Hospital and Dental Clinic",
+   "category": "vet",
+   "address": "13331 York Center Drive, Charlotte, NC",
+   "note": "General practice veterinary hospital in Steele Creek, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "Ballantyne Veterinary Clinic",
+   "category": "vet",
+   "address": "16139 Lancaster Highway, Charlotte, NC",
+   "note": "General practice veterinary hospital in Ballantyne, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "West Ballantyne Animal Hospital",
+   "category": "vet",
+   "address": "11926 Providence Road West, Charlotte, NC",
+   "note": "General practice veterinary hospital in Ballantyne, listed in a local roundup of Charlotte animal hospitals. Call ahead to confirm services.",
+   "source_url": "https://www.wsoctv.com/station/search/top-charlotte-animal-hospitals/715402939/"
+  },
+  {
+   "name": "Molly's Dog Care, South End",
+   "category": "care",
+   "address": "1115 South Mint Street, Charlotte, NC 28203",
+   "note": "Dog daycare, boarding, grooming and training in South End.",
+   "source_url": "https://southendclt.org/go/mollys-dog-care"
+  },
+  {
+   "name": "Club Fetch",
+   "category": "care",
+   "address": "2426 Dunavant Street, Charlotte, NC 28203",
+   "note": "Dog daycare and boarding in South End with indoor and outdoor play yards and spa add-ons.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-charlotte/"
+  },
+  {
+   "name": "NoDa Bark and Board",
+   "category": "care",
+   "address": "2001 North Davidson Street, Charlotte, NC 28205",
+   "note": "Dog daycare, boarding and grooming near NoDa, with supervised play in size groups.",
+   "source_url": "https://www.charlottemagazine.com/geobase_cat/pet-resources"
+  },
+  {
+   "name": "Hounds Town Charlotte, NoDa",
+   "category": "care",
+   "address": "117 West 29th Street, Charlotte, NC 28206",
+   "note": "Dog daycare, boarding and grooming north of Uptown.",
+   "source_url": "https://www.yellowpages.com/char-nc/dog-day-care"
+  },
+  {
+   "name": "Pet Paradise Charlotte",
+   "category": "care",
+   "address": "2919 Boyer Street, Charlotte, NC 28208",
+   "note": "Dog boarding, daycare and grooming resort near the airport with a swimming area and webcams.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-charlotte/"
+  },
+  {
+   "name": "One Lucky Pup, Northlake",
+   "category": "care",
+   "address": "11607 Reames Road, Charlotte, NC 28269",
+   "note": "Dog daycare, boarding, grooming and training in the Northlake area.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-charlotte/"
+  },
+  {
+   "name": "One Lucky Pup, Springbrook Road",
+   "category": "care",
+   "address": "616 Springbrook Road, Charlotte, NC 28217",
+   "note": "Dog daycare, boarding, grooming and training off South Boulevard.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-charlotte/"
+  },
+  {
+   "name": "Midwood Barkery",
+   "category": "care",
+   "address": "3100 Monroe Road, Charlotte, NC 28205",
+   "note": "Dog boarding, daycare and grooming on Monroe Road.",
+   "source_url": "https://lantern.llc/b/midwood-barkery-charlotte/book"
+  },
+  {
+   "name": "Canine Corner",
+   "category": "care",
+   "address": "2139 South Tryon Street, Charlotte, NC 28203",
+   "note": "Dog daycare, overnight boarding, training and grooming in South End.",
+   "source_url": "https://lantern.llc/b/canine-corner-charlotte/book"
+  },
+  {
+   "name": "The Barker Lounge, Montford",
+   "category": "care",
+   "address": "1719 Montford Drive, Charlotte, NC 28209",
+   "note": "Dog daycare and overnight boarding on Montford Drive, with grooming as an add-on.",
+   "source_url": "https://lantern.llc/b/the-barker-lounge-charlotte/book"
+  },
+  {
+   "name": "Carolina Doggie Playland",
+   "category": "care",
+   "address": "3111 South Tryon Street, Charlotte, NC 28217",
+   "note": "Dog daycare and boarding with indoor and outdoor play, per its directory listing.",
+   "source_url": "https://www.yellowpages.com/char-nc/dog-day-care"
+  },
+  {
+   "name": "Animal People Dog Boarding and Day Care",
+   "category": "care",
+   "address": "2908 Rozzelles Ferry Road, Charlotte, NC 28208",
+   "note": "Dog boarding, daycare and training west of Uptown, per its directory listing.",
+   "source_url": "https://www.yellowpages.com/char-nc/dog-day-care"
+  },
+  {
+   "name": "The Dog Wizard Charlotte",
+   "category": "care",
+   "address": "216 Foster Avenue, Charlotte, NC 28203",
+   "note": "Dog training facility near South End offering private, group and puppy training.",
+   "source_url": "https://ca.style.yahoo.com/leash-training-obedience-tricks-charlotte-090000505.html"
+  },
+  {
+   "name": "The Dog Knowledge",
+   "category": "care",
+   "address": "1110 Pro Am Drive, Charlotte, NC 28211",
+   "note": "Dog training facility with multi-week programs, plus daycare and boarding.",
+   "source_url": "https://ca.style.yahoo.com/leash-training-obedience-tricks-charlotte-090000505.html"
+  },
+  {
+   "name": "Canine Scholars Dog Training",
+   "category": "care",
+   "address": "1235 East Boulevard, Charlotte, NC 28203",
+   "note": "Dog trainer in Dilworth offering individual and group sessions, home visits, and trick dog and therapy dog training.",
+   "source_url": "https://ca.style.yahoo.com/leash-training-obedience-tricks-charlotte-090000505.html"
+  },
+  {
+   "name": "Obedient K9 Academy",
+   "category": "care",
+   "address": "1420 South Mint Street, Charlotte, NC 28203",
+   "note": "Dog training business in South End offering customized plans with group classes.",
+   "source_url": "https://ca.style.yahoo.com/leash-training-obedience-tricks-charlotte-090000505.html"
+  },
+  {
+   "name": "Queen City Canine",
+   "category": "care",
+   "address": "509 Scholtz Road, Charlotte, NC 28217",
+   "note": "Dog training facility in south Charlotte covering obedience, leash skills and behavior problems.",
+   "source_url": "https://ca.style.yahoo.com/leash-training-obedience-tricks-charlotte-090000505.html"
+  },
+  {
+   "name": "CMPD Animal Care and Control",
+   "category": "other",
+   "address": "8315 Byrum Drive, Charlotte, NC 28217",
+   "note": "The city animal shelter near the airport, for adoptions, lost and found pets and reporting dog bites.",
+   "source_url": "https://www.axios.com/local/charlotte/2017/08/31/agenda-guide-dog-ownership-charlotte-101251"
   }
  ]
 }

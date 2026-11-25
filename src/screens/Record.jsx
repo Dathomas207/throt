@@ -166,7 +166,7 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
           <div className="loops" role="group" aria-label="Loop length">{LOOPS.map((m) => <button key={m} className={`chip flat ${selMiles === m ? 'on' : ''}`} aria-pressed={selMiles === m} disabled={loopBusy} onClick={() => { setRk('loop'); here.setMiles(m) }}><b>{m}</b> mi</button>)}</div>
           {!loop && <div className="meta">Uses your location right now and builds a 2 mile loop on mapped paths. Pick 1 or 3 miles for a different length.</div>}
           {loop && loop.status === 'nofix' && <div className="mnote" role="alert"><span className="grow"><b>No location.</b> {locationHelp(loop.reason)}</span></div>}
-          {loop && loop.status === 'nofix' && <button className="cta white bordered small" onClick={() => here.fromCenter(lastViewCenter() || DEFAULT_CENTER)}>{lastViewCenter() ? 'Build it from the last map area instead' : 'Build it from Cambridge, MA instead'}</button>}
+          {loop && loop.status === 'nofix' && <button className="cta white bordered small" onClick={() => here.fromCenter(lastViewCenter() || DEFAULT_CENTER)}>{lastViewCenter() ? 'Build it from the last map area instead' : 'Build it from Eastover, Charlotte instead'}</button>}
           {loop && loop.status === 'ready' && (<>
             <TrotMap route={loop.route.pts} me={loop.from === 'you' ? loop.at : undefined} className="lmap" />
             <div className="rsum"><b>{loop.route.miles.toFixed(2)} mi</b><span>about {loop.route.minutes} min · {loop.route.approximate ? 'approximate' : 'routed on mapped paths'} · {loop.from === 'you' ? 'starts where you are' : 'starts at the map area, not your location'}</span></div>

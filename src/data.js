@@ -1,5 +1,5 @@
-// Demo data. Places and coordinates are approximate samples around Cambridge, MA.
-const C = [42.3850, -71.1492]
+// Demo data. Places and coordinates are approximate samples around Eastover and Dilworth in Charlotte, NC.
+const C = [35.1945, -80.8415]
 function loop(center, rLat, rLng, n = 90, phase = 0) {
   const pts = []
   for (let i = 0; i <= n; i++) {
@@ -25,21 +25,21 @@ function path(a, b, n = 40, bend = 0.0012) {
   return pts
 }
 export const ROUTES = {
-  pond: { name: 'Pond perimeter loop', miles: 2.4, minutes: 48, note: 'Flat · mostly shaded · water access', pts: ring(C, 0.0055, 0.0082, 96, -2.2), via: [[42.3905, -71.1490], [42.3890, -71.1425], [42.3850, -71.1408], [42.3800, -71.1455], [42.3805, -71.1535], [42.3850, -71.1576], [42.3893, -71.1548]] },
-  meadow: { name: 'Lusitania Meadow out and back', miles: 1.1, minutes: 24, note: 'Easy · off-leash stretch', pts: path([42.3829, -71.1440], [42.3868, -71.1408]).concat(path([42.3868, -71.1408], [42.3829, -71.1440]).slice(1)) },
-  danehy: { name: 'Danehy Park lap', miles: 1.8, minutes: 41, note: 'Open fields · fenced dog run', pts: loop([42.3889, -71.1370], 0.0022, 0.0034, 70, 1) },
-  fells: { name: 'Sheepfold and Skyline', miles: 5.9, minutes: 142, note: 'Hilly · off-leash meadow · rocky', pts: loop([42.4530, -71.1090], 0.0085, 0.011, 110, 0.4) },
+  pond: { name: 'Freedom Park loop', miles: 1.2, minutes: 24, note: 'Flat · paved · around the lake', pts: loop([35.1945, -80.8415], 0.0026, 0.0036, 96, -2.2) },
+  meadow: { name: 'Eastover Park out and back', miles: 0.8, minutes: 16, note: 'Easy · grassy creekside', pts: path([35.1974, -80.8147], [35.2012, -80.8128], 40, 0.0004).concat(path([35.2012, -80.8128], [35.1974, -80.8147], 40, 0.0004).slice(1)) },
+  danehy: { name: 'Latta Park lap', miles: 0.9, minutes: 18, note: 'Shaded · neighborhood park', pts: loop([35.2080, -80.8530], 0.0016, 0.0022, 70, 1) },
+  fells: { name: 'Little Sugar Creek Greenway, Midtown to Freedom Park', miles: 2.6, minutes: 52, note: 'Paved greenway · leashed', pts: path([35.2135, -80.8356], [35.1967, -80.8391], 60, 0.0006).concat(path([35.1967, -80.8391], [35.2135, -80.8356], 60, 0.0006).slice(1)) },
 }
 // Distances are measured from the drawn geometry so the number always matches the line on the map.
 function lineMiles(pts) { let d = 0; for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], R = 3958.8, r = Math.PI / 180, x = Math.sin(((b[0] - a[0]) * r) / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(((b[1] - a[1]) * r) / 2) ** 2; d += 2 * R * Math.asin(Math.sqrt(x)) } return d }
 for (const k of Object.keys(ROUTES)) { const m = lineMiles(ROUTES[k].pts); ROUTES[k].miles = Math.round(m * 10) / 10; ROUTES[k].minutes = Math.max(5, Math.round(m * 20)) }
 export const PLACES = [
-  { id: 'fresh', name: 'Fresh Pond Reservation', kind: 'Dog park and trail', at: [42.3847, -71.1487], tags: ['Off-leash area', 'Water access', 'Shade', 'Quiet before 8 AM'], dogs: 38, top: 'Moose', topVisits: 9, routes: ['pond', 'meadow'] },
-  { id: 'danehy', name: 'Danehy Park', kind: 'Park with dog run', at: [42.3889, -71.1370], tags: ['Fenced run', 'Open fields', 'Lights at night'], dogs: 27, top: 'Juno', topVisits: 7, routes: ['danehy'] },
-  { id: 'pacific', name: 'Pacific Street Dog Park', kind: 'Fenced dog park', at: [42.3577, -71.1014], tags: ['Fenced', 'Small-dog area', 'Busy evenings'], dogs: 19, top: 'Pickle', topVisits: 11, routes: [] },
-  { id: 'fells', name: 'Sheepfold, Middlesex Fells', kind: 'Off-leash meadow and trails', at: [42.4530, -71.1090], tags: ['Off-leash meadow', 'Long trails', 'Parking'], dogs: 44, top: 'Biscuit', topVisits: 3, routes: ['fells'] },
+  { id: 'fresh', name: 'Freedom Park', kind: 'Park with a lake loop', at: [35.1967, -80.8391], tags: ['Leashed', 'Paved loop', 'Shade', 'Quiet before 8 AM'], dogs: 38, top: 'Moose', topVisits: 9, routes: ['pond', 'fells'] },
+  { id: 'danehy', name: 'Latta Park', kind: 'Neighborhood park', at: [35.2080, -80.8530], tags: ['Leashed', 'Shade', 'Open lawn'], dogs: 27, top: 'Juno', topVisits: 7, routes: ['danehy'] },
+  { id: 'pacific', name: 'Frazier Park Dog Park', kind: 'Fenced dog park', at: [35.2333, -80.8576], tags: ['Fenced', 'Small-dog area', 'Busy evenings'], dogs: 19, top: 'Pickle', topVisits: 11, routes: [] },
+  { id: 'fells', name: 'Eastover Park', kind: 'Park on Briar Creek', at: [35.1974, -80.8147], tags: ['Leashed', 'Open grass', 'Walking paths'], dogs: 44, top: 'Biscuit', topVisits: 3, routes: ['meadow'] },
 ]
-export const DOG = { id: 'biscuit', name: 'Biscuit', breed: 'Golden Retriever', age: '4 yrs', weight: 68, home: 'Cambridge, MA', bio: 'Swims in anything. Carries one stick per walk, minimum.', followers: 248, lifetime: 1312, streak: 12, rangeMin: 60, rangeMax: 90 }
+export const DOG = { id: 'biscuit', name: 'Biscuit', breed: 'Golden Retriever', age: '4 yrs', weight: 68, home: 'Charlotte, NC', bio: 'Swims in anything. Carries one stick per walk, minimum.', followers: 248, lifetime: 1312, streak: 12, rangeMin: 60, rangeMax: 90 }
 export const PEOPLE = {
   dale: { id: 'dale', name: 'Dale', role: 'Biscuit’s human', color: '#C8F031', ink: '#0F1B2D' },
   pat: { id: 'pat', name: 'Pat', role: 'Dog walker · weekdays', color: '#1F5AE8', ink: '#FFFFFF' },
@@ -48,20 +48,20 @@ export const PEOPLE = {
 }
 // daysAgo 0 = today. Sample history for Biscuit.
 export const SEED = [
-  { id: 's1', dog: 'Biscuit', by: 'dale', type: 'Walk', title: 'Morning loop at Fresh Pond', daysAgo: 0, time: '7:14 AM', place: 'Fresh Pond', route: 'pond', miles: 2.4, minutes: 48, sniffs: 14, paws: 23, comments: 4, note: 'Found the good stick. Would not trade it for a treat.' },
-  { id: 's2', dog: 'Biscuit', by: 'pat', type: 'Walk', title: 'Midday meadow sniffari', daysAgo: 1, time: '12:30 PM', place: 'Lusitania Meadow', route: 'meadow', miles: 1.1, minutes: 26, sniffs: 19, paws: 17, comments: 2, note: 'Made two new friends and one enemy (a goose).' },
-  { id: 's3', dog: 'Biscuit', by: 'dale', type: 'Walk', title: 'Evening lap, extra slow', daysAgo: 1, time: '6:05 PM', place: 'Danehy Park', route: 'danehy', miles: 1.8, minutes: 44, sniffs: 11, paws: 12, comments: 1 },
+  { id: 's1', dog: 'Biscuit', by: 'dale', type: 'Walk', title: 'Morning loop at Freedom Park', daysAgo: 0, time: '7:14 AM', place: 'Freedom Park', route: 'pond', miles: 2.4, minutes: 48, sniffs: 14, paws: 23, comments: 4, note: 'Found the good stick. Would not trade it for a treat.' },
+  { id: 's2', dog: 'Biscuit', by: 'pat', type: 'Walk', title: 'Midday Eastover sniffari', daysAgo: 1, time: '12:30 PM', place: 'Eastover Park', route: 'meadow', miles: 1.1, minutes: 26, sniffs: 19, paws: 17, comments: 2, note: 'Made two new friends and one enemy (a goose).' },
+  { id: 's3', dog: 'Biscuit', by: 'dale', type: 'Walk', title: 'Evening lap, extra slow', daysAgo: 1, time: '6:05 PM', place: 'Latta Park', route: 'danehy', miles: 1.8, minutes: 44, sniffs: 11, paws: 12, comments: 1 },
   { id: 's4', dog: 'Biscuit', by: 'tails', type: 'Daycare', title: 'Daycare day with the big dogs', daysAgo: 2, time: '9:00 AM', place: 'Happy Tails', route: null, miles: 0, minutes: 190, sniffs: 0, paws: 31, comments: 6, note: 'Played hard, napped harder.' },
-  { id: 's5', dog: 'Biscuit', by: 'pat', type: 'Walk', title: 'Pond loop with Pat', daysAgo: 3, time: '12:15 PM', place: 'Fresh Pond', route: 'pond', miles: 2.3, minutes: 46, sniffs: 12, paws: 14, comments: 0 },
-  { id: 's6', dog: 'Biscuit', by: 'sue', type: 'Hike', title: 'Skyline scramble with Sue', daysAgo: 4, time: '8:40 AM', place: 'Middlesex Fells', route: 'fells', miles: 5.9, minutes: 142, sniffs: 33, paws: 52, comments: 9, note: 'First time at the Sheepfold. Zoomies for ten straight minutes.' },
-  { id: 's7', dog: 'Biscuit', by: 'dale', type: 'Swim', title: 'Dock diving practice', daysAgo: 5, time: '4:20 PM', place: 'Fresh Pond', route: 'meadow', miles: 0.8, minutes: 35, sniffs: 5, paws: 40, comments: 5 },
+  { id: 's5', dog: 'Biscuit', by: 'pat', type: 'Walk', title: 'Park loop with Pat', daysAgo: 3, time: '12:15 PM', place: 'Freedom Park', route: 'pond', miles: 2.3, minutes: 46, sniffs: 12, paws: 14, comments: 0 },
+  { id: 's6', dog: 'Biscuit', by: 'sue', type: 'Hike', title: 'Greenway miles with Sue', daysAgo: 4, time: '8:40 AM', place: 'Little Sugar Creek Greenway', route: 'fells', miles: 5.9, minutes: 142, sniffs: 33, paws: 52, comments: 9, note: 'First time doing the whole greenway stretch. Slept the entire afternoon.' },
+  { id: 's7', dog: 'Biscuit', by: 'dale', type: 'Swim', title: 'Kiddie pool laps', daysAgo: 5, time: '4:20 PM', place: 'Home', route: null, miles: 0, minutes: 35, sniffs: 5, paws: 40, comments: 5 },
   { id: 's8', dog: 'Biscuit', by: 'dale', type: 'Training', title: 'Loose-leash practice', daysAgo: 6, time: '7:30 AM', place: 'Neighborhood', route: 'danehy', miles: 0.9, minutes: 22, sniffs: 6, paws: 9, comments: 1 },
 ]
 for (const a of SEED) { if (a.route && ROUTES[a.route] && a.type !== 'Daycare') { a.miles = ROUTES[a.route].miles; a.minutes = ROUTES[a.route].minutes } }
 export const PACK = [
   { id: 'p0', dog: 'Millie', breed: 'Bernedoodle', byName: 'Dale', type: 'Play time', title: 'Backyard zoomies before dinner', daysAgo: 0, time: '4:10 PM', place: 'Home', route: null, miles: 0, minutes: 35, sniffs: 0, paws: 41, comments: 6, color: '#0F1B2D', ink: '#C8F031', note: 'Three laps of the yard, one stolen glove, zero regrets.' },
-  { id: 'p1', dog: 'Moose', breed: 'Bernese Mountain Dog', byName: 'Priya', type: 'Walk', title: 'Ninth pond lap this week', daysAgo: 0, time: '6:40 AM', place: 'Fresh Pond', route: 'pond', miles: 2.4, minutes: 55, sniffs: 21, paws: 18, comments: 3, color: '#1F5AE8', ink: '#FFFFFF' },
-  { id: 'p2', dog: 'Juno', breed: 'Border Collie', byName: 'Pat', type: 'Walk', title: 'Pack walk, four dogs deep', daysAgo: 0, time: '12:30 PM', place: 'Danehy Park', route: 'danehy', miles: 1.8, minutes: 41, sniffs: 9, paws: 27, comments: 4, color: '#0F1B2D', ink: '#C8F031' },
+  { id: 'p1', dog: 'Moose', breed: 'Bernese Mountain Dog', byName: 'Priya', type: 'Walk', title: 'Ninth park lap this week', daysAgo: 0, time: '6:40 AM', place: 'Freedom Park', route: 'pond', miles: 2.4, minutes: 55, sniffs: 21, paws: 18, comments: 3, color: '#1F5AE8', ink: '#FFFFFF' },
+  { id: 'p2', dog: 'Juno', breed: 'Border Collie', byName: 'Pat', type: 'Walk', title: 'Pack walk, four dogs deep', daysAgo: 0, time: '12:30 PM', place: 'Latta Park', route: 'danehy', miles: 1.8, minutes: 41, sniffs: 9, paws: 27, comments: 4, color: '#0F1B2D', ink: '#C8F031' },
   { id: 'p3', dog: 'Pickle', breed: 'Dachshund', byName: 'Marco', type: 'Walk', title: 'Short legs, long loop', daysAgo: 1, time: '5:50 PM', place: 'Pacific Street', route: 'meadow', miles: 1.0, minutes: 31, sniffs: 24, paws: 35, comments: 7, color: '#FF8A5B', ink: '#0F1B2D' },
 ]
 for (const x of PACK) { if (x.route && ROUTES[x.route]) { x.miles = ROUTES[x.route].miles; x.minutes = ROUTES[x.route].minutes } }
@@ -158,16 +158,16 @@ export const DEMO_CHALLENGES = [
 
 // ---- Millie, the demo's second dog (appended) --------------------------------
 // Dale's other dog. Her pack entry p0 above is listed here as one of her own activities.
-export const MILLIE = { id: 'millie', name: 'Millie', breed: 'Bernedoodle', age: '2 yrs', weight: 55, home: 'Cambridge, MA', bio: 'Fluffy, bouncy, and first to the door. Believes every glove is a toy.', followers: 96, lifetime: 412, streak: 5, rangeMin: 60, rangeMax: 100 }
+export const MILLIE = { id: 'millie', name: 'Millie', breed: 'Bernedoodle', age: '2 yrs', weight: 55, home: 'Charlotte, NC', bio: 'Fluffy, bouncy, and first to the door. Believes every glove is a toy.', followers: 96, lifetime: 412, streak: 5, rangeMin: 60, rangeMax: 100 }
 const perf = (a, avg, max, sprints) => ({ ...a, avgSpeed: avg, maxSpeed: max, sprints, movingMinutes: Math.round(a.minutes * 0.88), sniffs: 0 })
 export const MILLIE_SEED = [
   perf({ ...PACK.find((x) => x.id === 'p0'), by: 'dale', byName: undefined, color: undefined, ink: undefined }, 0, 0, 8),
-  perf({ id: 'm2', dog: 'Millie', by: 'pat', type: 'Walk', title: 'Lunch loop with Pat', daysAgo: 1, time: '12:40 PM', place: 'Danehy Park', route: 'danehy', miles: ROUTES.danehy.miles, minutes: ROUTES.danehy.minutes, paws: 12, comments: 1 }, 3.0, 6.9, 2),
+  perf({ id: 'm2', dog: 'Millie', by: 'pat', type: 'Walk', title: 'Lunch loop with Pat', daysAgo: 1, time: '12:40 PM', place: 'Latta Park', route: 'danehy', miles: ROUTES.danehy.miles, minutes: ROUTES.danehy.minutes, paws: 12, comments: 1 }, 3.0, 6.9, 2),
   perf({ id: 'm3', dog: 'Millie', by: 'dale', type: 'Play time', title: 'Tug of war, best of five', daysAgo: 2, time: '6:30 PM', place: 'Home', route: null, miles: 0, minutes: 25, paws: 18, comments: 2, note: 'Won three. Claims she won five.' }, 0, 0, 6),
-  perf({ id: 'm4', dog: 'Millie', by: 'sue', type: 'Hike', title: 'Fells loop with Sue', daysAgo: 3, time: '9:10 AM', place: 'Middlesex Fells', route: 'fells', miles: ROUTES.fells.miles, minutes: ROUTES.fells.minutes, paws: 33, comments: 4, note: 'First real hill. Carried a stick the whole way down.' }, 2.5, 7.8, 1),
-  perf({ id: 'm5', dog: 'Millie', by: 'dale', type: 'Walk', title: 'Meadow out and back', daysAgo: 4, time: '7:20 AM', place: 'Lusitania Meadow', route: 'meadow', miles: ROUTES.meadow.miles, minutes: ROUTES.meadow.minutes, paws: 9, comments: 0 }, 2.9, 6.4, 2),
+  perf({ id: 'm4', dog: 'Millie', by: 'sue', type: 'Hike', title: 'Greenway miles with Sue', daysAgo: 3, time: '9:10 AM', place: 'Little Sugar Creek Greenway', route: 'fells', miles: ROUTES.fells.miles, minutes: ROUTES.fells.minutes, paws: 33, comments: 4, note: 'First real hill. Carried a stick the whole way down.' }, 2.5, 7.8, 1),
+  perf({ id: 'm5', dog: 'Millie', by: 'dale', type: 'Walk', title: 'Eastover out and back', daysAgo: 4, time: '7:20 AM', place: 'Eastover Park', route: 'meadow', miles: ROUTES.meadow.miles, minutes: ROUTES.meadow.minutes, paws: 9, comments: 0 }, 2.9, 6.4, 2),
   perf({ id: 'm6', dog: 'Millie', by: 'dale', type: 'Training', title: 'Leave it, with gloves', daysAgo: 5, time: '5:45 PM', place: 'Home', route: null, miles: 0, minutes: 20, paws: 14, comments: 3, note: 'Two gloves survived.' }, 0, 0, 0),
-  perf({ id: 'm7', dog: 'Millie', by: 'pat', type: 'Walk', title: 'Pond loop with Pat', daysAgo: 6, time: '12:20 PM', place: 'Fresh Pond', route: 'pond', miles: ROUTES.pond.miles, minutes: ROUTES.pond.minutes, paws: 11, comments: 1 }, 3.0, 7.1, 3),
+  perf({ id: 'm7', dog: 'Millie', by: 'pat', type: 'Walk', title: 'Park loop with Pat', daysAgo: 6, time: '12:20 PM', place: 'Freedom Park', route: 'pond', miles: ROUTES.pond.miles, minutes: ROUTES.pond.minutes, paws: 11, comments: 1 }, 3.0, 7.1, 3),
 ]
 const MILLIE_HEALTH = {
   weeks: [262, 281, 250, 296, 270, 288, 301],

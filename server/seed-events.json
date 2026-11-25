@@ -2,6 +2,19 @@
  "note": "Seed list compiled 2026-11-25 from public listings. Dates and venues can change: each entry links to its source. Coordinates are city-level approximations.",
  "events": [
   {
+   "name": "Piedmont North Carolina Bulldog Club specialty shows",
+   "kind": "conformation",
+   "starts_on": "2026-11-28",
+   "ends_on": null,
+   "venue": "Spartanburg Kennel Club Building",
+   "city": "Boiling Springs",
+   "region": "SC",
+   "lat": 35.046,
+   "lng": -81.982,
+   "url": "https://showdogcentral.com/events/2026018901-piedmont-north-carolina-bulldog-club",
+   "description": "Two AKC Bulldog specialty shows on one day, about 75 miles west of Charlotte."
+  },
+  {
    "name": "Worcester County Kennel Club all-breed show",
    "kind": "conformation",
    "starts_on": "2026-11-29",
@@ -39,6 +52,19 @@
    "lng": -72.62,
    "url": "https://explorewesternmass.com/venue/eastern-states/",
    "description": "All-breed AKC dog show and obedience event."
+  },
+  {
+   "name": "The Pup Pop-Up CLT",
+   "kind": "other",
+   "starts_on": "2026-12-05",
+   "ends_on": null,
+   "venue": "PINE, 4100 Raleigh Street",
+   "city": "Charlotte",
+   "region": "NC",
+   "lat": 35.251,
+   "lng": -80.799,
+   "url": "https://humanesocietyofcharlotte.org/event/7th-annual-canine-christmas",
+   "description": "Pet-friendly holiday pop-up benefiting the Humane Society of Charlotte. Listed on the society's calendar; pets are invited."
   },
   {
    "name": "AKC Royal Canin National All-Breed Puppy and Junior Stakes",
@@ -119,6 +145,71 @@
    "description": "AKC all-breed show with junior showmanship."
   },
   {
+   "name": "Dog Days of Winter Dog Jog 5K and 1 Mile Walk",
+   "kind": "other",
+   "starts_on": "2027-02-06",
+   "ends_on": null,
+   "venue": "U.S. National Whitewater Center",
+   "city": "Charlotte",
+   "region": "NC",
+   "lat": 35.272,
+   "lng": -81.005,
+   "url": "https://whitewater.org/race/dog-days-of-winter-dog-jog/",
+   "description": "Trail 5K and one mile walk for people and their dogs. Dogs must stay on leash."
+  },
+  {
+   "name": "Charlotte Dog Training Club obedience trials",
+   "kind": "obedience",
+   "starts_on": "2027-02-06",
+   "ends_on": "2027-02-07",
+   "venue": "Charlotte Dog Training Club, 2273 Burkette Road",
+   "city": "Rock Hill",
+   "region": "SC",
+   "lat": 34.94,
+   "lng": -81.03,
+   "url": "https://showdogcentral.com/events/2027118601-charlotte-dog-training-club",
+   "description": "AKC obedience trials on both days at the club's building south of Charlotte."
+  },
+  {
+   "name": "Labrador Retriever Club of the Piedmont specialty shows",
+   "kind": "conformation",
+   "starts_on": "2027-02-13",
+   "ends_on": "2027-02-14",
+   "venue": "Northside Recreation Center",
+   "city": "Rock Hill",
+   "region": "SC",
+   "lat": 34.95,
+   "lng": -81.03,
+   "url": "https://showdogcentral.com/events/2027292005-labrador-retriever-club-of-the-piedmont",
+   "description": "AKC Labrador Retriever specialty with obedience, rally, sweepstakes, junior showmanship and beginner puppy on both days."
+  },
+  {
+   "name": "Forsyth Kennel Club shows",
+   "kind": "conformation",
+   "starts_on": "2027-03-06",
+   "ends_on": "2027-03-07",
+   "venue": "Winston-Salem Fairgrounds Event Center",
+   "city": "Winston-Salem",
+   "region": "NC",
+   "lat": 36.128,
+   "lng": -80.258,
+   "url": "https://showdogcentral.com/events/2027031901-forsyth-kennel-club-inc",
+   "description": "AKC all-breed shows with junior showmanship, about 80 miles north of Charlotte."
+  },
+  {
+   "name": "Piedmont Collie Club specialty shows",
+   "kind": "conformation",
+   "starts_on": "2027-03-06",
+   "ends_on": "2027-03-07",
+   "venue": "Shadow Hill Training Center",
+   "city": "Jackson Springs",
+   "region": "NC",
+   "lat": 35.213,
+   "lng": -79.63,
+   "url": "https://showdogcentral.com/events/2027279801-piedmont-collie-club",
+   "description": "AKC Collie specialty shows with junior showmanship and beginner puppy, about 80 miles east of Charlotte."
+  },
+  {
    "name": "Spring Tarheel Cluster",
    "kind": "conformation",
    "starts_on": "2027-03-10",
@@ -182,6 +273,32 @@
    "lng": -71.328,
    "url": "https://infodog.com/show/state_show_details.htm?state=ma",
    "description": "Group shows with junior showmanship and beginner puppy."
+  },
+  {
+   "name": "Columbia Kennel Club shows",
+   "kind": "conformation",
+   "starts_on": "2027-07-08",
+   "ends_on": "2027-07-09",
+   "venue": "Cabarrus Arena and Events Center",
+   "city": "Concord",
+   "region": "NC",
+   "lat": 35.37,
+   "lng": -80.5,
+   "url": "https://showdogcentral.com/events/2027027503-columbia-kennel-club-inc",
+   "description": "AKC all-breed shows with junior showmanship, held indoors about 25 miles from Charlotte."
+  },
+  {
+   "name": "Greater Monroe Kennel Club shows",
+   "kind": "conformation",
+   "starts_on": "2027-07-10",
+   "ends_on": "2027-07-11",
+   "venue": "Cabarrus Arena and Events Center",
+   "city": "Concord",
+   "region": "NC",
+   "lat": 35.37,
+   "lng": -80.5,
+   "url": "https://showdogcentral.com/events/2027559719-greater-monroe-kennel-club",
+   "description": "AKC all-breed shows with junior showmanship. The listing showed AKC approval as pending, so confirm before entering."
   },
   {
    "name": "Salisbury North Carolina Kennel Club shows",
