@@ -75,6 +75,7 @@ function DachshundHead() {
 
 const PORTRAITS = {
   Biscuit: { Head: GoldenHead, bg: '#C8F031', photo: 'biscuit.jpg', label: 'Biscuit, a golden retriever, smiling on the grass' },
+  Millie: { Head: BerneseHead, bg: '#C6D4F7', photo: 'millie.jpg', label: 'Millie, a Bernedoodle, sitting on a doorstep' },
   Moose: { Head: BerneseHead, bg: '#C6D4F7', label: 'Illustration of Moose, a Bernese mountain dog' },
   Juno: { Head: CollieHead, bg: '#FFD9CB', label: 'Illustration of Juno, a border collie' },
   Pickle: { Head: DachshundHead, bg: '#1F5AE8', label: 'Illustration of Pickle, a dachshund' },

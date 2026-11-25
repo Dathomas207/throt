@@ -20,6 +20,9 @@ export function checkDog(f) {
   const w = f.weight.trim()
   if (w !== '' && (!/^\d+(\.\d+)?$/.test(w) || Number(w) < 0.5 || Number(w) > 400)) e.weight = 'Weight should be a number of pounds from 0.5 to 400.'
   if (f.bio.trim().length > 280) e.bio = 'Keep the bio to 280 characters or fewer.'
+  if (f.city !== undefined && f.city.trim().length > 60) e.city = 'Keep the city to 60 characters or fewer.'
+  const g = f.goal === undefined ? '' : f.goal.trim()
+  if (g !== '' && (!/^\d+$/.test(g) || Number(g) < 10 || Number(g) > 300)) e.goal = 'The goal should be a whole number of minutes from 10 to 300, or empty.'
   return e
 }
 
@@ -40,6 +43,7 @@ export default function EditDog({ dog, onSave, onClose }) {
   const [f, setF] = useState({
     name: dog.name, breed: dog.breed || '', birthday: dog.birthday || '', age: dog.birthday ? '' : dog.age || '',
     weight: dog.weight == null ? '' : String(dog.weight), bio: dog.bio || '', public: !!dog.public, shareRoutes: !!dog.shareRoutes,
+    city: dog.city || '', goal: dog.goalMinutes == null ? '' : String(dog.goalMinutes), leaderboards: dog.leaderboards !== false,
   })
   // undefined leaves the photo alone, null removes it, a data URL replaces it.
   const [photo, setPhoto] = useState(undefined)
@@ -79,6 +83,10 @@ export default function EditDog({ dog, onSave, onClose }) {
     if (weight !== (dog.weight == null ? null : dog.weight)) body.weight = weight
     if (f.public !== !!dog.public) body.public = f.public
     if (f.shareRoutes !== !!dog.shareRoutes) body.shareRoutes = f.shareRoutes
+    if (f.city.trim() !== (dog.city || '')) body.city = f.city.trim()
+    const goal = f.goal.trim() === '' ? null : Number(f.goal)
+    if (goal !== (dog.goalMinutes == null ? null : dog.goalMinutes)) body.goal_minutes = goal
+    if (f.leaderboards !== (dog.leaderboards !== false)) body.leaderboards = f.leaderboards
     if (photo !== undefined && !(photo === null && !dog.photoUrl)) body.photo = photo
     if (!Object.keys(body).length) { onClose(); return }
     setBusy(true); setErr('')
@@ -105,9 +113,12 @@ export default function EditDog({ dog, onSave, onClose }) {
           <Field label="Birthday (optional)" error={errs.birthday} hint={f.birthday ? 'Age is worked out from the birthday.' : 'Not sure of the date? Leave this empty and type an age below.'}><input type="date" value={f.birthday} onChange={set('birthday')} max={today()} /></Field>
           {!f.birthday && <Field label="Age (optional)" error={errs.age} hint={'For example "4 yrs" or "8 mos".'}><input value={f.age} onChange={set('age')} maxLength={30} autoComplete="off" /></Field>}
           <Field label="Weight in pounds (optional)" error={errs.weight}><input value={f.weight} onChange={set('weight')} inputMode="decimal" maxLength={8} autoComplete="off" /></Field>
+          <Field label="City (optional)" error={errs.city} hint={'For example "Charlotte, NC". Used for the city leaderboard.'}><input value={f.city} onChange={set('city')} maxLength={60} autoComplete="off" /></Field>
+          <Field label="Daily activity goal in minutes (optional)" error={errs.goal} hint="Your own number, from 10 to 300. Not a recommendation and not veterinary advice."><input value={f.goal} onChange={set('goal')} inputMode="numeric" maxLength={3} autoComplete="off" /></Field>
           <Field label="Bio (optional)" error={errs.bio} hint={`${f.bio.trim().length} of 280`}><textarea value={f.bio} onChange={set('bio')} rows={3} maxLength={400} /></Field>
           <label className="switch"><input type="checkbox" checked={f.public} onChange={set('public')} /><span className="grow"><b>Public page</b><small>Anyone with the link sees {dog.name}'s photo, name, breed, bio, totals and last 10 outings, with first names only.</small></span></label>
           <label className="switch"><input type="checkbox" checked={f.public && f.shareRoutes} disabled={!f.public} onChange={set('shareRoutes')} /><span className="grow"><b>Show route maps on the public page</b><small>Route shapes can give away where {dog.name} lives.</small></span></label>
+          <label className="switch"><input type="checkbox" checked={f.leaderboards} onChange={set('leaderboards')} /><span className="grow"><b>Show on leaderboards</b><small>Public dogs only. Turn this off to keep {dog.name} off every board. Owner names never show.</small></span></label>
           <p className="fhint">{dog.name}'s page address stays the same if the name changes, so links already shared keep working.</p>
           {err && <p className="formerr" role="alert">{err}</p>}
           <button className="cta" type="submit" disabled={busy || reading}>{busy ? 'Saving' : 'Save profile'}</button>

@@ -15,7 +15,9 @@ export function drawCard(a) {
   x.fillStyle = '#FFFFFF'; x.font = 'italic 900 150px Archivo, Arial, sans-serif'; x.fillText(a.dog.toUpperCase(), 70, 1340)
   const who = a.byName || (PEOPLE[a.by] ? PEOPLE[a.by].name : '')
   x.font = '500 46px Inter, Arial, sans-serif'; x.fillStyle = '#D5DBE4'; x.fillText(`${a.title}${who ? ' · with ' + who : ''}`.slice(0, 44), 70, 1410)
-  const stats = [['DISTANCE', a.miles ? a.miles.toFixed(1) + ' mi' : '-'], ['TIME', fmtTime(a.minutes)], ['SNIFF STOPS', String(a.sniffs)]]
+  // Only stats that have a value are drawn. Daycare shows time only.
+  const timed = a.type === 'Daycare'
+  const stats = [!timed && a.miles > 0 ? ['DISTANCE', a.miles.toFixed(1) + ' mi'] : null, ['TIME', fmtTime(a.minutes)], !timed && a.maxSpeed > 0 ? ['TOP SPEED', Number(a.maxSpeed).toFixed(1) + ' mph'] : null].filter(Boolean)
   stats.forEach(([k, v], i) => { const X = 70 + i * 330; x.fillStyle = '#AEB7C4'; x.font = '600 34px Inter, Arial, sans-serif'; x.fillText(k, X, 1540); x.fillStyle = '#FFFFFF'; x.font = 'italic 800 92px Archivo, Arial, sans-serif'; x.fillText(v, X, 1640) })
   x.fillStyle = '#C8F031'; x.fillRect(70, 1740, 120, 10)
   x.fillStyle = '#AEB7C4'; x.font = '500 36px Inter, Arial, sans-serif'; x.fillText('Every walk counts.', 70, 1810)

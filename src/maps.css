@@ -18,3 +18,80 @@
 .osmlink{font-size:12px;color:var(--grey);min-height:44px;display:inline-flex;align-items:center;text-decoration:underline}
 .gpswait{background:#FFF1E8}
 .rrow.box.lbox{flex-direction:column;align-items:stretch;gap:10px}
+/* Place search, category pins, Jump to and the route builder in Explore. */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+.psearch{position:relative;margin-bottom:8px}
+.sbox{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 6px 0 14px;border-radius:22px;background:#fff;box-shadow:0 2px 8px rgba(15,27,45,.15)}
+.sbox:focus-within{outline:2px solid var(--blue);outline-offset:1px}
+.sbox input{flex:1;min-width:0;height:44px;border:0;background:none;font:500 15px Inter,sans-serif;color:var(--ink);outline:none;-webkit-appearance:none;appearance:none}
+.sbox input::-webkit-search-cancel-button{display:none}
+.sclear{width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%}
+.sugs{position:absolute;left:0;right:0;top:50px;z-index:5;background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(15,27,45,.22);padding:6px;max-height:300px;overflow-y:auto}
+.sugs ul{list-style:none;margin:0;padding:0}
+.sug{display:block;width:100%;min-height:48px;padding:7px 10px;border-radius:10px;text-align:left}.sug:hover,.sug:focus-visible{background:var(--bg)}
+.sug b{display:block;font-size:14px;font-weight:600;overflow-wrap:anywhere}.sug small{display:block;font-size:12px;color:var(--grey);overflow-wrap:anywhere}.sug.go b{color:var(--blue)}
+.snote{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;font-size:13px;font-weight:600;color:var(--grey)}
+.mbar{flex-wrap:wrap}
+.jump{position:relative;display:flex}.jump.end{margin-left:auto}
+.jump select{min-height:44px;padding:0 30px 0 16px;border-radius:22px;border:0;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%230F1B2D' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 13px center;color:var(--ink);font:700 13px Inter,sans-serif;box-shadow:0 2px 8px rgba(15,27,45,.15);-webkit-appearance:none;appearance:none;cursor:pointer;max-width:130px}
+.bhint{background:var(--ink);color:#fff;font-size:13px;font-weight:700;min-height:44px;padding:0 16px;border-radius:22px;display:flex;align-items:center;box-shadow:0 2px 8px rgba(15,27,45,.25)}
+/* Category pins: a letter plus a colour ring per kind of place. P parks, B bars, C cafes and food, S shops, V vets, D daycare and training, W dog water. */
+.pin.cat span{width:auto;height:auto;border-radius:0;background:none;color:#fff;font:italic 800 14px Archivo,Arial,sans-serif;line-height:1}
+.pin.c-bar{border-color:var(--volt)}.pin.c-bar span{color:var(--volt)}
+.pin.c-cafe{background:#fff;border-color:var(--ink)}.pin.c-cafe span{color:var(--ink)}
+.pin.c-shop{background:var(--blue)}
+.pin.c-vet{background:#fff;border-color:var(--blue)}.pin.c-vet span{color:var(--blue)}
+.pin.c-care{background:var(--grey)}
+.pin.c-water{background:#E8EEFD;border-color:var(--blue)}.pin.c-water span{color:var(--blue)}
+.pin.cat.on{background:var(--volt);border-color:var(--ink)}.pin.cat.on span{background:none;color:var(--ink)}
+.pin.mini{flex-shrink:0;box-shadow:none}.pin.mini.c-park,.pin.mini.c-shop,.pin.mini.c-care{border-color:var(--line)}
+.wpt{width:28px;height:28px;border-radius:50%;background:var(--volt);border:3px solid var(--ink);color:var(--ink);display:flex;align-items:center;justify-content:center;font:italic 800 13px Archivo,Arial,sans-serif;box-shadow:0 2px 6px rgba(15,27,45,.35)}
+.map.tapmode,.map.tapmode .leaflet-grab{cursor:crosshair}
+.plinks{display:flex;gap:8px;flex-wrap:wrap}.plinks a{min-height:44px;padding:0 16px;border-radius:22px;border:1px solid var(--line);display:inline-flex;align-items:center;font-size:13px;font-weight:700;color:var(--blue);text-decoration:none;overflow-wrap:anywhere}
+.cta.wide{width:100%}
+.chip:disabled{opacity:.45;cursor:default}
+.saverow{display:flex;align-items:flex-end;gap:10px}.saverow .cta{min-height:48px;flex-shrink:0}
+.row.nowrap{flex-wrap:nowrap}.row.nowrap .cta.small{flex-shrink:0;min-height:52px}
+.stoggle{min-height:44px;font-size:13px;font-weight:700;color:var(--blue);text-align:left}
+.srow{display:flex;align-items:center;gap:8px}.srow .rrow{flex:1;min-width:0}.rrow.box.srow{padding:4px 8px 4px 14px}
+.sdel{min-width:44px;height:44px;border-radius:22px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:700}.sdel.sure{padding:0 12px;background:#FFF1E8}
+/* Zoom buttons, scale bar, tap-to-use hint and mile markers on every map. */
+.zoomctl{display:flex;flex-direction:column;gap:6px;margin:0 10px 6px 0!important}
+.zoomctl button{width:44px;height:44px;border-radius:12px;background:#fff;color:var(--ink);font:800 22px/1 Archivo,Arial,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(15,27,45,.22)}
+.zoomctl button:focus-visible,.layerbtn:focus-visible,.grabbtn:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.map .leaflet-control-scale{margin:0 0 6px 10px}.map .leaflet-control-scale-line{border-color:var(--ink);color:var(--ink);background:rgba(255,255,255,.8);font-size:10px;font-weight:700;line-height:1.2;padding:1px 5px}
+.maphint{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:500;pointer-events:none;background:rgba(15,27,45,.82);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:12px;white-space:nowrap}.map.engaged .maphint{display:none}
+.milemark{min-width:40px;height:20px;padding:0 5px;border-radius:10px;background:#fff;border:2px solid var(--ink);color:var(--ink);font:italic 800 10px/16px Archivo,Arial,sans-serif;text-align:center;white-space:nowrap;box-shadow:0 1px 4px rgba(15,27,45,.3)}
+.wpt.drop{width:32px;height:32px;font-size:18px}
+/* Community places: a squared pin, so they are never mistaken for map data. */
+.pin.comm{border-radius:9px;border-style:dashed}
+/* Layers control and legend. */
+.layerbox{position:absolute;right:12px;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:6px;pointer-events:none}.layerbox>*{pointer-events:auto}
+.layerbtn{min-height:44px;padding:0 14px;border-radius:22px;background:#fff;color:var(--ink);font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(15,27,45,.18)}
+.layerpanel{width:250px;max-height:52vh;overflow-y:auto;background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(15,27,45,.25);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.layerpanel fieldset{border:0;margin:0;padding:0}.layerpanel legend,.legend b{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--grey);text-transform:uppercase;padding:0;margin-bottom:2px;display:block}
+.lrow{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;font-weight:600;cursor:pointer}.lrow input{width:22px;height:22px;accent-color:var(--ink);flex-shrink:0}
+.legend{border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}.lg{display:flex;align-items:center;gap:8px;font-size:12px;color:#3A4250}.lg .pin.mini{width:26px;height:26px;border-width:2px}.lg .pin.mini span{font-size:11px}
+.swatch{width:26px;height:0;flex-shrink:0;border-top:4px solid var(--blue)}.swatch.saved{border-top:4px dashed var(--ink)}.swatch.heat{height:12px;border:0;border-radius:6px;background:linear-gradient(90deg,#7B5CFF,#FF8A5B,#FF5A1F)}
+/* Sheet with three snap heights and a grab handle that is also a button. */
+.sheet.snap{max-height:none;padding-top:0;transition:height .2s ease}.sheet.snap.dragging{transition:none}
+@media (prefers-reduced-motion:reduce){.sheet.snap{transition:none}}
+.grabbtn{position:sticky;top:0;z-index:2;flex-shrink:0;width:100%;min-height:44px;margin-bottom:-10px;background:#fff;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;border-radius:22px 22px 0 0}
+.sheet.snap>*{flex-shrink:0}
+.asum{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;font-weight:600;color:#3A4250;background:var(--bg);border-radius:10px;padding:8px 10px}
+.upd{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--grey)}.spin.sm{width:12px;height:12px;border-width:2px}
+.prow{display:flex;flex-direction:column;gap:6px;border-radius:14px;scroll-margin:54px 0 8px}.prow.hi{background:#F0F6D8;box-shadow:0 0 0 6px #F0F6D8}.prow .cta.small{align-self:flex-start}
+.pinfo{margin:0;display:flex;flex-direction:column;gap:6px}.pinfo div{display:flex;gap:10px;font-size:13px;line-height:1.4}.pinfo dt{width:112px;flex-shrink:0;color:var(--grey);font-weight:600}.pinfo dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.pnote{margin:0;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.addform{display:flex;flex-direction:column;gap:10px}
+.field select{height:48px;border-radius:12px;border:1px solid var(--line);padding:0 12px;font:500 15px Inter,sans-serif;color:var(--ink);background:#fff}
+.ferr,.field em.ferr{color:#B3261E;font-style:normal;font-size:12px;font-weight:600}
+/* Record: activity chips with icons, timed sessions, loop preview and the speeds note. */
+.chip.tchip{display:inline-flex;align-items:center;gap:7px}
+.lmap{height:190px;border-radius:12px;overflow:hidden}
+.tsession .tbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:0 20px;position:relative;z-index:1}
+.clock.huge{font-size:76px;line-height:1}
+.sprintbtn{min-width:200px;min-height:96px;border-radius:24px;background:var(--volt);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 20px}.sprintbtn b{font:italic 800 40px/1 Archivo,Arial,sans-serif}.sprintbtn span{font-size:13px;font-weight:700}
+.sprintbtn:active{transform:scale(.97)}
+.speednote{margin:0;font-size:12px;line-height:1.45;color:#D5DBE4}
+.panel .mbtn{box-shadow:none}

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Ic, Paw, Av, DogAv, RangeOff, toAct } from './ui.jsx'
-import { PEOPLE, SEED, CONNECTIONS } from './data.js'
+import { PEOPLE, SEED, CONNECTIONS, ACTIVITY_TYPES } from './data.js'
 import { api, probe, hasToken, setAuthLost, signOut, takeInviteFromUrl, pendingInvite, primePhoto } from './api.js'
 import Home from './screens/Home.jsx'
 import Explore from './screens/Explore.jsx'
@@ -9,13 +9,17 @@ import People from './screens/People.jsx'
 import DogTab from './screens/DogTab.jsx'
 import Detail from './screens/Detail.jsx'
 import Welcome, { acceptPendingInvite } from './screens/Welcome.jsx'
+import Settings from './screens/Settings.jsx'
+import Compete from './screens/Compete.jsx'
+
+const PLAN = 'trot-plan'
 
 const KEY = 'trot-demo-v1'
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {} } catch (e) { return {} } }
 const MODE = 'trot-mode', DOGKEY = 'trot-dog'
 const getLS = (k) => { try { return localStorage.getItem(k) } catch (e) { return null } }
 const setLS = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v) } catch (e) {} }
-const WALK_TYPES = ['Walk', 'Hike', 'Run', 'Swim', 'Fetch', 'Training', 'Dog park', 'Daycare']
+const WALK_TYPES = ACTIVITY_TYPES.map((t) => t.id)
 
 // Decides between three paths:
 //   demo    the seeded Biscuit demo. The only path when no API is reachable.
@@ -69,11 +73,11 @@ export default function App() {
   if (phase === 'boot') return <div className="shell"><div className="welcome splash" role="status" aria-label="Loading Trot"><div className="wlogo">TROT</div></div></div>
   if (phase === 'welcome') return <div className="shell"><main className="screen"><Welcome user={me} notice={notice} onDemo={toDemo} onReady={enter} /></main></div>
   if (phase === 'real' && me && slug) return <RealApp key={me.user.id} me={me} setMe={setMe} slug={slug} pickDog={(s) => { setSlug(s); setLS(DOGKEY, s) }} notice={notice} signOut={out} toDemo={toDemo} />
-  return <DemoApp leaveDemo={hasApi ? toWelcome : null} signedIn={!!(me && me.dogs.length)} />
+  return <DemoApp leaveDemo={hasApi ? toWelcome : null} signedIn={!!(me && me.dogs.length)} hasApi={hasApi} />
 }
 
 // ---- the Biscuit demo: seeded data, state in localStorage, no backend ---------
-function DemoApp({ leaveDemo, signedIn }) {
+function DemoApp({ leaveDemo, signedIn, hasApi }) {
   const saved = useMemo(load, [])
   const [tab, setTab] = useState('home')
   const [me, setMe] = useState(saved.me || 'dale')
@@ -82,7 +86,13 @@ function DemoApp({ leaveDemo, signedIn }) {
   const [conn, setConn] = useState(saved.conn || Object.fromEntries(CONNECTIONS.map((c) => [c.id, !!c.on])))
   const [open, setOpen] = useState(null)
   const [toast, setToast] = useState('')
-  useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify({ me, mine, pawed, conn })) } catch (e) {} }, [me, mine, pawed, conn])
+  // The demo's tracking level and plan choice live in this browser only.
+  const [level, setLevel] = useState([1, 2, 3].includes(saved.level) ? saved.level : 1)
+  const [plan, setPlanState] = useState(getLS(PLAN) || 'free')
+  const setPlan = (p) => { setPlanState(p); setLS(PLAN, p) }
+  const [settings, setSettings] = useState(false)
+  const [compete, setCompete] = useState(null)
+  useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify({ me, mine, pawed, conn, level })) } catch (e) {} }, [me, mine, pawed, conn, level])
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 2600); return () => clearTimeout(t) }, [toast])
   const acts = useMemo(() => [...mine, ...SEED], [mine])
   const week = useMemo(() => {
@@ -93,8 +103,8 @@ function DemoApp({ leaveDemo, signedIn }) {
   const todayMin = acts.filter((a) => a.daysAgo === 0 && a.type !== 'Daycare').reduce((s, a) => s + a.minutes, 0)
   const paw = (id) => setPawed((p) => ({ ...p, [id]: !p[id] }))
   const saveWalk = (a) => { setMine((m) => [a, ...m]); setTab('home'); setOpen(a) }
-  const ctx = { saveWalk, me, setMe, acts, week, todayMin, pawed, paw, conn, setConn, setOpen, setTab, setToast, mine, setMine }
-  const reset = () => { setMine([]); setPawed({}); setMe('dale'); setConn(Object.fromEntries(CONNECTIONS.map((c) => [c.id, !!c.on]))); setToast('Demo reset') }
+  const ctx = { saveWalk, me, setMe, acts, week, todayMin, pawed, paw, conn, setConn, setOpen, setTab, setToast, mine, setMine, level, openSettings: () => setSettings(true), openCompete: (t) => setCompete(t || 'boards') }
+  const reset = () => { setMine([]); setPawed({}); setMe('dale'); setConn(Object.fromEntries(CONNECTIONS.map((c) => [c.id, !!c.on]))); setLevel(1); setPlan('free'); setLS('trot-demo-joins', null); setToast('Demo reset') }
   return (
     <div className="shell">
       <main className="screen">
@@ -102,7 +112,7 @@ function DemoApp({ leaveDemo, signedIn }) {
         {tab === 'explore' && <Explore {...ctx} />}
         {tab === 'record' && <Record {...ctx} />}
         {tab === 'people' && <People {...ctx} />}
-        {tab === 'dog' && <DogTab {...ctx} reset={reset} leaveDemo={leaveDemo} signedIn={signedIn} />}
+        {tab === 'dog' && <DogTab {...ctx} />}
       </main>
       {tab !== 'record' && (
         <nav className="tabs" aria-label="Main">
@@ -113,6 +123,8 @@ function DemoApp({ leaveDemo, signedIn }) {
           <button className={`tab ${tab === 'dog' ? 'on' : ''}`} onClick={() => setTab('dog')}><DogAv name="Biscuit" demo s={24} bg={tab === 'dog' ? '#0F1B2D' : '#5B6472'} c="#fff" /><span>Biscuit</span></button>
         </nav>
       )}
+      {compete && <Compete close={() => setCompete(null)} start={compete} acts={acts} setToast={setToast} hasApi={hasApi} />}
+      {settings && <Settings close={() => setSettings(false)} setToast={setToast} plan={plan} setPlan={setPlan} level={level} setLevel={setLevel} conn={conn} setConn={setConn} me={me} setMe={setMe} reset={reset} leaveDemo={leaveDemo} signedIn={signedIn} />}
       {open && <Detail a={open} {...ctx} close={() => setOpen(null)} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
@@ -138,6 +150,10 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
   const [patch, setPatch] = useState({})
   const [err, setErr] = useState('')
   const saving = useRef(false), seq = useRef(0)
+  const [settings, setSettings] = useState(false)
+  const [compete, setCompete] = useState(null)
+  const [plan, setPlanState] = useState(getLS(PLAN) || 'free')
+  const setPlan = (p) => { setPlanState(p); setLS(PLAN, p) }
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 3200); return () => clearTimeout(t) }, [toast])
   const dogs = me.dogs
   const all = scope === 'all' && dogs.length > 1
@@ -201,7 +217,10 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
         title: String(a.title || a.type || 'Walk').trim().slice(0, 80) || 'Walk',
         note: String(a.note || '').trim().slice(0, 500),
         place: String(a.place || '').trim().slice(0, 80),
-        miles: clamp(a.miles, 200), minutes: clamp(a.minutes, 1440), sniffs: Math.round(clamp(a.sniffs, 1000)),
+        miles: clamp(a.miles, 200), minutes: clamp(a.minutes, 1440),
+        // Performance statistics are sent only when the recorder measured them.
+        ...(a.avgSpeed > 0 ? { avgSpeed: clamp(a.avgSpeed, 40) } : {}), ...(a.maxSpeed > 0 ? { maxSpeed: Math.max(clamp(a.maxSpeed, 40), a.avgSpeed > 0 ? clamp(a.avgSpeed, 40) : 0) } : {}), ...(a.sprints > 0 ? { sprints: Math.round(clamp(a.sprints, 500)) } : {}),
+        ...(a.movingMinutes > 0 ? { movingMinutes: Math.min(clamp(a.movingMinutes, 1440), clamp(a.minutes, 1440)) } : {}),
         route: pts.length > 1 ? pts : null,
       })
       await reload()
@@ -243,8 +262,8 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
     </div></div>
   )
   const todayMin = data.weekWalks.filter((w) => w.type !== 'Daycare' && new Date(w.startedAt).toDateString() === new Date().toDateString()).reduce((s, w) => s + w.minutes, 0)
-  const real = { user: me.user, dogs, dog, totals: data.totals, team, weekWalks: data.weekWalks, dogActs, switchDog, scope: all ? 'all' : 'dog', setScope, hasMore: !!feed.cursor, more, loadingMore: feed.more, createInvite, patchDog, saveProfile, renameMe, listInvites, cancelInvite, removeMember, deleteWalk, refreshMe, signOut: doSignOut, toDemo, hasPendingInvite: !!pendingInvite() }
-  const ctx = { real, acts, pawed, paw, setOpen, setTab, setToast, conn: {} }
+  const real = { user: me.user, dogs, dog, totals: data.totals, team, weekWalks: data.weekWalks, dogActs, switchDog, scope: scope === 'pack' ? 'pack' : all ? 'all' : 'dog', setScope, reload, hasMore: !!feed.cursor, more, loadingMore: feed.more, createInvite, patchDog, saveProfile, renameMe, listInvites, cancelInvite, removeMember, deleteWalk, refreshMe, signOut: doSignOut, toDemo, hasPendingInvite: !!pendingInvite() }
+  const ctx = { real, acts, pawed, paw, setOpen, setTab, setToast, conn: {}, openSettings: () => setSettings(true), openCompete: (t) => setCompete(t || 'boards') }
   return (
     <RangeOff.Provider value={true}>
       <div className="shell">
@@ -265,6 +284,8 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
             <button className={`tab ${tab === 'dog' ? 'on' : ''}`} onClick={() => setTab('dog')}><DogAv name={dog.name} photoUrl={dog.photoUrl} s={24} bg={tab === 'dog' ? '#0F1B2D' : '#5B6472'} c="#fff" /><span className="tabname">{dog.name}</span></button>
           </nav>
         )}
+        {compete && <Compete close={() => setCompete(null)} start={compete} real={real} setToast={setToast} />}
+        {settings && <Settings close={() => setSettings(false)} real={real} setToast={setToast} plan={plan} setPlan={setPlan} />}
         {open && <Detail a={open} {...ctx} dogName={dog.name} close={() => setOpen(null)} />}
         {toast && <div className="toast" role="status">{toast}</div>}
       </div>

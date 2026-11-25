@@ -1,13 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Ic, Paw, Av, Stat, Range, Card, whoName, ptsOf, DogSwitch, personColor, firstName, ROLE_LABEL, copyText, Confirm } from '../ui.jsx'
+import { Ic, Paw, Av, Stat, Range, Card, whoName, ptsOf, DogSwitch, personColor, firstName, ROLE_LABEL, copyText, Confirm, Gear } from '../ui.jsx'
+import Person from './Person.jsx'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine } from '../data.js'
 
 export default function People(props) { return props.real ? <RealPeople {...props} /> : <DemoPeople {...props} /> }
 
 const INVITE_ROLES = [['walker', 'Dog walker'], ['family', 'Family'], ['daycare', 'Daycare']]
 // Signed in: the care team and each person's share of the last 7 days, from the API.
-function RealPeople({ real, setToast }) {
+const HeadBtns = ({ openCompete, openSettings }) => <div className="row g8"><button className="cta small white bordered" onClick={() => openCompete('events')}>Events</button><Gear onClick={openSettings} /></div>
+
+function RealPeople({ real, setToast, openSettings, openCompete, pawed, paw, setOpen }) {
   const { dog, dogs, team, totals } = real
+  const [person, setPerson] = useState(null)
   const [sheet, setSheet] = useState(false)
   const [role, setRole] = useState('walker')
   const [link, setLink] = useState('')
@@ -59,25 +63,24 @@ function RealPeople({ real, setToast }) {
   const close = () => { setSheet(false); setLink(''); setErr('') }
   return (
     <div className="scroll">
-      <header className="top"><h1 className="h1">{dog.name}'s people</h1></header>
+      <header className="top"><h1 className="h1">{dog.name}'s people</h1><HeadBtns openCompete={openCompete} openSettings={openSettings} /></header>
       <DogSwitch dogs={dogs} active={dog.slug} onPick={real.switchDog} />
       <section className="hero">
+        <button className="herobtn" onClick={() => { const me = rows.find((r) => r.you); if (me) setPerson(me) }} aria-label="Open your own walks and totals">
         <div className="eyebrow">YOUR LAST 7 DAYS WITH {dog.name.toUpperCase()}, {firstName(real.user.name).toUpperCase()}</div>
         <div className="row g20"><Stat light l="TIME TOGETHER" v={fmtTime(mine.week.minutes)} big={30} /><Stat light l="OUTINGS" v={mine.week.outings} big={30} /><Stat light l="MILES" v={mine.week.miles.toFixed(1)} big={30} /></div>
         {total > 0 && <div className="lovebar" aria-label={`Share of ${dog.name}'s week by person`}>{rows.filter((r) => r.week.minutes > 0).map((r) => <i key={r.id} style={{ width: (r.week.minutes / total) * 100 + '%', background: r.color === '#0F1B2D' ? '#5B6472' : r.color }} />)}</div>}
         <div className="meta lightm"><Ic n="heart" s={14} c="#C8F031" f="#C8F031" /> {total > 0 ? `You gave ${dog.name} ${share}% of the last 7 days out and about.` : `${dog.name} has no outings in the last 7 days yet.`}</div>
+        <span className="herolink">See your walks with {dog.name}</span>
+        </button>
       </section>
       <div className="list">
         <div className="eyebrow dark padx">LAST 7 DAYS</div>
         {rows.map((r) => (
-          <div key={r.id} className="card"><div className="prow">
+          <div key={r.id} className="card"><button className="prow pbtn" onClick={() => setPerson(r)} aria-label={`Open ${r.name}: walks and totals with ${dog.name}`}>
             <Av t={(r.name.trim()[0] || '?').toUpperCase()} s={44} bg={r.color} c={r.ink} sq={r.role === 'daycare'} />
             <div className="grow"><div className="row between"><b>{r.name}{r.you && <span className="you">You</span>}</b><span className="num">{total ? Math.round((r.week.minutes / total) * 100) : 0}%</span></div><div className="meta">{r.role === 'owner' ? `${dog.name}'s human` : ROLE_LABEL[r.role] || r.role}</div><div className="bar thin"><i style={{ width: (total ? (r.week.minutes / total) * 100 : 0) + '%' }} /></div><div className="meta">{r.week.outings} {r.week.outings === 1 ? 'outing' : 'outings'} · {fmtTime(r.week.minutes)} · {r.week.miles.toFixed(1)} mi</div></div>
-          </div>
-            {owner && !r.you && r.role !== 'owner' && (ask && ask.kind === 'member' && ask.id === r.id
-              ? <div className="rowfoot"><Confirm text={`Remove ${r.name} from ${dog.name}'s team? They lose access to ${dog.name}'s walks and routes. Walks they already logged stay on ${dog.name}'s page.`} yes={`Remove ${firstName(r.name)}`} no="Keep" busy={ask.busy} error={ask.error} onYes={confirmAsk} onNo={() => setAsk(null)} /></div>
-              : <div className="rowfoot"><button className="tbtn" onClick={() => setAsk({ kind: 'member', id: r.id, name: r.name })}>Remove {firstName(r.name)} from the team</button></div>)}
-          </div>
+          </button></div>
         ))}
         {owner && invites.length > 0 && <div className="card padc"><div className="eyebrow dark">INVITES NOT USED YET</div>
           {invites.map((i) => <div key={i.id} className="invrow">
@@ -98,8 +101,10 @@ function RealPeople({ real, setToast }) {
             </form>
             : <div className="row between g8"><span className="grow yourow"><b>{real.user.name}</b><small>Shows as "with {firstName(real.user.name)}" on walks you log</small></span><button className="tbtn" onClick={() => setNaming({ value: real.user.name, busy: false, error: '' })}>Edit name</button></div>}
           <button className="rrow box line" onClick={real.signOut}><span className="grow"><b>Sign out</b><small>On this device</small></span></button>
+          <button className="rrow box line" onClick={openSettings}><span className="grow"><b>Settings</b><small>Account, tracking, connections and plans</small></span></button>
         </div>
       </div>
+      {person && <Person person={person} real={real} close={() => setPerson(null)} pawed={pawed} paw={paw} setOpen={setOpen} setToast={setToast} />}
       {sheet && <div className="scrim" onClick={close}><div className="modal" role="dialog" aria-label={`Invite someone to ${dog.name}'s team`} onClick={(e) => e.stopPropagation()}>
         <div className="grab" /><h2>Invite someone to {dog.name}'s team</h2>
         {!link ? <>
@@ -118,31 +123,43 @@ function RealPeople({ real, setToast }) {
   )
 }
 
-function DemoPeople({ week, me, setMe, setToast }) {
+function DemoPeople({ week, me, setToast, acts, pawed, paw, setOpen, openSettings, openCompete }) {
+  const [person, setPerson] = useState(null)
+  const [invite, setInvite] = useState(false)
   const rows = Object.values(PEOPLE).map((p) => ({ ...p, ...(week.by[p.id] || { min: 0, n: 0, mi: 0 }) })).sort((a, b) => b.min - a.min)
   const mine = week.by[me] || { min: 0, n: 0, mi: 0 }
   const share = week.total ? Math.round((mine.min / week.total) * 100) : 0
   return (
     <div className="scroll">
-      <header className="top"><h1 className="h1">Biscuit's people</h1></header>
+      <header className="top"><h1 className="h1">Biscuit's people</h1><HeadBtns openCompete={openCompete} openSettings={openSettings} /></header>
       <section className="hero">
+        <button className="herobtn" onClick={() => setPerson(PEOPLE[me])} aria-label="Open your own walks and totals">
         <div className="eyebrow">YOUR WEEK WITH BISCUIT, {PEOPLE[me].name.toUpperCase()}</div>
         <div className="row g20"><Stat light l="TIME TOGETHER" v={fmtTime(mine.min)} big={30} /><Stat light l="OUTINGS" v={mine.n} big={30} /><Stat light l="MILES" v={mine.mi.toFixed(1)} big={30} /></div>
         <div className="lovebar" aria-label="Share of Biscuit's week by person">{rows.filter((r) => r.min > 0).map((r) => <i key={r.id} style={{ width: (r.min / week.total) * 100 + '%', background: r.color === '#0F1B2D' ? '#5B6472' : r.color }} />)}</div>
         <div className="meta lightm"><Ic n="heart" s={14} c="#C8F031" f="#C8F031" /> You gave Biscuit {share}% of this week's time out and about.</div>
+        <span className="herolink">See your walks with Biscuit</span>
+        </button>
       </section>
       <div className="list">
         <div className="eyebrow dark padx">THIS WEEK</div>
         {rows.map((r) => (
-          <div key={r.id} className="card prow">
+          <button key={r.id} className="card prow pbtn" onClick={() => setPerson(PEOPLE[r.id])} aria-label={`Open ${r.name}: walks and totals with Biscuit`}>
             <Av t={r.name[0]} s={44} bg={r.color} c={r.ink} sq={r.id === 'tails'} />
             <div className="grow"><div className="row between"><b>{r.name}{r.id === me && <span className="you">You</span>}</b><span className="num">{week.total ? Math.round((r.min / week.total) * 100) : 0}%</span></div><div className="meta">{r.role}</div><div className="bar thin"><i style={{ width: (week.total ? (r.min / week.total) * 100 : 0) + '%' }} /></div><div className="meta">{r.n} {r.n === 1 ? "outing" : "outings"} · {fmtTime(r.min)} · {r.mi.toFixed(1)} mi</div></div>
-          </div>
+          </button>
         ))}
-        <button className="rrow box" onClick={() => setToast('Invite link copied (demo)')}><span className="ricon"><Ic n="plus" s={20} c="#1F5AE8" /></span><span className="grow"><b>Add someone to Biscuit's team</b><small>Walkers, family, daycare, the vet</small></span></button>
-        <div className="eyebrow dark padx">DEMO: VIEW THE APP AS</div>
-        <div className="chips wrap padx">{['dale', 'pat', 'sue'].map((id) => <button key={id} className={`chip flat ${me === id ? 'on' : ''}`} aria-pressed={me === id} onClick={() => { setMe(id); setToast(`Now signed in as ${PEOPLE[id].name}`) }}>{PEOPLE[id].name}</button>)}</div>
+        <button className="rrow box" onClick={() => setInvite(true)}><span className="ricon"><Ic n="plus" s={20} c="#1F5AE8" /></span><span className="grow"><b>Add someone to Biscuit's team</b><small>Walkers, family, daycare, the vet</small></span></button>
+        <button className="rrow box" onClick={openSettings}><span className="grow"><b>View the app as someone else</b><small>The demo switch for Dale, Pat and Sue is in Settings, under Demo tools</small></span></button>
       </div>
+      {invite && <div className="scrim" onClick={() => setInvite(false)}><div className="modal" role="dialog" aria-label="Invite someone to Biscuit's team" onClick={(e) => e.stopPropagation()}>
+        <div className="grab" /><h2>Invite someone to Biscuit's team</h2>
+        <label className="field lightf"><span>Invite link (demo sample, it does not work)</span><input className="linkinput" readOnly value="https://trot.example/?invite=demo-sample-link" onFocus={(e) => e.target.select()} /></label>
+        <p className="meta">With a real dog page, this link works once and expires in 14 days. Send it to one walker, family member or daycare.</p>
+        <button className="cta" onClick={() => { setInvite(false); setToast('Sample link copied (demo). It does not open anything.') }}><Ic n="link" s={20} c="#0F1B2D" />Copy</button>
+        <button className="cta white bordered" onClick={() => setInvite(false)}>Close</button>
+      </div></div>}
+      {person && <Person person={person} acts={acts} week={week} close={() => setPerson(null)} pawed={pawed} paw={paw} setOpen={setOpen} setToast={setToast} />}
     </div>
   )
 }

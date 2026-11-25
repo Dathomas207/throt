@@ -109,3 +109,81 @@ export function takeInviteFromUrl() {
 }
 export function pendingInvite() { try { return sessionStorage.getItem(INVITE) || inviteMem } catch (e) { return inviteMem } }
 export function clearInvite() { inviteMem = null; try { sessionStorage.removeItem(INVITE) } catch (e) {} }
+
+// ---- places, events, awards, documents, boards (appended) --------------------
+const qs = (o) => { const p = Object.entries(o || {}).filter(([, v]) => v !== undefined && v !== null && v !== ''); return p.length ? '?' + p.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&') : '' }
+const tz = () => new Date().getTimezoneOffset()
+
+// Community dog places. list() works signed out; the token is sent only when there is one.
+api.places = {
+  list: (box) => request('GET', `/places${qs({ s: box.s, w: box.w, n: box.n, e: box.e })}`),
+  add: (input) => request('POST', '/places', input),
+  confirm: (id) => request('POST', `/places/${id}/confirm`, {}),
+  unconfirm: (id) => request('DELETE', `/places/${id}/confirm`),
+  remove: (id) => request('DELETE', `/places/${id}`),
+}
+api.events = {
+  // near is [lat, lng]; from is YYYY-MM-DD. Both optional.
+  list: ({ near, from } = {}) => request('GET', `/events${qs({ near: near ? near.join(',') : undefined, from })}`),
+  forDog: (slug) => request('GET', `/dogs/${slug}/events`),
+  add: (input) => request('POST', '/events', input),
+  remove: (id) => request('DELETE', `/events/${id}`),
+  mark: (id, slug, body) => request('PUT', `/events/${id}/entries/${slug}`, body || { status: 'going' }),
+  unmark: (id, slug) => request('DELETE', `/events/${id}/entries/${slug}`),
+}
+api.awards = {
+  list: (slug) => request('GET', `/dogs/${slug}/awards${qs({ tz: tz() })}`),
+  add: (slug, input) => request('POST', `/dogs/${slug}/awards`, input),
+  update: (id, patch) => request('PATCH', `/awards/${id}`, patch),
+  remove: (id) => request('DELETE', `/awards/${id}`),
+}
+api.health = {
+  get: (slug) => request('GET', `/dogs/${slug}/health${qs({ tz: tz() })}`),
+  add: (slug, input) => request('POST', `/dogs/${slug}/health${qs({ tz: tz() })}`, input),
+  update: (id, patch) => request('PATCH', `/health/${id}${qs({ tz: tz() })}`, patch),
+  remove: (id) => request('DELETE', `/health/${id}`),
+  shares: (slug) => request('GET', `/dogs/${slug}/health/shares`),
+  share: (slug) => request('POST', `/dogs/${slug}/health/shares`, {}),
+  revoke: (slug, id) => request('DELETE', `/dogs/${slug}/health/shares/${id}`),
+}
+api.boards = {
+  get: (o) => request('GET', `/leaderboards${qs(o)}`),
+  challenges: (slug) => request('GET', `/challenges${qs({ dog: slug })}`),
+  challenge: (key, slug) => request('GET', `/challenges/${key}${qs({ dog: slug })}`),
+  join: (slug, key) => request('POST', `/dogs/${slug}/challenges/${key}`, {}),
+  leave: (slug, key) => request('DELETE', `/dogs/${slug}/challenges/${key}`),
+  pack: () => request('GET', '/pack'),
+}
+api.team = {
+  person: (slug, id) => request('GET', `/dogs/${slug}/members/${id}`),
+  setRole: (slug, id, role) => request('PATCH', `/dogs/${slug}/members/${id}`, { role }),
+}
+api.documents = {
+  list: (slug) => request('GET', `/dogs/${slug}/documents`),
+  update: (id, patch) => request('PATCH', `/documents/${id}`, patch),
+  remove: (id) => request('DELETE', `/documents/${id}`),
+  // The file goes up as a data URL in JSON. XMLHttpRequest is used so the form can show progress.
+  upload: (slug, input, onProgress) => new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest()
+    x.open('POST', `${BASE}/api/dogs/${slug}/documents`)
+    x.setRequestHeader('content-type', 'application/json'); x.setRequestHeader('accept', 'application/json')
+    if (token) x.setRequestHeader('authorization', 'Bearer ' + token)
+    x.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)) }
+    x.onerror = () => reject(new ApiError(0, 'Cannot reach Trot. Check your connection and try again.'))
+    x.onload = () => {
+      let data = null
+      try { data = JSON.parse(x.responseText) } catch (e) {}
+      if (x.status >= 200 && x.status < 300 && data) return resolve(data)
+      if (x.status === 401) { setToken(null); if (onAuthLost) onAuthLost() }
+      reject(new ApiError(x.status, (data && data.error) || (x.status === 413 ? 'That file is too big. The limit is 5 MB.' : 'The upload did not work. Try again.')))
+    }
+    x.send(JSON.stringify(input))
+  }),
+  // The file endpoint needs the token, so the bytes are fetched here and handed back as a blob URL.
+  open: async (id) => {
+    let res
+    try { res = await fetch(`${BASE}/api/documents/${id}/file`, { headers: token ? { authorization: 'Bearer ' + token } : {} }) } catch (e) { throw new ApiError(0, 'Cannot reach Trot. Check your connection and try again.') }
+    if (!res.ok) throw new ApiError(res.status, 'That document could not be opened.')
+    return URL.createObjectURL(await res.blob())
+  },
+}

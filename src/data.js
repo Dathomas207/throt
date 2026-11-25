@@ -1,5 +1,5 @@
 // Demo data. Places and coordinates are approximate samples around Cambridge, MA.
-const C = [42.3852, -71.1492]
+const C = [42.3850, -71.1492]
 function loop(center, rLat, rLng, n = 90, phase = 0) {
   const pts = []
   for (let i = 0; i <= n; i++) {
@@ -7,6 +7,13 @@ function loop(center, rLat, rLng, n = 90, phase = 0) {
     const w = 1 + 0.12 * Math.sin(3 * t) + 0.06 * Math.cos(5 * t)
     pts.push([center[0] + rLat * w * Math.sin(t), center[1] + rLng * w * Math.cos(t)])
   }
+  return pts
+}
+// A plain ellipse sized to sit outside the pond's shoreline. It is still an approximation:
+// `via` lists points around the pond so the walking router can replace it with the real path.
+function ring(center, rLat, rLng, n = 96, phase = 0) {
+  const pts = []
+  for (let i = 0; i <= n; i++) { const t = (i / n) * Math.PI * 2 + phase; pts.push([center[0] + rLat * Math.sin(t), center[1] + rLng * Math.cos(t)]) }
   return pts
 }
 function path(a, b, n = 40, bend = 0.0012) {
@@ -18,7 +25,7 @@ function path(a, b, n = 40, bend = 0.0012) {
   return pts
 }
 export const ROUTES = {
-  pond: { name: 'Pond perimeter loop', miles: 2.4, minutes: 48, note: 'Flat · mostly shaded · water access', pts: loop(C, 0.0036, 0.0052, 90, -2.2) },
+  pond: { name: 'Pond perimeter loop', miles: 2.4, minutes: 48, note: 'Flat · mostly shaded · water access', pts: ring(C, 0.0055, 0.0082, 96, -2.2), via: [[42.3905, -71.1490], [42.3890, -71.1425], [42.3850, -71.1408], [42.3800, -71.1455], [42.3805, -71.1535], [42.3850, -71.1576], [42.3893, -71.1548]] },
   meadow: { name: 'Lusitania Meadow out and back', miles: 1.1, minutes: 24, note: 'Easy · off-leash stretch', pts: path([42.3829, -71.1440], [42.3868, -71.1408]).concat(path([42.3868, -71.1408], [42.3829, -71.1440]).slice(1)) },
   danehy: { name: 'Danehy Park lap', miles: 1.8, minutes: 41, note: 'Open fields · fenced dog run', pts: loop([42.3889, -71.1370], 0.0022, 0.0034, 70, 1) },
   fells: { name: 'Sheepfold and Skyline', miles: 5.9, minutes: 142, note: 'Hilly · off-leash meadow · rocky', pts: loop([42.4530, -71.1090], 0.0085, 0.011, 110, 0.4) },
@@ -52,6 +59,7 @@ export const SEED = [
 ]
 for (const a of SEED) { if (a.route && ROUTES[a.route] && a.type !== 'Daycare') { a.miles = ROUTES[a.route].miles; a.minutes = ROUTES[a.route].minutes } }
 export const PACK = [
+  { id: 'p0', dog: 'Millie', breed: 'Bernedoodle', byName: 'Dale', type: 'Play time', title: 'Backyard zoomies before dinner', daysAgo: 0, time: '4:10 PM', place: 'Home', route: null, miles: 0, minutes: 35, sniffs: 0, paws: 41, comments: 6, color: '#0F1B2D', ink: '#C8F031', note: 'Three laps of the yard, one stolen glove, zero regrets.' },
   { id: 'p1', dog: 'Moose', breed: 'Bernese Mountain Dog', byName: 'Priya', type: 'Walk', title: 'Ninth pond lap this week', daysAgo: 0, time: '6:40 AM', place: 'Fresh Pond', route: 'pond', miles: 2.4, minutes: 55, sniffs: 21, paws: 18, comments: 3, color: '#1F5AE8', ink: '#FFFFFF' },
   { id: 'p2', dog: 'Juno', breed: 'Border Collie', byName: 'Pat', type: 'Walk', title: 'Pack walk, four dogs deep', daysAgo: 0, time: '12:30 PM', place: 'Danehy Park', route: 'danehy', miles: 1.8, minutes: 41, sniffs: 9, paws: 27, comments: 4, color: '#0F1B2D', ink: '#C8F031' },
   { id: 'p3', dog: 'Pickle', breed: 'Dachshund', byName: 'Marco', type: 'Walk', title: 'Short legs, long loop', daysAgo: 1, time: '5:50 PM', place: 'Pacific Street', route: 'meadow', miles: 1.0, minutes: 31, sniffs: 24, paws: 35, comments: 7, color: '#FF8A5B', ink: '#0F1B2D' },
@@ -78,3 +86,72 @@ export const HEALTH = [
 export function dayLabel(d) { return d === 0 ? 'Today' : d === 1 ? 'Yesterday' : new Date(Date.now() - d * 864e5).toLocaleDateString('en-US', { weekday: 'long' }) }
 export function fmtTime(min) { const m = Math.floor(min), s = Math.round((min - m) * 60); return m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m` : `${m}:${String(s).padStart(2, '0')}` }
 export function haversine(a, b) { const R = 3958.8, r = Math.PI / 180, dLat = (b[0] - a[0]) * r, dLng = (b[1] - a[1]) * r; const x = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLng / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)) }
+
+// Pace statistics for the demo walks. Speeds come from the phone carried on the walk, in miles per hour.
+const BURST = { 'Play time': [2.6, 8], Agility: [2.4, 10], Walk: [1.9, 2], Hike: [1.7, 1], Run: [1.6, 6], Swim: [1.5, 0], Fetch: [2.6, 9], Training: [1.8, 3], 'Dog park': [2.4, 7], Daycare: [0, 0] }
+for (const a of [...SEED, ...PACK]) {
+  const hrs = a.minutes / 60, avg = a.miles > 0 && hrs > 0 ? a.miles / hrs : 0, b = BURST[a.type] || BURST.Walk
+  a.avgSpeed = Math.round(avg * 10) / 10
+  a.maxSpeed = avg ? Math.round(Math.min(14, avg * b[0] + 1.2) * 10) / 10 : 0
+  a.sprints = avg ? b[1] : 0
+  a.movingMinutes = Math.round(a.minutes * 0.88)
+}
+
+// Activity types. `gps` types record a route; the others are timed sessions. `stats` lists what to show first.
+export const ACTIVITY_TYPES = [
+  { id: 'Walk', label: 'Walk', gps: true, stats: ['distance', 'time', 'maxSpeed'] },
+  { id: 'Run', label: 'Run', gps: true, stats: ['distance', 'pace', 'maxSpeed', 'sprints'] },
+  { id: 'Hike', label: 'Hike', gps: true, stats: ['distance', 'time', 'maxSpeed'] },
+  { id: 'Play time', label: 'Play time', gps: false, stats: ['time', 'sprints'] },
+  { id: 'Fetch', label: 'Fetch', gps: true, stats: ['time', 'sprints', 'maxSpeed'] },
+  { id: 'Dog park', label: 'Dog park', gps: true, stats: ['time', 'sprints', 'maxSpeed'] },
+  { id: 'Swim', label: 'Swim', gps: false, stats: ['time'] },
+  { id: 'Training', label: 'Training', gps: false, stats: ['time'] },
+  { id: 'Agility', label: 'Agility', gps: false, stats: ['time', 'sprints'] },
+  { id: 'Daycare', label: 'Daycare', gps: false, stats: ['time'] },
+]
+export const activityType = (id) => ACTIVITY_TYPES.find((t) => t.id === id) || ACTIVITY_TYPES[0]
+
+// ---- demo health, documents, awards and boards for Biscuit (appended) --------
+// Sample data, consistent with WEIGHTS and HEALTH above. Dates are offsets from today so they never go stale.
+export const DEMO_HEALTH = {
+  // Weekly minutes for the seven weeks before this one, oldest first. This week comes from the demo walks.
+  weeks: [352, 371, 340, 388, 365, 394, 379],
+  vaccines: [
+    { t: 'Flea and tick dose', given: -24, due: 6 },
+    { t: 'Bordetella', given: -310, due: 55 },
+    { t: 'Rabies vaccine (3 year)', given: -980, due: 115 },
+    { t: 'Heartworm preventive', given: -20, due: 10 },
+  ],
+  meds: [{ t: 'Fish oil', dose: '1,000 mg capsule', schedule: 'Once a day with breakfast', start: -150 }, { t: 'Ear drops', dose: '4 drops, left ear', schedule: 'Twice a day', start: -40, end: -30 }],
+  visits: [{ on: -41, clinic: 'Sample Animal Hospital', reason: 'Annual exam', notes: 'Weight 68.4 lb. Asked to keep trimming toward 68. Left ear treated for ten days.' }, { on: -232, clinic: 'Sample Animal Hospital', reason: 'Torn dewclaw', notes: 'Trimmed and wrapped. Healed in two weeks.' }],
+  conditions: [{ t: 'Chicken allergy', notes: 'Itchy paws within a day. Fish and lamb are fine.' }, { t: 'Ear infections after swimming', notes: 'Dry both ears after every swim.' }],
+  notes: ['Carsick on drives over an hour. No breakfast before long trips.'],
+  // Shown only at tracking level 3, and labelled as sample data.
+  tracker: { steps: 11840, restHours: 13.5, days: [9200, 12100, 15300, 8700, 11900, 13400, 11840] },
+}
+export const DEMO_DOCS = [
+  { id: 'd1', name: 'Rabies certificate 2024', category: 'vaccination', size: 184000, daysAgo: 400 },
+  { id: 'd2', name: 'Annual exam summary', category: 'vet', size: 412000, daysAgo: 41 },
+  { id: 'd3', name: 'City dog licence', category: 'licence', size: 96000, daysAgo: 200 },
+  { id: 'd4', name: 'Pet insurance policy', category: 'insurance', size: 733000, daysAgo: 300 },
+]
+export const DEMO_AWARDS = [
+  { id: 'a1', title: 'Novice trick dog', kind: 'trick', eventName: 'Sample entry, not a real title', placement: '', daysAgo: 40 },
+  { id: 'a2', title: 'Fastest retrieve', kind: 'ribbon', eventName: 'Sample entry, not a real event', placement: 'First', daysAgo: 95 },
+]
+// Sample dogs for the demo boards, beside Biscuit and the pack above. Weekly miles, minutes, outings and top speed.
+export const DEMO_BOARD = [
+  { name: 'Moose', breed: 'Bernese Mountain Dog', miles: 16.8, minutes: 385, outings: 9, top_speed: 6.1 },
+  { name: 'Juno', breed: 'Border Collie', miles: 21.4, minutes: 330, outings: 8, top_speed: 13.2 },
+  { name: 'Pickle', breed: 'Dachshund', miles: 6.2, minutes: 190, outings: 7, top_speed: 5.4 },
+  { name: 'Millie', breed: 'Bernedoodle', miles: 9.7, minutes: 300, outings: 8, top_speed: 9.8 },
+  { name: 'Tansy', breed: 'Whippet', miles: 12.9, minutes: 205, outings: 6, top_speed: 17.5 },
+  { name: 'Waffles', breed: 'Beagle', miles: 11.3, minutes: 280, outings: 7, top_speed: 7.0 },
+  { name: 'Otis', breed: 'Golden Retriever', miles: 14.1, minutes: 310, outings: 6, top_speed: 8.3 },
+]
+export const DEMO_CHALLENGES = [
+  { key: 'month-25', name: '25-mile month', description: 'Cover 25 miles together this month.', unit: 'mi', target: 25, daysLeft: 6, base: 11.4 },
+  { key: 'explorer-5', name: 'Explorer', description: 'Walk in 5 different places this month.', unit: 'places', target: 5, daysLeft: 6, base: 0 },
+  { key: 'team-3', name: 'Whole team', description: 'Get walked by 3 different people this month.', unit: 'people', target: 3, daysLeft: 6, base: 0 },
+]

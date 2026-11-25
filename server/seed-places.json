@@ -1,0 +1,160 @@
+{
+ "note": "Charlotte seed list compiled 2026-11-25 from public listings. Dog policies, hours and fees change: each entry links to its source and should be checked before visiting. Entries have addresses, not coordinates.",
+ "city": "Charlotte, NC",
+ "places": [
+  {
+   "name": "Frazier Park Dog Park",
+   "category": "park",
+   "address": "1201 West 4th Street Extension, Charlotte, NC 28202",
+   "note": "County dog park, 1.3 acres, fenced, with separate areas for small and large dogs and a water supply. Next to the Irwin and Stewart Creek greenways.",
+   "source_url": "https://partnersforparks.org/dog-parks/"
+  },
+  {
+   "name": "Davie Dog Park",
+   "category": "park",
+   "address": "4635 Pineville-Matthews Road, Charlotte, NC 28226",
+   "note": "County dog park in William R. Davie Park, about 5 acres, fenced, with separate areas for large and small dogs and shaded on-leash trails nearby.",
+   "source_url": "https://partnersforparks.org/dog-parks/"
+  },
+  {
+   "name": "Barkingham Park",
+   "category": "park",
+   "address": "2900 Rocky River Road, Charlotte, NC 28215",
+   "note": "County dog park in Reedy Creek Park, about 4 acres, fenced.",
+   "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
+  },
+  {
+   "name": "Ray's Fetching Meadow",
+   "category": "park",
+   "address": "8711 Monroe Road, Charlotte, NC 28212",
+   "note": "County dog park in McAlpine Creek Community Park, about 1 acre, fenced, with areas for large and small dogs.",
+   "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
+  },
+  {
+   "name": "Shuffletown Dog Park",
+   "category": "park",
+   "address": "9500 Belhaven Boulevard, Charlotte, NC 28216",
+   "note": "County dog park in Shuffletown Park, about 4.6 acres, fenced.",
+   "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
+  },
+  {
+   "name": "Swaney Pointe K-9 Park",
+   "category": "park",
+   "address": "18441 Nantz Road, Cornelius, NC 28031",
+   "note": "County dog park in Ramsey Creek Park, about 4 acres, fenced, with areas for small and large dogs.",
+   "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
+  },
+  {
+   "name": "Ninth Street Park dog park",
+   "category": "park",
+   "address": "417 West 9th Street, Charlotte, NC 28202",
+   "note": "Small urban dog park in Fourth Ward.",
+   "source_url": "https://partnersforparks.org/dog-days-year-round/"
+  },
+  {
+   "name": "Clarks Creek Community Park dog park",
+   "category": "park",
+   "address": "5435 Hucks Road, Charlotte, NC 28269",
+   "note": "Fenced dog park with separate areas for larger and smaller dogs and a shaded walking trail.",
+   "source_url": "https://www.charlotteonthecheap.com/dog-parks-charlotte/"
+  },
+  {
+   "name": "Eastover Park",
+   "category": "park",
+   "address": "2730 Randolph Road, Charlotte, NC 28211",
+   "note": "Neighborhood park in Eastover with a flat grassy floodplain and walking paths along Briar Creek. Dogs on leash.",
+   "source_url": "https://www.barkparkfinder.com/dog-parks-near-me/charlotte-north-carolina-eastover-park"
+  },
+  {
+   "name": "Freedom Park",
+   "category": "park",
+   "address": "1900 East Boulevard, Charlotte, NC 28203",
+   "note": "Large county park with a lake loop and a link to the Little Sugar Creek Greenway. Dogs on leash.",
+   "source_url": "https://en.wikipedia.org/wiki/Freedom_Park_(Charlotte,_North_Carolina)"
+  },
+  {
+   "name": "Little Sugar Creek Greenway, Midtown access",
+   "category": "park",
+   "address": "1100 Metropolitan Avenue, Charlotte, NC 28204",
+   "note": "Paved greenway along the creek. Leashed dogs are welcome on the path.",
+   "source_url": "https://www.bringfido.com/attraction/32273?a=3"
+  },
+  {
+   "name": "Skiptown",
+   "category": "bar",
+   "address": "222 Rampart Street, Charlotte, NC 28203",
+   "note": "Off-leash dog park and bar in South End, with daycare, boarding and grooming. Entry is by day pass or membership.",
+   "source_url": "https://www.charlotteonthecheap.com/dog-bars-charlotte/"
+  },
+  {
+   "name": "Lucky Dog Bark and Brew, Charlotte",
+   "category": "bar",
+   "address": "2220 Thrift Road, Charlotte, NC 28208",
+   "note": "Indoor and outdoor off-leash dog park with a sports bar, plus daycare and boarding.",
+   "source_url": "https://luckydogbarkandbrew.com/"
+  },
+  {
+   "name": "Lucky Dog Bark and Brew, Steele Creek",
+   "category": "bar",
+   "address": "13835 South Lakes Drive, Charlotte, NC 28273",
+   "note": "Off-leash dog park with a bar, plus daycare and boarding.",
+   "source_url": "https://luckydogbarkandbrew.com/"
+  },
+  {
+   "name": "Lucky Dog Bark and Brew, Cornelius",
+   "category": "bar",
+   "address": "19607 Statesville Road, Cornelius, NC 28031",
+   "note": "Off-leash dog park with a bar, plus daycare and boarding.",
+   "source_url": "https://luckydogbarkandbrew.com/"
+  },
+  {
+   "name": "The Dog Bar",
+   "category": "bar",
+   "address": "3307 North Davidson Street, Charlotte, NC 28205",
+   "note": "Leash-free bar in NoDa with indoor and outdoor areas. Listed with an annual membership fee per dog.",
+   "source_url": "https://www.charlotteonthecheap.com/dog-bars-charlotte/"
+  },
+  {
+   "name": "NoDa Brewing Company",
+   "category": "bar",
+   "address": "150 West 32nd Street, Charlotte, NC 28206",
+   "note": "Brewery with a dog-friendly patio. Leashed dogs outside.",
+   "source_url": "https://doggieswelcome.com/dog-friendly-places-in-charlotte-north-carolina/"
+  },
+  {
+   "name": "The Olde Mecklenburg Brewery",
+   "category": "bar",
+   "address": "4150 Yancey Road, Charlotte, NC 28217",
+   "note": "Brewery with a large biergarten that welcomes pets.",
+   "source_url": "https://doggieswelcome.com/dog-friendly-places-in-charlotte-north-carolina/"
+  },
+  {
+   "name": "Brewers at 4001 Yancey",
+   "category": "bar",
+   "address": "4001 Yancey Road, Charlotte, NC 28217",
+   "note": "Brewery with a fenced dog run and three patios.",
+   "source_url": "https://www.wagbar.com/pet-friendly-bars-in-charlotte-nc-where-to-go-with-your-dog"
+  },
+  {
+   "name": "Birdsong Brewing Co.",
+   "category": "bar",
+   "address": "1016 North Davidson Street, Charlotte, NC 28206",
+   "note": "Taproom that welcomes well-behaved, leashed dogs, with water bowls on request.",
+   "source_url": "https://mattstoneteam.com/dog-friendly-breweries-charlotte-nc-2025/"
+  },
+  {
+   "name": "Optimist Hall",
+   "category": "cafe",
+   "address": "1115 North Brevard Street, Charlotte, NC 28206",
+   "note": "Food hall. Dogs are welcome in the outdoor spaces, including the main courtyard, but not inside the hall.",
+   "source_url": "https://doggieswelcome.com/dog-friendly-places-in-charlotte-north-carolina/"
+  },
+  {
+   "name": "The Suffolk Punch",
+   "category": "cafe",
+   "address": "2911 Griffith Street, Charlotte, NC 28203",
+   "note": "South End restaurant and brewery listed with a dog-friendly patio.",
+   "source_url": "https://www.sydnicolephotography.com/blog/the-best-pet-friendly-restaurants-breweries-in-charlotte-nc/"
+  }
+ ]
+}

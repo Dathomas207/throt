@@ -61,6 +61,8 @@ h2{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--grey);margin:6
 .cta{min-height:52px;border-radius:26px;background:var(--volt);color:var(--ink);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 20px;text-decoration:none}
 .cta:focus-visible,.logo:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .foot{padding:4px 16px 28px;font-size:12px;color:var(--grey);text-align:center}
+.demo{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;letter-spacing:.4px;padding:3px 9px;border-radius:9px;background:#2A3A52;color:#fff}
+.award{display:flex;gap:12px;align-items:center}.aw{font-weight:700;font-size:15px;overflow-wrap:anywhere}.rib{width:22px;height:30px;flex-shrink:0;background:var(--blue);clip-path:polygon(0 0,100% 0,100% 100%,50% 76%,0 100%)}
 .empty{padding:22px 16px;text-align:center;font-size:14px;color:var(--grey)}
 .nf{padding:60px 20px;display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;color:#fff;background:var(--ink);flex:1}
 .nf p{color:#D5DBE4;margin:0;font-size:15px;line-height:1.5}
@@ -122,15 +124,18 @@ export function renderDogPage(dog, baseUrl) {
 <div class="pad">
 <div class="meta">${esc(w.type)} · ${w.with ? `${w.type === 'Daycare' ? 'at' : 'with'} <b>${esc(w.with)}</b> · ` : ''}<time datetime="${esc(w.startedAt)}">${esc(fmtDate(w.startedAt))}</time>${w.place ? ` · ${esc(w.place)}` : ''}</div>
 <div class="title">${esc(w.title)}</div>
-<div class="row">${w.miles > 0 ? `<div><div class="sl">DISTANCE</div><div class="sv">${esc(fmtMi(w.miles))} mi</div></div>` : ''}<div><div class="sl">TIME</div><div class="sv">${esc(fmtMin(w.minutes))}</div></div>${w.sniffs > 0 ? `<div><div class="sl">SNIFF STOPS</div><div class="sv">${esc(w.sniffs)}</div></div>` : ''}<div><div class="sl">PAWS</div><div class="sv">${esc(w.paws)}</div></div></div>
+<div class="row">${w.type !== 'Daycare' && w.miles > 0 ? `<div><div class="sl">DISTANCE</div><div class="sv">${esc(fmtMi(w.miles))} mi</div></div>` : ''}<div><div class="sl">TIME</div><div class="sv">${esc(fmtMin(w.minutes))}</div></div>${w.type !== 'Daycare' && w.maxSpeed > 0 ? `<div><div class="sl">TOP SPEED</div><div class="sv">${esc(Number(w.maxSpeed).toFixed(1))} mph</div></div>` : ''}<div><div class="sl">PAWS</div><div class="sv">${esc(w.paws)}</div></div></div>
 ${w.note ? `<p class="note">${esc(w.note)}</p>` : ''}
 </div>
 ${w.route ? routeSvg(w.route) : ''}
 </article>`).join('')
+  const KIND = { title: 'Title', ribbon: 'Ribbon', certificate: 'Certificate', trick: 'Trick', other: 'Award' }
+  // Recorded by the owner, who chose to show them here. Trot does not check them.
+  const awards = (dog.awards || []).map((a) => `<div class="award"><span class="rib" aria-hidden="true"></span><div><div class="aw">${esc(a.title)}</div><div class="meta">${esc([KIND[a.kind] || 'Award', a.placement, a.eventName, a.awardedOn ? fmtDate(a.awardedOn + 'T00:00:00Z') : ''].filter(Boolean).join(' · '))}</div></div></div>`).join('')
   const body = `
 <header class="prof">
 <a class="logo" href="/">TROT</a>
-<div class="who">${dog.photoUrl ? `<img class="av" src="${esc(dog.photoUrl)}" alt="Photo of ${esc(dog.name)}" width="72" height="72">` : `<div class="av" aria-hidden="true">${esc(initial)}</div>`}<div><h1>${esc(dog.name)}</h1>${dog.breed ? `<div class="sub">${esc(dog.breed)}</div>` : ''}</div></div>
+<div class="who">${dog.photoUrl ? `<img class="av" src="${esc(dog.photoUrl)}" alt="Photo of ${esc(dog.name)}" width="72" height="72">` : `<div class="av" aria-hidden="true">${esc(initial)}</div>`}<div><h1>${esc(dog.name)}</h1>${dog.breed ? `<div class="sub">${esc(dog.breed)}</div>` : ''}${dog.isDemo ? '<div class="demo">Demo dog</div>' : ''}</div></div>
 ${dog.bio ? `<p class="bio">${esc(dog.bio)}</p>` : ''}
 <div class="eyebrow">LIFETIME</div>
 <div class="stats">${stat('MILES', fmtMi(life.miles))}${stat('OUTINGS', life.outings)}${stat('TIME OUT', fmtMin(life.minutes))}</div>
@@ -139,9 +144,10 @@ ${dog.bio ? `<p class="bio">${esc(dog.bio)}</p>` : ''}
 <a class="cta" href="/">Open Trot</a>
 </header>
 <main class="list">
+${awards ? `<h2>AWARDS</h2><div class="card pad">${awards}</div>` : ''}
 <h2>RECENT OUTINGS</h2>
 ${walks || `<div class="card empty">No outings yet. ${esc(dog.name)}'s first walk will show up here.</div>`}
 </main>
-<footer class="foot">Every walk counts. Dates are shown in UTC.</footer>`
+<footer class="foot">Every walk counts. Dates are shown in UTC.${dog.walks.some((w) => w.maxSpeed > 0) ? ' Speeds are measured from the phone carried on the walk, so they are the pair\'s speed, not the dog\'s own.' : ''}${dog.isDemo ? ` ${esc(dog.name)} is a demo dog with made-up walks, here so the trial does not look empty.` : ''}</footer>`
   return shell({ title, description, url, image, body })
 }

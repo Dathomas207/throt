@@ -2,7 +2,15 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import express from 'express'
+import zlib from 'node:zlib'
 import { renderDogPage, renderNotFound } from './publicPage.js'
+import { registerHealth } from './routesHealth.js'
+import { registerPlaces } from './routesPlaces.js'
+import { registerDocs, DOC_LIMITS } from './routesDocs.js'
+import { registerShows } from './routesShows.js'
+import { registerCompete } from './routesCompete.js'
+
+import { geoRouter } from './geo.js'
 
 export const LIMITS = {
   body: '400kb',
@@ -25,10 +33,18 @@ export const LIMITS = {
   weight: 400,
   activeInvites: 50,
   dogsPerUser: 20,
+  city: 60,
+  speed: 40,
+  sprints: 500,
+  goalMin: 10,
+  goalMax: 300,
 }
 export const ROLES = ['owner', 'walker', 'family', 'daycare']
 export const INVITE_ROLES = ['walker', 'family', 'daycare']
-export const WALK_TYPES = ['Walk', 'Hike', 'Run', 'Swim', 'Fetch', 'Training', 'Dog park', 'Daycare']
+// Mirrors the ids of ACTIVITY_TYPES in src/data.js. A test fails if the two lists drift.
+export const WALK_TYPES = ['Walk', 'Run', 'Hike', 'Play time', 'Fetch', 'Dog park', 'Swim', 'Training', 'Agility', 'Daycare']
+// Seeded demo accounts live on this domain, which can never receive mail. Nobody can sign in with it.
+export const DEMO_EMAIL_DOMAIN = 'example.invalid'
 const SESSION_DAYS = 30
 const INVITE_DAYS = 14
 const DAY = 864e5
@@ -138,6 +154,7 @@ function dogFields(b, { partial }) {
   if (!partial || b.age !== undefined) out.age = text(b.age, 'Age', { max: LIMITS.age })
   if (!partial || b.birthday !== undefined) out.birthday = birthday(b.birthday)
   if (!partial || b.weight !== undefined) out.weight = number(b.weight, 'Weight', { min: 0.5, max: LIMITS.weight, optional: true })
+  if (b.city !== undefined) out.city = text(b.city, 'City', { max: LIMITS.city })
   return out
 }
 function ageLabel(dog) {
@@ -174,11 +191,11 @@ function limiter({ windowMs, max }) {
   }
 }
 
-export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = {} } = {}) {
+export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = {}, demoOnBoards = process.env.DEMO_ON_LEADERBOARDS !== '0' } = {}) {
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', trustProxy)
-  const R = { sessionMax: 20, sessionWindowMs: 15 * 60e3, writeMax: 120, writeWindowMs: 60e3, readMax: 600, readWindowMs: 60e3, ...rate }
+  const R = { sessionMax: 20, sessionWindowMs: 15 * 60e3, writeMax: 120, writeWindowMs: 60e3, readMax: 600, readWindowMs: 60e3, placeMax: 30, placeWindowMs: 3600e3, eventMax: 20, eventWindowMs: 3600e3, ...rate }
   const sessionLimit = limiter({ windowMs: R.sessionWindowMs, max: R.sessionMax })
   const writeLimit = limiter({ windowMs: R.writeWindowMs, max: R.writeMax })
   const readLimit = limiter({ windowMs: R.readWindowMs, max: R.readMax })
@@ -206,7 +223,15 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   // One route takes a photo, so only that route gets the larger body limit.
   const jsonBody = express.json({ limit: LIMITS.body })
   const jsonPhotoBody = express.json({ limit: LIMITS.photoBody })
-  api.use((req, res, next) => (req.method === 'PATCH' && /^\/dogs\/[^/]+\/?$/.test(req.path) ? jsonPhotoBody : jsonBody)(req, res, next))
+  // A document upload is the one large body. The caller has to be signed in before any of it is read.
+  const jsonDocBody = express.json({ limit: DOC_LIMITS.body })
+  api.use(async (req, res, next) => {
+    if (req.method === 'POST' && /^\/dogs\/[^/]+\/documents\/?$/.test(req.path)) {
+      if (!(await userFor(req))) throw new HttpError(401, 'Sign in to continue.')
+      return jsonDocBody(req, res, next)
+    }
+    return (req.method === 'PATCH' && /^\/dogs\/[^/]+\/?$/.test(req.path) ? jsonPhotoBody : jsonBody)(req, res, next)
+  })
   // The client uses this to tell a real Trot API from static hosting, where any
   // path answers with index.html.
   api.get('/health', (req, res) => res.json({ ok: true, service: 'trot' }))
@@ -268,7 +293,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     next()
   }
   // Every dog column except the photo itself, which only the photo endpoints read.
-  const DOG_FIELDS = ['id', 'slug', 'name', 'breed', 'birthday', 'age', 'weight', 'bio', 'is_public', 'share_routes', 'created_by', 'created_at', 'photo_v']
+  const DOG_FIELDS = ['id', 'slug', 'name', 'breed', 'birthday', 'age', 'weight', 'bio', 'is_public', 'share_routes', 'created_by', 'created_at', 'photo_v', 'tracking_level', 'goal_minutes', 'city', 'leaderboards', 'is_demo']
   const DOG_COLS = DOG_FIELDS.join(', ')
   const DOG_COLS_D = DOG_FIELDS.map((c) => 'd.' + c).join(', ')
   const V_RE = /^[a-f0-9]{6,64}$/
@@ -285,7 +310,9 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   }
   const dogOut = (d, role) => ({
     slug: d.slug, name: d.name, breed: d.breed, birthday: d.birthday || null, age: ageLabel(d), weight: d.weight == null ? null : num(d.weight), bio: d.bio,
-    public: !!d.is_public, shareRoutes: !!d.share_routes, photoUrl: photoUrl(d.slug, d.photo_v), ...(role ? { role } : {}),
+    public: !!d.is_public, shareRoutes: !!d.share_routes, photoUrl: photoUrl(d.slug, d.photo_v),
+    trackingLevel: [1, 2, 3].includes(num(d.tracking_level)) ? num(d.tracking_level) : 1, goalMinutes: d.goal_minutes == null ? null : num(d.goal_minutes),
+    city: d.city || '', leaderboards: d.leaderboards !== false, isDemo: !!d.is_demo, ...(role ? { role } : {}),
   })
   const totalsOut = (r) => ({ outings: num(r && r.outings), miles: round(num(r && r.miles), 100), minutes: round(num(r && r.minutes), 10) })
   async function totals(dogId, since) {
@@ -314,14 +341,17 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     for (let i = 0; i < max; i++) out.push(pts[Math.round((i * (pts.length - 1)) / (max - 1))])
     return out
   }
-  const WALK_COLS = 'w.id, w.dog_id, w.user_id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, d.slug AS dog_slug, d.name AS dog_name, d.photo_v AS dog_photo_v, u.name AS user_name'
+  const WALK_COLS = 'w.id, w.dog_id, w.user_id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, w.avg_speed, w.max_speed, w.sprints, w.moving_minutes, w.run_minutes, d.slug AS dog_slug, d.name AS dog_name, d.photo_v AS dog_photo_v, d.is_demo AS dog_is_demo, u.name AS user_name'
+  // Performance statistics are optional. A missing one is null, never zero.
+  const opt = (v) => (v == null ? null : num(v))
+  const perf = (r) => ({ avgSpeed: opt(r.avg_speed), maxSpeed: opt(r.max_speed), sprints: opt(r.sprints), movingMinutes: opt(r.moving_minutes), runMinutes: opt(r.run_minutes) })
   async function walksOut(rows, userId, { full = false } = {}) {
     const { counts, mine } = await pawCounts(rows.map((r) => r.id), userId)
     return rows.map((r) => {
       const pts = parseRoute(r.route)
       return {
-        id: r.id, dog: { slug: r.dog_slug, name: r.dog_name, photoUrl: photoUrl(r.dog_slug, r.dog_photo_v) }, by: { id: r.user_id, name: r.user_name, you: r.user_id === userId },
-        type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs),
+        id: r.id, dog: { slug: r.dog_slug, name: r.dog_name, photoUrl: photoUrl(r.dog_slug, r.dog_photo_v), isDemo: !!r.dog_is_demo }, by: { id: r.user_id, name: r.user_name, you: r.user_id === userId },
+        type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs), ...perf(r),
         startedAt: iso(r.started_at), route: full ? pts : thin(pts), paws: counts[r.id] || 0, pawed: !!mine[r.id],
       }
     })
@@ -333,6 +363,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     if (!r.ok) return limited(res, r)
     const b = object(req.body)
     const mail = email(b.email)
+    if (mail.endsWith('@' + DEMO_EMAIL_DOMAIN) || mail.endsWith('.invalid')) throw new HttpError(403, 'That address belongs to a demo account and cannot be used to sign in.')
     const name = text(b.name, 'Your name', { min: 1, max: LIMITS.name })
     const now = Date.now()
     let { rows } = await db.query('SELECT id, name, email FROM users WHERE email = $1', [mail])
@@ -382,8 +413,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
       const id = newId()
       try {
         await db.tx(async (t) => {
-          await t.query('INSERT INTO dogs (id, slug, name, breed, birthday, age, weight, bio, is_public, share_routes, created_by, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, $9, $10)',
-            [id, slug, f.name, f.breed, f.birthday, f.age, f.weight, f.bio, req.user.id, now])
+          await t.query('INSERT INTO dogs (id, slug, name, breed, birthday, age, weight, bio, is_public, share_routes, created_by, created_at, city) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, $9, $10, $11)',
+            [id, slug, f.name, f.breed, f.birthday, f.age, f.weight, f.bio, req.user.id, now, f.city || ''])
           await t.query('INSERT INTO memberships (user_id, dog_id, role, created_at) VALUES ($1, $2, $3, $4)', [req.user.id, id, 'owner', now])
         })
       } catch (e) { if (isUnique(e)) continue; throw e }
@@ -418,9 +449,15 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const sr = b.share_routes !== undefined ? b.share_routes : b.shareRoutes
     if (sr !== undefined) f.share_routes = bool(sr, 'share_routes')
     if (b.photo !== undefined) { const ph = photo(b.photo); f.photo = ph.data; f.photo_v = ph.v }
+    const lvl = b.tracking_level !== undefined ? b.tracking_level : b.trackingLevel
+    if (lvl !== undefined) f.tracking_level = number(lvl, 'Tracking level', { min: 1, max: 3, integer: true })
+    const goal = b.goal_minutes !== undefined ? b.goal_minutes : b.goalMinutes
+    // null clears the goal. The goal is the owner's own number, not a recommendation.
+    if (goal !== undefined) f.goal_minutes = goal === null ? null : number(goal, 'Daily goal', { min: LIMITS.goalMin, max: LIMITS.goalMax, integer: true })
+    if (b.leaderboards !== undefined) f.leaderboards = bool(b.leaderboards, 'leaderboards')
     // Column names come from this fixed list, never from the request. The slug is
     // not in it: a renamed dog keeps its address so shared links keep working.
-    const cols = ['name', 'breed', 'bio', 'age', 'birthday', 'weight', 'is_public', 'share_routes', 'photo', 'photo_v'].filter((c) => f[c] !== undefined)
+    const cols = ['name', 'breed', 'bio', 'age', 'birthday', 'weight', 'is_public', 'share_routes', 'photo', 'photo_v', 'tracking_level', 'goal_minutes', 'city', 'leaderboards'].filter((c) => f[c] !== undefined)
     if (!cols.length) throw bad('Nothing to change.')
     await db.query(`UPDATE dogs SET ${cols.map((c, i) => `${c} = $${i + 1}`).join(', ')} WHERE id = $${cols.length + 1}`, [...cols.map((c) => f[c]), dog.id])
     const { rows } = await db.query(`SELECT ${DOG_COLS} FROM dogs WHERE id = $1`, [dog.id])
@@ -451,6 +488,34 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     if (m.rows[0].role === 'owner') throw bad('An owner cannot be removed.')
     await db.query('DELETE FROM memberships WHERE dog_id = $1 AND user_id = $2 AND role <> $3', [dog.id, id, 'owner'])
     res.json({ ok: true })
+  })
+
+  // One person's time with this dog: last 7 days, all time, and the outings they logged. No email.
+  api.get('/dogs/:slug/members/:userId', auth, async (req, res) => {
+    const { dog } = await dogFor(req.params.slug, req.user.id)
+    const id = req.params.userId
+    const m = ID_RE.test(id) ? await db.query('SELECT u.id, u.name, m.role FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.dog_id = $1 AND m.user_id = $2', [dog.id, id]) : { rows: [] }
+    if (!m.rows[0]) throw new HttpError(404, 'That person is not on this team.')
+    const since = iso(Date.now() - 7 * DAY)
+    const sum = async (extra, params) => totalsOut((await db.query(`SELECT COUNT(*) AS outings, COALESCE(SUM(miles), 0) AS miles, COALESCE(SUM(minutes), 0) AS minutes FROM walks WHERE dog_id = $1${extra}`, params)).rows[0])
+    const week = await sum(' AND user_id = $2 AND started_at >= $3', [dog.id, id, since]), all = await sum(' AND started_at >= $2', [dog.id, since])
+    const recent = await db.query(`SELECT ${WALK_COLS} FROM walks w JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id WHERE w.dog_id = $1 AND w.user_id = $2 ORDER BY w.started_at DESC, w.id DESC LIMIT 50`, [dog.id, id])
+    res.json({
+      member: { id: m.rows[0].id, name: m.rows[0].name, role: m.rows[0].role, you: id === req.user.id, week, lifetime: await sum(' AND user_id = $2', [dog.id, id]), sharePercent: all.minutes > 0 ? Math.round((week.minutes / all.minutes) * 100) : 0 },
+      walks: await walksOut(recent.rows, req.user.id),
+    })
+  })
+  // The owner can change how someone is on the team. An owner's own role stays.
+  api.patch('/dogs/:slug/members/:userId', auth, async (req, res) => {
+    const { dog } = await dogFor(req.params.slug, req.user.id, { owner: true })
+    const id = req.params.userId
+    const role = object(req.body).role
+    if (!INVITE_ROLES.includes(role)) throw bad(`Role must be one of: ${INVITE_ROLES.join(', ')}.`)
+    const m = ID_RE.test(id) ? await db.query('SELECT role FROM memberships WHERE dog_id = $1 AND user_id = $2', [dog.id, id]) : { rows: [] }
+    if (!m.rows[0]) throw new HttpError(404, 'That person is not on this team.')
+    if (m.rows[0].role === 'owner') throw bad('An owner\'s role cannot be changed.')
+    await db.query('UPDATE memberships SET role = $1 WHERE dog_id = $2 AND user_id = $3 AND role <> $4', [role, dog.id, id, 'owner'])
+    res.json({ ok: true, role })
   })
 
   // -- invites
@@ -523,6 +588,14 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const minutes = number(b.minutes, 'Minutes', { max: LIMITS.minutes })
     const sniffs = number(b.sniffs ?? 0, 'Sniff stops', { max: LIMITS.sniffs, integer: true })
     const pts = route(b.route)
+    // Optional performance statistics, measured from the phone carried on the walk.
+    const avgSpeed = number(b.avgSpeed, 'Average speed', { max: LIMITS.speed, optional: true })
+    const maxSpeed = number(b.maxSpeed, 'Top speed', { max: LIMITS.speed, optional: true })
+    const sprints = number(b.sprints, 'Sprints', { max: LIMITS.sprints, integer: true, optional: true })
+    const movingMinutes = number(b.movingMinutes, 'Moving time', { max: LIMITS.minutes, optional: true })
+    const runMinutes = number(b.runMinutes, 'Running time', { max: LIMITS.minutes, optional: true })
+    if ((movingMinutes != null && movingMinutes > minutes + 0.01) || (runMinutes != null && runMinutes > minutes + 0.01)) throw bad('Moving time and running time cannot be longer than the walk.')
+    if (avgSpeed != null && maxSpeed != null && avgSpeed > maxSpeed + 0.05) throw bad('Average speed cannot be above top speed.')
     const now = Date.now()
     let started = now - minutes * 60e3
     if (b.startedAt !== undefined && b.startedAt !== null) {
@@ -533,8 +606,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
       if (started < now - 366 * DAY) throw bad('A walk cannot be more than a year old.')
     }
     const id = newId()
-    await db.query('INSERT INTO walks (id, dog_id, user_id, type, title, note, place, miles, minutes, sniffs, started_at, route, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
-      [id, dog.id, req.user.id, type, title, note, place, round(miles, 100), round(minutes, 100), sniffs, iso(started), pts ? JSON.stringify(pts) : null, iso(now)])
+    await db.query('INSERT INTO walks (id, dog_id, user_id, type, title, note, place, miles, minutes, sniffs, started_at, route, created_at, avg_speed, max_speed, sprints, moving_minutes, run_minutes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)',
+      [id, dog.id, req.user.id, type, title, note, place, round(miles, 100), round(minutes, 100), b.sniffs == null ? 0 : sniffs, iso(started), pts ? JSON.stringify(pts) : null, iso(now), avgSpeed == null ? null : round(avgSpeed, 10), maxSpeed == null ? null : round(maxSpeed, 10), sprints, movingMinutes == null ? null : round(movingMinutes, 100), runMinutes == null ? null : round(runMinutes, 100)])
     const { rows } = await db.query(`SELECT ${WALK_COLS} FROM walks w JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id WHERE w.id = $1`, [id])
     res.status(201).json({ walk: (await walksOut(rows, req.user.id, { full: true }))[0] })
   })
@@ -619,14 +692,17 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     if (!dog || !dog.is_public) return null
     const since = iso(Date.now() - 7 * DAY)
     const w = await db.query(
-      'SELECT w.id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, u.name AS user_name, m.role FROM walks w JOIN users u ON u.id = w.user_id LEFT JOIN memberships m ON m.dog_id = w.dog_id AND m.user_id = w.user_id WHERE w.dog_id = $1 ORDER BY w.started_at DESC, w.id DESC LIMIT 10', [dog.id])
+      'SELECT w.id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, w.avg_speed, w.max_speed, w.sprints, w.moving_minutes, w.run_minutes, u.name AS user_name, m.role FROM walks w JOIN users u ON u.id = w.user_id LEFT JOIN memberships m ON m.dog_id = w.dog_id AND m.user_id = w.user_id WHERE w.dog_id = $1 ORDER BY w.started_at DESC, w.id DESC LIMIT 10', [dog.id])
     const { counts } = await pawCounts(w.rows.map((r) => r.id), null)
+    // Only the awards the owner chose to show.
+    const aw = await db.query('SELECT title, kind, event_name, placement, awarded_on FROM awards WHERE dog_id = $1 AND is_public = TRUE ORDER BY awarded_on DESC, created_at DESC LIMIT 50', [dog.id])
     return {
-      slug: dog.slug, name: dog.name, breed: dog.breed, bio: dog.bio, shareRoutes: !!dog.share_routes, photoUrl: photoUrl(dog.slug, dog.photo_v, true),
+      slug: dog.slug, name: dog.name, breed: dog.breed, bio: dog.bio, shareRoutes: !!dog.share_routes, photoUrl: photoUrl(dog.slug, dog.photo_v, true), isDemo: !!dog.is_demo,
+      awards: aw.rows.map((r) => ({ title: r.title, kind: r.kind, eventName: r.event_name, placement: r.placement, awardedOn: r.awarded_on || null })),
       totals: { lifetime: await totals(dog.id), week: await totals(dog.id, since) },
       walks: w.rows.map((r) => {
         const out = {
-          type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs), startedAt: iso(r.started_at),
+          type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs), ...perf(r), startedAt: iso(r.started_at),
           // First names only for people. A daycare is a business, so its name is shown whole.
           with: r.role === 'daycare' ? r.user_name : firstName(r.user_name), paws: counts[r.id] || 0,
         }
@@ -649,6 +725,30 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     sendPhoto(res, rows[0].photo, 'public, max-age=300')
   })
 
+  // Shared with the route modules, which are registered here before the catch-all.
+  async function memberItem(table, cols, id, userId, missing) {
+    // `table` and `cols` are fixed strings from the route modules, never from a request.
+    if (!ID_RE.test(id)) throw new HttpError(404, missing)
+    const { rows } = await db.query(`SELECT ${cols} FROM ${table} WHERE id = $1`, [id])
+    if (!rows[0]) throw new HttpError(404, missing)
+    const m = await db.query('SELECT role FROM memberships WHERE dog_id = $1 AND user_id = $2', [rows[0].dog_id, userId])
+    if (!m.rows[0]) throw new HttpError(403, 'You are not on this dog\'s care team.')
+    return { ...rows[0], role: m.rows[0].role }
+  }
+  const pageHeaders = (res) => {
+    res.set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+    res.set('X-Frame-Options', 'DENY')
+    res.type('html')
+  }
+  const kit = { api, app, db, auth, userFor, dogFor, memberItem, HttpError, bad, text, number, bool, object, sha, newToken, newId, iso, num, round, firstName, ageLabel, origin, ID_RE, TOKEN_RE, limiter, limited, readLimit, R, pageHeaders, photoUrl, parseRoute, thin, pawCounts, demoOnBoards }
+  registerCompete(kit)
+  registerDocs(kit)
+  registerHealth(kit)
+  registerPlaces(kit)
+  registerShows(kit)
+  // Read-only lookups, no sign-in. They sit on the API router, so only the per-address read limit applies.
+  api.use('/geo', geoRouter(db))
+
   api.use((req, res) => res.status(404).json({ error: 'Not found.' }))
   api.use((err, req, res, next) => {
     let status = err.status || err.statusCode || 500
@@ -661,11 +761,6 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   app.use('/api', api)
 
   // ---- public dog page --------------------------------------------------------
-  const pageHeaders = (res) => {
-    res.set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
-    res.set('X-Frame-Options', 'DENY')
-    res.type('html')
-  }
   app.get('/d/:slug', async (req, res) => {
     const r = readLimit('ip:' + req.ip)
     pageHeaders(res)
@@ -683,13 +778,13 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   // server answers /sw.js itself with a version that leaves /api, /d and /healthz alone.
   app.get('/sw.js', (req, res) => {
     res.type('application/javascript').set('Cache-Control', 'no-cache').send(`// Network first, falling back to cache, for the app shell only.
-const CACHE = 'trot-v2'
+const CACHE = 'trot-v3'
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())))
 self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url)
   if (e.request.method !== 'GET' || u.origin !== location.origin) return
-  if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/d/') || u.pathname === '/healthz') return
+  if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/d/') || u.pathname.startsWith('/vet/') || u.pathname === '/healthz') return
   // Cache under the path only, so a one-time invite token in the query never lands in the cache.
   const key = u.pathname
   e.respondWith(fetch(e.request).then((r) => { if (r.ok) { const c = r.clone(); caches.open(CACHE).then((x) => x.put(key, c)) } return r }).catch(() => caches.match(key).then((r) => r || caches.match('/'))))
@@ -698,6 +793,33 @@ self.addEventListener('fetch', (e) => {
   })
   if (staticDir) {
     const index = path.join(staticDir, 'index.html')
+    // Text assets are gzipped once and kept in memory. Hashed files under /assets never
+    // change, so browsers keep them for a year. index.html is always revalidated.
+    const zipped = new Map()
+    const ZIP = { '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json; charset=utf-8', '.webmanifest': 'application/manifest+json', '.html': 'text/html; charset=utf-8' }
+    app.use((req, res, next) => {
+      const type = ZIP[path.extname(req.path)]
+      if (!type || (req.method !== 'GET' && req.method !== 'HEAD') || !/\bgzip\b/.test(req.get('accept-encoding') || '') || req.path === '/sw.js' || req.path === '/index.html') return next()
+      let rel
+      try { rel = decodeURIComponent(req.path) } catch (e) { return next() }
+      const file = path.join(staticDir, rel)
+      if (rel.includes('\0') || !file.startsWith(staticDir + path.sep)) return next()
+      let hit = zipped.get(file)
+      try {
+        const st = fs.statSync(file)
+        if (!st.isFile() || st.size > 8 * 1024 * 1024) return next()
+        if (!hit || hit.mtime !== st.mtimeMs) {
+          if (zipped.size > 300) zipped.clear()
+          hit = { mtime: st.mtimeMs, buf: zlib.gzipSync(fs.readFileSync(file), { level: 9 }), etag: `W/"${st.size.toString(16)}-${Math.round(st.mtimeMs).toString(16)}-gz"` }
+          zipped.set(file, hit)
+        }
+      } catch (e) { return next() }
+      res.set('Content-Type', type).set('Content-Encoding', 'gzip').set('Vary', 'Accept-Encoding').set('ETag', hit.etag)
+      res.set('Cache-Control', /^\/assets\//.test(rel) ? 'public, max-age=31536000, immutable' : 'public, max-age=3600')
+      if (req.get('if-none-match') === hit.etag) return res.status(304).end()
+      res.set('Content-Length', String(hit.buf.length))
+      return req.method === 'HEAD' ? res.end() : res.end(hit.buf)
+    })
     app.use(express.static(staticDir, { index: false, maxAge: '1h', setHeaders: (res, p) => { if (/[\\/]assets[\\/]/.test(p)) res.set('Cache-Control', 'public, max-age=31536000, immutable') } }))
     app.use((req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next()
