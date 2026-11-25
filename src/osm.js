@@ -6,6 +6,7 @@ import { PLACES, haversine } from './data.js'
 export const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
 ]
 const TIMEOUT_MS = 12000
 const FAST_TIMEOUT_MS = 6500 // the small first request (parks) gives up quickly
