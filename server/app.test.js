@@ -1729,12 +1729,12 @@ test('curated places: seeded once, geocoded once, hidden until they have coordin
     // A place a person adds keeps the plain shape.
     const mine = await call('POST', '/api/places', { token: u.json.token, from: l.url, body: { name: 'My spot', category: 'water', lat: 35.21, lng: -80.84 } })
     assert.deepEqual(Object.keys(mine.json.place).sort(), ['addedBy', 'amenities', 'at', 'category', 'confirmations', 'confirmed', 'dogPolicy', 'eventNote', 'flagged', 'id', 'lastCheckedAt', 'managedBy', 'managedByYou', 'managedRole', 'myClaim', 'name', 'note', 'website'])
-    // The shipped list loads, without duplicates.
+    // The shipped list loads, without duplicates, and replaces listings that are no longer in the list.
     const real = JSON.parse(fs.readFileSync(new URL('./seed-places.json', import.meta.url), 'utf8'))
     const n = await seedPlaces(mem, real)
     await seedPlaces(mem, real)
     assert.equal(n, real.places.length)
-    assert.equal((await mem.query('SELECT COUNT(*) AS n FROM places WHERE curated = TRUE')).rows[0].n * 1, 3 + n)
+    assert.equal((await mem.query('SELECT COUNT(*) AS n FROM places WHERE curated = TRUE')).rows[0].n * 1, n) // the three from the earlier list are no longer listed, so they are gone
   } finally { await new Promise((r) => l.s.close(r)); await mem.close() }
 })
 

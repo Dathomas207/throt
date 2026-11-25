@@ -31,6 +31,7 @@ const curatedId = (name, address) => { const h = crypto.createHash('sha256').upd
 export async function seedPlaces(db, data, now = Date.now()) {
   const list = data && Array.isArray(data.places) ? data.places : []
   let kept = 0
+  const ids = new Set()
   for (const p of list) {
     const name = clean(p.name, PLACE_LIMITS.name), address = clean(p.address, 200), note = clean(p.note, PLACE_LIMITS.note), src = webLink(p.source_url)
     if (name.length < PLACE_LIMITS.nameMin || !address || !PLACE_CATEGORIES.includes(p.category)) continue
@@ -42,6 +43,13 @@ export async function seedPlaces(db, data, now = Date.now()) {
     // Rows seeded before listings carried a checked date count as checked when they were loaded.
     await db.query('UPDATE places SET last_checked_at = created_at WHERE id = $1 AND last_checked_at IS NULL', [id])
     kept++
+    ids.add(id)
+  }
+  // A listing taken out of the list (closed, moved, or its address corrected) goes from the index too,
+  // unless someone now maintains it.
+  if (ids.size) {
+    const old = await db.query('SELECT id FROM places WHERE curated = TRUE AND managed_by IS NULL')
+    for (const r of old.rows) if (!ids.has(r.id)) { try { await db.query('DELETE FROM places WHERE id = $1', [r.id]) } catch (e) { await db.query('UPDATE places SET lat = NULL, lng = NULL WHERE id = $1', [r.id]).catch(() => {}) } }
   }
   return kept
 }
