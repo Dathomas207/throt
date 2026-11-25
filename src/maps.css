@@ -72,7 +72,7 @@
 .layerpanel fieldset{border:0;margin:0;padding:0}.layerpanel legend,.legend b{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--grey);text-transform:uppercase;padding:0;margin-bottom:2px;display:block}
 .lrow{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;font-weight:600;cursor:pointer}.lrow input{width:22px;height:22px;accent-color:var(--ink);flex-shrink:0}
 .legend{border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}.lg{display:flex;align-items:center;gap:8px;font-size:12px;color:#3A4250}.lg .pin.mini{width:26px;height:26px;border-width:2px}.lg .pin.mini span{font-size:11px}
-.swatch{width:26px;height:0;flex-shrink:0;border-top:4px solid var(--blue)}.swatch.saved{border-top:4px dashed var(--ink)}.swatch.heat{height:12px;border:0;border-radius:6px;background:linear-gradient(90deg,#7B5CFF,#FF8A5B,#FF5A1F)}
+.swatch{width:26px;height:0;flex-shrink:0;border-top:4px solid var(--blue)}.swatch.saved{border-top:4px dashed var(--ink)}.swatch.heat{height:12px;border:0;border-radius:6px;background:linear-gradient(90deg,#8FAAF3,#4F7DEE,#1F5AE8)}
 /* Sheet with three snap heights and a grab handle that is also a button. */
 .sheet.snap{max-height:none;padding-top:0;transition:height .2s ease}.sheet.snap.dragging{transition:none}
 @media (prefers-reduced-motion:reduce){.sheet.snap{transition:none}}

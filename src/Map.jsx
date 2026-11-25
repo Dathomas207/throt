@@ -142,9 +142,9 @@ export default function TrotMap({ route, upto, pins, onPin, selected, focus, liv
       if (off || heatLayer.current || map.current !== m) return
       const max = Math.max(1, ...data.map((p) => p[2] || 1))
       // A blurred pane of soft dots under the route and pins. Hotter cells are brighter and larger.
-      if (!m.getPane('heat')) { const pane = m.createPane('heat'); pane.style.zIndex = 350; pane.style.filter = 'blur(5px)'; pane.style.pointerEvents = 'none' }
+      if (!m.getPane('heat')) { const pane = m.createPane('heat'); pane.style.zIndex = 350; pane.style.filter = 'blur(9px)'; pane.style.opacity = '0.55'; pane.style.pointerEvents = 'none' }
       const renderer = L.canvas({ pane: 'heat', padding: 0.3 })
-      heatLayer.current = L.layerGroup(data.map((p) => { const t = (p[2] || 1) / max; return L.circleMarker([p[0], p[1]], { renderer, pane: 'heat', radius: 6 + 5 * t, stroke: false, interactive: false, fillColor: t > 0.66 ? '#FF5A1F' : t > 0.33 ? '#FF8A5B' : '#7B5CFF', fillOpacity: 0.35 + 0.4 * t }) })).addTo(m)
+      heatLayer.current = L.layerGroup(data.map((p) => { const t = (p[2] || 1) / max; return L.circleMarker([p[0], p[1]], { renderer, pane: 'heat', radius: 5 + 3 * t, stroke: false, interactive: false, fillColor: t > 0.66 ? '#1F5AE8' : t > 0.33 ? '#4F7DEE' : '#8FAAF3', fillOpacity: 0.18 + 0.3 * t }) })).addTo(m)
     })
     return () => { off = true; if (heatLayer.current && map.current === m) m.removeLayer(heatLayer.current) }
   }, [heat])

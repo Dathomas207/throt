@@ -19,8 +19,8 @@ const DEBOUNCE_MS = 350
 const BUILD_ZOOM = 15
 const LOCATE_MOVE_MS = 2000 // a location that arrives later than this only adds the dot; the view is left alone
 const MOVED_FRACTION = 0.3 // how far the view has to move, as a share of the screen, before "Search this area" is offered
-const VIEW_KEY = 'trot-view', LAYERS_KEY = 'trot-layers'
-const LAYER_DEFAULTS = { places: true, trails: false, heat: true, community: true, saved: false }
+const VIEW_KEY = 'trot-view', LAYERS_KEY = 'trot-layers-v2'
+const LAYER_DEFAULTS = { places: true, trails: false, heat: false, community: true, saved: false }
 const LAYER_LABELS = [['places', 'Places'], ['trails', 'Trails'], ['heat', 'Heatmap'], ['community', 'Community places'], ['saved', 'Saved routes']]
 const SNAPS = ['peek', 'half', 'full']
 const NO_BUILD = { on: false, wps: [], route: null, status: 'idle', fit: false }
