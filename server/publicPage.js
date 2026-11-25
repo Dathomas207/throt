@@ -43,7 +43,7 @@ body{background:#0B1422;font-family:Inter,system-ui,sans-serif;color:var(--ink);
 .prof{background:var(--ink);padding:22px 16px 20px;color:#fff;display:flex;flex-direction:column;gap:14px}
 .logo{font:italic 900 24px Archivo,Arial,sans-serif;letter-spacing:-1px;color:var(--volt);text-decoration:none;display:inline-flex;align-items:center;min-height:44px}
 .who{display:flex;gap:14px;align-items:center}
-.av{width:72px;height:72px;border-radius:50%;background:var(--volt);color:var(--ink);font:700 30px Archivo,Arial,sans-serif;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.av{width:72px;object-fit:cover;height:72px;border-radius:50%;background:var(--volt);color:var(--ink);font:700 30px Archivo,Arial,sans-serif;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 h1{font:italic 900 34px Archivo,Arial,sans-serif;line-height:1.05;margin:0 0 4px;overflow-wrap:anywhere;text-transform:uppercase}
 h2{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--grey);margin:6px 4px 0}
 .sub{font-size:13px;color:#D5DBE4}.bio{font-size:14px;line-height:1.45;color:#D5DBE4;margin:0;overflow-wrap:anywhere}
@@ -110,7 +110,8 @@ export function renderNotFound() {
 
 export function renderDogPage(dog, baseUrl) {
   const url = baseUrl ? `${baseUrl}/d/${dog.slug}` : ''
-  const image = baseUrl ? `${baseUrl}/icon-512.png` : ''
+  // photoUrl is built by the server from the slug and a hex version. It is escaped like everything else.
+  const image = baseUrl ? `${baseUrl}${dog.photoUrl || '/icon-512.png'}` : ''
   const life = dog.totals.lifetime, week = dog.totals.week
   const title = `${dog.name} on Trot`
   const description = `${dog.name}${dog.breed ? `, ${dog.breed}` : ''}. ${fmtMi(life.miles)} miles over ${life.outings} ${life.outings === 1 ? 'outing' : 'outings'}. ${fmtMi(week.miles)} miles in the last 7 days.`
@@ -129,7 +130,7 @@ ${w.route ? routeSvg(w.route) : ''}
   const body = `
 <header class="prof">
 <a class="logo" href="/">TROT</a>
-<div class="who"><div class="av" aria-hidden="true">${esc(initial)}</div><div><h1>${esc(dog.name)}</h1>${dog.breed ? `<div class="sub">${esc(dog.breed)}</div>` : ''}</div></div>
+<div class="who">${dog.photoUrl ? `<img class="av" src="${esc(dog.photoUrl)}" alt="Photo of ${esc(dog.name)}" width="72" height="72">` : `<div class="av" aria-hidden="true">${esc(initial)}</div>`}<div><h1>${esc(dog.name)}</h1>${dog.breed ? `<div class="sub">${esc(dog.breed)}</div>` : ''}</div></div>
 ${dog.bio ? `<p class="bio">${esc(dog.bio)}</p>` : ''}
 <div class="eyebrow">LIFETIME</div>
 <div class="stats">${stat('MILES', fmtMi(life.miles))}${stat('OUTINGS', life.outings)}${stat('TIME OUT', fmtMin(life.minutes))}</div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Ic, Paw, Av, Stat, Range, Card, whoName, ptsOf, DogSwitch, daysAgoOf, ROLE_LABEL, copyText } from '../ui.jsx'
+import { Ic, Paw, Av, DogAv, Stat, Range, Card, whoName, ptsOf, DogSwitch, daysAgoOf, ROLE_LABEL, copyText } from '../ui.jsx'
+import EditDog from './EditDog.jsx'
 import { DogForm } from './Welcome.jsx'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine } from '../data.js'
 
@@ -11,6 +12,7 @@ function RealDogTab({ real, pawed, paw, setOpen, setToast }) {
   const { dog, dogs, totals, weekWalks, dogActs, user } = real
   const [sub, setSub] = useState('Activity')
   const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState('')
   const owner = dog.role === 'owner'
   const days = [...Array(7)].map((_, i) => { const d = 6 - i; return { d, min: weekWalks.filter((w) => daysAgoOf(w.startedAt) === d && w.type !== 'Daycare').reduce((s, w) => s + w.minutes, 0), l: new Date(Date.now() - d * 864e5).toLocaleDateString('en-US', { weekday: 'narrow' }) } })
@@ -22,8 +24,9 @@ function RealDogTab({ real, pawed, paw, setOpen, setToast }) {
   return (
     <div className="scroll">
       <section className="prof">
-        <div className="row g16"><div className="photo initial" aria-hidden="true">{(dog.name.trim()[0] || 'D').toUpperCase()}</div><div className="grow"><div className="bigname">{dog.name.toUpperCase()}</div>{facts && <div className="lightm">{facts}</div>}</div></div>
+        <div className="row g16"><DogAv name={dog.name} photoUrl={dog.photoUrl} s={92} ring bg="#2A3A52" c="#C8F031" /><div className="grow"><div className="bigname">{dog.name.toUpperCase()}</div>{facts && <div className="lightm">{facts}</div>}</div></div>
         {dog.bio && <p className="lightm bio">{dog.bio}</p>}
+        {owner && <button className="cta small editbtn" onClick={() => setEditing(true)}>Edit profile</button>}
         <div className="row g20"><Stat light l="LIFETIME" v={totals.lifetime.miles.toFixed(1) + ' mi'} big={20} /><Stat light l="OUTINGS" v={totals.lifetime.outings} big={20} /><Stat light l="LAST 7 DAYS" v={totals.week.miles.toFixed(1) + ' mi'} big={20} /></div>
         {dog.public
           ? <a className="publink" href={path} target="_blank" rel="noopener"><Ic n="link" s={18} c="#C8F031" /><span className="grow"><b>{dog.name}'s public page</b><small>{url.replace(/^https?:\/\//, '')}</small></span></a>
@@ -43,7 +46,7 @@ function RealDogTab({ real, pawed, paw, setOpen, setToast }) {
           {dog.public && <a className="rrow" href={path} target="_blank" rel="noopener"><span className="ricon"><Ic n="link" s={20} c="#1F5AE8" /></span><span className="grow"><b>Open {dog.name}'s public page</b><small>{url.replace(/^https?:\/\//, '')}</small></span></a>}
           {dog.public && <button className="cta small white bordered" onClick={async () => setToast((await copyText(url)) ? 'Page link copied' : 'Copy did not work here.')}>Copy page link</button>}
           {owner ? <>
-            <label className="switch"><input type="checkbox" checked={dog.public} disabled={busy === 'public'} onChange={(e) => toggle('public', e.target.checked)} /><span className="grow"><b>Public page</b><small>Anyone with the link sees {dog.name}'s name, breed, bio, totals and last 10 outings, with first names only.</small></span></label>
+            <label className="switch"><input type="checkbox" checked={dog.public} disabled={busy === 'public'} onChange={(e) => toggle('public', e.target.checked)} /><span className="grow"><b>Public page</b><small>Anyone with the link sees {dog.name}'s photo, name, breed, bio, totals and last 10 outings, with first names only.</small></span></label>
             <label className="switch"><input type="checkbox" checked={dog.shareRoutes} disabled={busy === 'share_routes' || !dog.public} onChange={(e) => toggle('share_routes', e.target.checked)} /><span className="grow"><b>Show route maps on the public page</b><small>Off by default. Route shapes can give away where {dog.name} lives.</small></span></label>
           </> : <p className="meta">{dog.public ? 'This page is public.' : 'This page is private.'} Only {dog.name}'s owner can change that.</p>}
         </div>
@@ -57,6 +60,7 @@ function RealDogTab({ real, pawed, paw, setOpen, setToast }) {
           <button className="rrow box line" onClick={real.signOut}><span className="grow"><b>Sign out</b><small>On this device</small></span></button>
         </div>
       </div>}
+      {editing && owner && <EditDog dog={dog} onClose={() => setEditing(false)} onSave={async (body) => { const r = await real.saveProfile(body); if (!r.error) { setEditing(false); setToast(`${r.dog.name}'s profile is saved`) } return r }} />}
       {adding && <div className="scrim" onClick={() => setAdding(false)}><div className="modal" role="dialog" aria-label="Add another dog" onClick={(e) => e.stopPropagation()}>
         <div className="grab" /><h2>Add another dog</h2>
         <DogForm light submitLabel="Create the page" onDone={async (d) => { setAdding(false); try { await real.refreshMe(d.slug); setToast(`${d.name} has a page`) } catch (e) { setToast(e.message) } }} />
@@ -77,7 +81,7 @@ function DemoDogTab({ acts, week, todayMin, pawed, paw, setOpen, conn, setConn, 
   return (
     <div className="scroll">
       <section className="prof">
-        <div className="row g16"><div className="photo">[PHOTO]</div><div className="grow"><div className="bigname">BISCUIT</div><div className="lightm">{DOG.breed} · {DOG.age} · {DOG.weight} lb</div><div className="lightm">{DOG.home}</div></div></div>
+        <div className="row g16"><DogAv name="Biscuit" demo s={92} ring /><div className="grow"><div className="bigname">BISCUIT</div><div className="lightm">{DOG.breed} · {DOG.age} · {DOG.weight} lb</div><div className="lightm">{DOG.home}</div></div></div>
         <p className="lightm bio">{DOG.bio}</p>
         <div className="row g20"><Stat light l="FOLLOWERS" v={DOG.followers} big={20} /><Stat light l="LIFETIME" v={DOG.lifetime.toLocaleString() + ' mi'} big={20} /><Stat light l="STREAK" v={DOG.streak + ' d'} big={20} /></div>
       </section>

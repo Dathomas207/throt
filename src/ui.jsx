@@ -1,6 +1,8 @@
-import React, { createContext, useContext } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { RouteThumb } from './Map.jsx'
 import { ROUTES, DOG, PEOPLE, dayLabel, fmtTime } from './data.js'
+import { loadPhoto, peekPhoto } from './api.js'
+import { Portrait, hasPortrait, DemoPhoto, hasDemoPhoto } from './portraits.jsx'
 
 const P = {
   home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z', map: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
@@ -11,7 +13,36 @@ const P = {
 }
 export const Ic = ({ n, s = 22, c = 'currentColor', f = 'none' }) => <svg aria-hidden="true" width={s} height={s} viewBox="0 0 24 24" fill={f} stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={P[n]} /></svg>
 export const Paw = ({ s = 22, c = 'currentColor', f = 'none' }) => { const w = s <= 32 ? 7.500 : 5; return <svg aria-hidden="true" width={s} height={s} viewBox="6 10 88 78" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round"><g transform="rotate(-9 50 50)"><path d="M33 27C38 22 44 20 50 20C56 20 62 22 67 27M33 60C34 71 41 79 50 79C59 79 66 71 67 60" /><path d="M33 27C24 24 15 30 15 44C15 58 19 70 26 71C31 71 33 66 33 60V40" fill={f} /><path d="M67 27C76 24 85 30 85 44C85 58 81 70 74 71C69 71 67 66 67 60V40" fill={f} /><path d="M50 66v2M50 68c-2 4-7 4-9 1M50 68c2 4 7 4 9 1" strokeWidth={w * 0.8} /><circle cx="42" cy="46" r="2.500" fill={c} /><circle cx="58" cy="46" r="2.500" fill={c} /><path d="M46 58h8l-4 4.500z" fill={c} strokeWidth="3" /></g></svg> }
-export const Av = ({ t, s = 40, bg = '#0F1B2D', c = '#C8F031', sq }) => <span className="av" style={{ width: s, height: s, background: bg, color: c, fontSize: s * 0.42, borderRadius: sq ? 10 : '50%' }}>{t}</span>
+// The one avatar. By default it shows a letter. With `src` it shows an image (give
+// it `alt`), and with children it shows artwork such as a demo portrait.
+export const Av = ({ t, s = 40, bg = '#0F1B2D', c = '#C8F031', sq, src, alt = '', ring, children }) => {
+  const style = { width: s, height: s, background: bg, color: c, fontSize: s * 0.42, borderRadius: sq ? 10 : '50%' }
+  const cls = `av${ring ? ' ring' : ''}`
+  if (src) return <img className={cls} src={src} alt={alt} width={s} height={s} style={style} />
+  return <span className={`${cls}${children ? ' avart' : ''}`} style={style}>{children || t}</span>
+}
+// Resolves a photoUrl from the API to something an <img> can show. Empty until it loads.
+export function usePhoto(url) {
+  const [src, setSrc] = useState(() => (url ? peekPhoto(url) : ''))
+  useEffect(() => {
+    if (!url) { setSrc(''); return }
+    const hit = peekPhoto(url)
+    setSrc(hit)
+    if (hit) return
+    let on = true
+    loadPhoto(url).then((u) => { if (on) setSrc(u) }, () => {})
+    return () => { on = false }
+  }, [url])
+  return src
+}
+// A dog's avatar: the uploaded photo when signed in, an illustrated portrait in
+// the demo, and the dog's initial otherwise.
+export function DogAv({ name, photoUrl, demo, ...rest }) {
+  const src = usePhoto(demo ? null : photoUrl)
+  const label = String(name || '').trim()
+  const art = demo && hasPortrait(label)
+  return <Av t={(label[0] || 'D').toUpperCase()} src={src} alt={src ? `Photo of ${label}` : ''} {...rest}>{art ? <Portrait name={label} /> : null}</Av>
+}
 export const Stat = ({ l, v, big, light }) => <div className={`stat ${light ? 'light' : ''}`}><div className="sl">{l}</div><div className="sv" style={big ? { fontSize: big } : null}>{v}</div></div>
 export const whoName = (a) => a.byName || (PEOPLE[a.by] ? PEOPLE[a.by].name : '')
 export const ptsOf = (a) => a.pts || (a.route && ROUTES[a.route] ? ROUTES[a.route].pts : null)
@@ -37,7 +68,7 @@ export function Card({ a, pawed, paw, setOpen }) {
     <article className="card">
       <button className="cardtop" onClick={() => setOpen(a)}>
         <div className="row g10">
-          <Av t={a.dog[0]} bg={a.color || '#0F1B2D'} c={a.ink || '#C8F031'} />
+          <DogAv name={a.dog} photoUrl={a.dogPhoto} demo={!a.real} bg={a.color || '#0F1B2D'} c={a.ink || '#C8F031'} />
           <div className="grow"><div className="dogname">{a.dog}</div><div className="meta">{a.type === 'Daycare' ? 'at' : 'with'} <b>{whoName(a)}</b> · {whenOf(a)}{a.place ? ` · ${a.place}` : ''}</div></div>
           {p && <Av t={p.name[0]} s={28} bg={p.color} c={p.ink} />}
         </div>
@@ -45,6 +76,7 @@ export function Card({ a, pawed, paw, setOpen }) {
         <div className="row g28">{a.miles > 0 && <Stat l="DISTANCE" v={a.miles.toFixed(1) + ' mi'} />}<Stat l="TIME" v={fmtTime(a.minutes)} />{a.sniffs > 0 && <Stat l="SNIFF STOPS" v={a.sniffs} />}</div>
         {a.note && <p className="note">{a.note}</p>}
       </button>
+      {!a.real && hasDemoPhoto(a.id) && <button className="thumbbtn" aria-label={`Open ${a.title}`} onClick={() => setOpen(a)}><DemoPhoto id={a.id} /></button>}
       {pts && <button className="thumbbtn" aria-label={`Open map for ${a.title}`} onClick={() => setOpen(a)}><RouteThumb pts={pts} /></button>}
       <div className="row actions">
         <button className={`act ${pawed[a.id] ? 'on' : ''}`} aria-pressed={!!pawed[a.id]} onClick={() => paw(a.id)}><Paw s={20} f={pawed[a.id] ? '#1F5AE8' : 'none'} c={pawed[a.id] ? '#1F5AE8' : 'currentColor'} />{n} {n === 1 ? 'paw' : 'paws'}</button>
@@ -71,7 +103,7 @@ export function toAct(w, team) {
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
   const [byColor, byInk] = personColor(team ? team.findIndex((m) => m.id === w.by.id) : -1)
   return {
-    real: true, id: w.id, dog: w.dog.name, dogSlug: w.dog.slug, by: w.by.id, byName: firstName(w.by.name), byColor, byInk,
+    real: true, id: w.id, dog: w.dog.name, dogSlug: w.dog.slug, dogPhoto: w.dog.photoUrl || null, byYou: !!w.by.you, by: w.by.id, byName: firstName(w.by.name), byColor, byInk,
     type: w.type, title: w.title, daysAgo, time, when: daysAgo > 6 ? `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${time}` : null,
     place: w.place, route: null, pts: w.route && w.route.length > 1 ? w.route : null, miles: w.miles, minutes: w.minutes, sniffs: w.sniffs,
     paws: w.paws - (w.pawed ? 1 : 0), comments: null, note: w.note,
@@ -91,4 +123,15 @@ export async function copyText(t) {
     const el = document.createElement('textarea'); el.value = t; el.setAttribute('readonly', ''); el.style.position = 'fixed'; el.style.opacity = '0'
     document.body.appendChild(el); el.select(); const ok = document.execCommand('copy'); el.remove(); return ok
   } catch (e) { return false }
+}
+
+// A confirm step that sits in the page, for removing or deleting something.
+export function Confirm({ text, yes, no = 'Keep', busy, error, onYes, onNo }) {
+  return (
+    <div className="confirm" role="group" aria-label="Please confirm">
+      <p>{text}</p>
+      {error && <p className="formerr" role="alert">{error}</p>}
+      <div className="row g8"><button type="button" className="cta small dark" onClick={onYes} disabled={busy}>{busy ? 'Working' : yes}</button><button type="button" className="cta small white bordered" onClick={onNo} disabled={busy}>{no}</button></div>
+    </div>
+  )
 }

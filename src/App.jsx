@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Ic, Paw, Av, RangeOff, toAct } from './ui.jsx'
+import { Ic, Paw, Av, DogAv, RangeOff, toAct } from './ui.jsx'
 import { PEOPLE, SEED, CONNECTIONS } from './data.js'
-import { api, probe, hasToken, setAuthLost, signOut, takeInviteFromUrl, pendingInvite } from './api.js'
+import { api, probe, hasToken, setAuthLost, signOut, takeInviteFromUrl, pendingInvite, primePhoto } from './api.js'
 import Home from './screens/Home.jsx'
 import Explore from './screens/Explore.jsx'
 import Record from './screens/Record.jsx'
@@ -110,7 +110,7 @@ function DemoApp({ leaveDemo, signedIn }) {
           <Tab on={tab === 'explore'} l="Explore" i="map" go={() => setTab('explore')} />
           <button className="rec" aria-label="Walk Biscuit" onClick={() => setTab('record')}><Paw s={28} c="#0F1B2D" /></button>
           <Tab on={tab === 'people'} l="People" i="users" go={() => setTab('people')} />
-          <button className={`tab ${tab === 'dog' ? 'on' : ''}`} onClick={() => setTab('dog')}><Av t="B" s={24} bg={tab === 'dog' ? '#0F1B2D' : '#5B6472'} c="#fff" /><span>Biscuit</span></button>
+          <button className={`tab ${tab === 'dog' ? 'on' : ''}`} onClick={() => setTab('dog')}><DogAv name="Biscuit" demo s={24} bg={tab === 'dog' ? '#0F1B2D' : '#5B6472'} c="#fff" /><span>Biscuit</span></button>
         </nav>
       )}
       {open && <Detail a={open} {...ctx} close={() => setOpen(null)} />}
@@ -162,9 +162,15 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
   }
 
   const team = data ? data.team : []
-  const fix = (w) => (patch[w.id] ? { ...w, ...patch[w.id] } : w)
-  const acts = useMemo(() => feed.walks.map((w) => toAct(fix(w), team)), [feed.walks, patch, team])
-  const dogActs = useMemo(() => (data ? data.walks.map((w) => toAct(fix(w), team)) : []), [data, patch, team])
+  // Walk lists carry the dog's name and photo as they were when the list was
+  // fetched. The dog list in `me` is updated the moment a profile is saved, so it wins.
+  const fix = (w0) => {
+    const d = dogs.find((x) => x.slug === w0.dog.slug)
+    const w = d && (d.name !== w0.dog.name || d.photoUrl !== w0.dog.photoUrl) ? { ...w0, dog: { ...w0.dog, name: d.name, photoUrl: d.photoUrl } } : w0
+    return patch[w.id] ? { ...w, ...patch[w.id] } : w
+  }
+  const acts = useMemo(() => feed.walks.map((w) => toAct(fix(w), team)), [feed.walks, patch, team, dogs])
+  const dogActs = useMemo(() => (data ? data.walks.map((w) => toAct(fix(w), team)) : []), [data, patch, team, dogs])
   const pawed = useMemo(() => {
     const m = {}
     ;[...feed.walks, ...(data ? data.walks : [])].forEach((w) => { m[w.id] = !!fix(w).pawed })
@@ -208,6 +214,27 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
     catch (e) { setToast(e.message); return false }
   }
   const createInvite = (role) => api.post(`/dogs/${slug}/invites`, { role })
+  // Saves the edit form. Answers { dog } or { error } so the form can show the reason inline.
+  const saveProfile = async (body) => {
+    try {
+      const r = await api.patch(`/dogs/${slug}`, body)
+      if (typeof body.photo === 'string' && r.dog.photoUrl) primePhoto(r.dog.photoUrl, body.photo)
+      setData((d) => (d ? { ...d, dog: r.dog } : d))
+      setMe((m) => ({ ...m, dogs: m.dogs.map((d) => (d.slug === r.dog.slug ? { ...d, ...r.dog } : d)) }))
+      return { dog: r.dog }
+    } catch (e) { return { error: e.message } }
+  }
+  const renameMe = async (name) => {
+    try { const r = await api.patch('/me', { name }); setMe((m) => ({ ...m, user: r.user })); reload(); return { user: r.user } }
+    catch (e) { return { error: e.message } }
+  }
+  const listInvites = () => api.get(`/dogs/${slug}/invites`)
+  const cancelInvite = async (id) => { try { await api.del(`/dogs/${slug}/invites/${id}`); return {} } catch (e) { return { error: e.message, status: e.status } } }
+  const removeMember = async (id) => { try { await api.del(`/dogs/${slug}/members/${id}`); await reload(); return {} } catch (e) { return { error: e.message } } }
+  const deleteWalk = async (id) => {
+    try { await api.del(`/walks/${id}`) } catch (e) { if (e.status !== 404) return { error: e.message } }
+    setOpen(null); setToast('Outing deleted'); await reload(); return {}
+  }
 
   if (!data) return (
     <div className="shell"><div className="welcome splash" role="status">
@@ -216,9 +243,8 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
     </div></div>
   )
   const todayMin = data.weekWalks.filter((w) => w.type !== 'Daycare' && new Date(w.startedAt).toDateString() === new Date().toDateString()).reduce((s, w) => s + w.minutes, 0)
-  const real = { user: me.user, dogs, dog, totals: data.totals, team, weekWalks: data.weekWalks, dogActs, switchDog, scope: all ? 'all' : 'dog', setScope, hasMore: !!feed.cursor, more, loadingMore: feed.more, createInvite, patchDog, refreshMe, signOut: doSignOut, toDemo, hasPendingInvite: !!pendingInvite() }
+  const real = { user: me.user, dogs, dog, totals: data.totals, team, weekWalks: data.weekWalks, dogActs, switchDog, scope: all ? 'all' : 'dog', setScope, hasMore: !!feed.cursor, more, loadingMore: feed.more, createInvite, patchDog, saveProfile, renameMe, listInvites, cancelInvite, removeMember, deleteWalk, refreshMe, signOut: doSignOut, toDemo, hasPendingInvite: !!pendingInvite() }
   const ctx = { real, acts, pawed, paw, setOpen, setTab, setToast, conn: {} }
-  const initial = (dog.name.trim()[0] || 'D').toUpperCase()
   return (
     <RangeOff.Provider value={true}>
       <div className="shell">
@@ -236,7 +262,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
             <Tab on={tab === 'explore'} l="Explore" i="map" go={() => setTab('explore')} />
             <button className="rec" aria-label={`Walk ${dog.name}`} onClick={() => setTab('record')}><Paw s={28} c="#0F1B2D" /></button>
             <Tab on={tab === 'people'} l="People" i="users" go={() => setTab('people')} />
-            <button className={`tab ${tab === 'dog' ? 'on' : ''}`} onClick={() => setTab('dog')}><Av t={initial} s={24} bg={tab === 'dog' ? '#0F1B2D' : '#5B6472'} c="#fff" /><span className="tabname">{dog.name}</span></button>
+            <button className={`tab ${tab === 'dog' ? 'on' : ''}`} onClick={() => setTab('dog')}><DogAv name={dog.name} photoUrl={dog.photoUrl} s={24} bg={tab === 'dog' ? '#0F1B2D' : '#5B6472'} c="#fff" /><span className="tabname">{dog.name}</span></button>
           </nav>
         )}
         {open && <Detail a={open} {...ctx} dogName={dog.name} close={() => setOpen(null)} />}

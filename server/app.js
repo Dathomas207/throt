@@ -6,6 +6,9 @@ import { renderDogPage, renderNotFound } from './publicPage.js'
 
 export const LIMITS = {
   body: '400kb',
+  // PATCH /api/dogs/:slug only: room for a 300 KB photo as base64 plus the other fields.
+  photoBody: '420kb',
+  photoBytes: 300 * 1024,
   routePoints: 5000,
   name: 60,
   email: 254,
@@ -95,6 +98,34 @@ function bool(v, label) {
   if (typeof v !== 'boolean') throw bad(`${label} must be true or false.`)
   return v
 }
+// A dog photo arrives as a data URL. Only three raster types are accepted, the
+// declared type has to match the first bytes, and the decoded size is capped.
+const PHOTO_RE = /^data:(image\/(?:jpeg|png|webp));base64,/
+function sniff(buf) {
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg'
+  if (buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png'
+  if (buf.length >= 12 && buf.toString('latin1', 0, 4) === 'RIFF' && buf.toString('latin1', 8, 12) === 'WEBP') return 'image/webp'
+  return ''
+}
+function photo(v) {
+  if (v === null) return { data: null, v: null }
+  if (typeof v !== 'string') throw bad('Photo must be an image, or null to remove it.')
+  const m = PHOTO_RE.exec(v.slice(0, 40))
+  if (!m) throw bad('Photo must be a JPEG, PNG or WebP image.')
+  const b64 = v.slice(m[0].length)
+  const tooBig = bad(`Photo must be ${Math.round(LIMITS.photoBytes / 1024)} KB or smaller.`)
+  if (b64.length > Math.ceil(LIMITS.photoBytes / 3) * 4) throw tooBig
+  if (!b64.length || b64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) throw bad('Photo is not valid image data.')
+  const buf = Buffer.from(b64, 'base64')
+  if (buf.length > LIMITS.photoBytes) throw tooBig
+  if (sniff(buf) !== m[1]) throw bad('Photo is not valid image data.')
+  return { data: `data:${m[1]};base64,${buf.toString('base64')}`, v: sha(buf).slice(0, 12) }
+}
+function photoBytes(stored) {
+  const m = PHOTO_RE.exec(String(stored || '').slice(0, 40))
+  if (!m) return null
+  return { type: m[1], buf: Buffer.from(stored.slice(m[0].length), 'base64') }
+}
 function object(v) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) throw bad('Send a JSON object.')
   return v
@@ -124,6 +155,7 @@ export function slugify(name) {
   const s = String(name).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/g, '')
   return s || 'dog'
 }
+const ID_RE = /^[0-9a-f-]{36}$/
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/
 const isUnique = (e) => e && (e.code === '23505' || /unique|duplicate/i.test(e.message || ''))
 
@@ -171,7 +203,10 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     if (!r.ok) return limited(res, r)
     next()
   })
-  api.use(express.json({ limit: LIMITS.body }))
+  // One route takes a photo, so only that route gets the larger body limit.
+  const jsonBody = express.json({ limit: LIMITS.body })
+  const jsonPhotoBody = express.json({ limit: LIMITS.photoBody })
+  api.use((req, res, next) => (req.method === 'PATCH' && /^\/dogs\/[^/]+\/?$/.test(req.path) ? jsonPhotoBody : jsonBody)(req, res, next))
   // The client uses this to tell a real Trot API from static hosting, where any
   // path answers with index.html.
   api.get('/health', (req, res) => res.json({ ok: true, service: 'trot' }))
@@ -232,9 +267,15 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     }
     next()
   }
+  // Every dog column except the photo itself, which only the photo endpoints read.
+  const DOG_FIELDS = ['id', 'slug', 'name', 'breed', 'birthday', 'age', 'weight', 'bio', 'is_public', 'share_routes', 'created_by', 'created_at', 'photo_v']
+  const DOG_COLS = DOG_FIELDS.join(', ')
+  const DOG_COLS_D = DOG_FIELDS.map((c) => 'd.' + c).join(', ')
+  const V_RE = /^[a-f0-9]{6,64}$/
+  const photoUrl = (slug, v, pub) => (v && V_RE.test(v) ? `/api/${pub ? 'public/' : ''}dogs/${slug}/photo?v=${v}` : null)
   async function dogFor(slug, userId, { owner = false } = {}) {
     if (!SLUG_RE.test(slug)) throw new HttpError(404, 'No dog with that address.')
-    const { rows } = await db.query('SELECT * FROM dogs WHERE slug = $1', [slug])
+    const { rows } = await db.query(`SELECT ${DOG_COLS} FROM dogs WHERE slug = $1`, [slug])
     const dog = rows[0]
     if (!dog) throw new HttpError(404, 'No dog with that address.')
     const m = await db.query('SELECT role FROM memberships WHERE dog_id = $1 AND user_id = $2', [dog.id, userId])
@@ -244,7 +285,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   }
   const dogOut = (d, role) => ({
     slug: d.slug, name: d.name, breed: d.breed, birthday: d.birthday || null, age: ageLabel(d), weight: d.weight == null ? null : num(d.weight), bio: d.bio,
-    public: !!d.is_public, shareRoutes: !!d.share_routes, ...(role ? { role } : {}),
+    public: !!d.is_public, shareRoutes: !!d.share_routes, photoUrl: photoUrl(d.slug, d.photo_v), ...(role ? { role } : {}),
   })
   const totalsOut = (r) => ({ outings: num(r && r.outings), miles: round(num(r && r.miles), 100), minutes: round(num(r && r.minutes), 10) })
   async function totals(dogId, since) {
@@ -273,13 +314,13 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     for (let i = 0; i < max; i++) out.push(pts[Math.round((i * (pts.length - 1)) / (max - 1))])
     return out
   }
-  const WALK_COLS = 'w.id, w.dog_id, w.user_id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, d.slug AS dog_slug, d.name AS dog_name, u.name AS user_name'
+  const WALK_COLS = 'w.id, w.dog_id, w.user_id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, d.slug AS dog_slug, d.name AS dog_name, d.photo_v AS dog_photo_v, u.name AS user_name'
   async function walksOut(rows, userId, { full = false } = {}) {
     const { counts, mine } = await pawCounts(rows.map((r) => r.id), userId)
     return rows.map((r) => {
       const pts = parseRoute(r.route)
       return {
-        id: r.id, dog: { slug: r.dog_slug, name: r.dog_name }, by: { id: r.user_id, name: r.user_name, you: r.user_id === userId },
+        id: r.id, dog: { slug: r.dog_slug, name: r.dog_name, photoUrl: photoUrl(r.dog_slug, r.dog_photo_v) }, by: { id: r.user_id, name: r.user_name, you: r.user_id === userId },
         type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs),
         startedAt: iso(r.started_at), route: full ? pts : thin(pts), paws: counts[r.id] || 0, pawed: !!mine[r.id],
       }
@@ -316,8 +357,15 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
 
   api.get('/me', auth, async (req, res) => {
     const { rows } = await db.query(
-      'SELECT d.*, m.role FROM memberships m JOIN dogs d ON d.id = m.dog_id WHERE m.user_id = $1 ORDER BY m.created_at ASC, d.slug ASC', [req.user.id])
+      `SELECT ${DOG_COLS_D}, m.role FROM memberships m JOIN dogs d ON d.id = m.dog_id WHERE m.user_id = $1 ORDER BY m.created_at ASC, d.slug ASC`, [req.user.id])
     res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email }, dogs: rows.map((d) => dogOut(d, d.role)) })
+  })
+
+  api.patch('/me', auth, async (req, res) => {
+    const b = object(req.body)
+    const name = text(b.name, 'Your name', { min: 1, max: LIMITS.name })
+    await db.query('UPDATE users SET name = $1 WHERE id = $2', [name, req.user.id])
+    res.json({ user: { id: req.user.id, name, email: req.user.email } })
   })
 
   // -- dogs
@@ -339,7 +387,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
           await t.query('INSERT INTO memberships (user_id, dog_id, role, created_at) VALUES ($1, $2, $3, $4)', [req.user.id, id, 'owner', now])
         })
       } catch (e) { if (isUnique(e)) continue; throw e }
-      const { rows } = await db.query('SELECT * FROM dogs WHERE id = $1', [id])
+      const { rows } = await db.query(`SELECT ${DOG_COLS} FROM dogs WHERE id = $1`, [id])
       return res.status(201).json({ dog: dogOut(rows[0], 'owner') })
     }
     throw new HttpError(503, 'Could not pick an address for this dog. Try again.')
@@ -369,12 +417,40 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     if (b.public !== undefined) f.is_public = bool(b.public, 'public')
     const sr = b.share_routes !== undefined ? b.share_routes : b.shareRoutes
     if (sr !== undefined) f.share_routes = bool(sr, 'share_routes')
-    // Column names come from this fixed list, never from the request.
-    const cols = ['name', 'breed', 'bio', 'age', 'birthday', 'weight', 'is_public', 'share_routes'].filter((c) => f[c] !== undefined)
+    if (b.photo !== undefined) { const ph = photo(b.photo); f.photo = ph.data; f.photo_v = ph.v }
+    // Column names come from this fixed list, never from the request. The slug is
+    // not in it: a renamed dog keeps its address so shared links keep working.
+    const cols = ['name', 'breed', 'bio', 'age', 'birthday', 'weight', 'is_public', 'share_routes', 'photo', 'photo_v'].filter((c) => f[c] !== undefined)
     if (!cols.length) throw bad('Nothing to change.')
     await db.query(`UPDATE dogs SET ${cols.map((c, i) => `${c} = $${i + 1}`).join(', ')} WHERE id = $${cols.length + 1}`, [...cols.map((c) => f[c]), dog.id])
-    const { rows } = await db.query('SELECT * FROM dogs WHERE id = $1', [dog.id])
+    const { rows } = await db.query(`SELECT ${DOG_COLS} FROM dogs WHERE id = $1`, [dog.id])
     res.json({ dog: dogOut(rows[0], 'owner') })
+  })
+
+  // The photo is served as image bytes, never inside JSON. The URL carries a
+  // version, so a short cache lifetime is safe and a new photo shows at once.
+  const sendPhoto = (res, stored, cache) => {
+    const p = photoBytes(stored)
+    if (!p) throw new HttpError(404, 'This dog has no photo.')
+    res.set('Cache-Control', cache).set('Content-Security-Policy', "default-src 'none'; sandbox").type(p.type).send(p.buf)
+  }
+  api.get('/dogs/:slug/photo', auth, async (req, res) => {
+    const { dog } = await dogFor(req.params.slug, req.user.id)
+    const { rows } = await db.query('SELECT photo FROM dogs WHERE id = $1', [dog.id])
+    sendPhoto(res, rows[0] && rows[0].photo, 'private, max-age=300')
+  })
+
+  // -- team: the owner can remove anyone but themselves
+  api.delete('/dogs/:slug/members/:userId', auth, async (req, res) => {
+    const { dog } = await dogFor(req.params.slug, req.user.id, { owner: true })
+    const id = req.params.userId
+    if (id === req.user.id) throw bad('You cannot remove yourself from your own dog\'s team.')
+    if (!ID_RE.test(id)) throw new HttpError(404, 'That person is not on this team.')
+    const m = await db.query('SELECT role FROM memberships WHERE dog_id = $1 AND user_id = $2', [dog.id, id])
+    if (!m.rows[0]) throw new HttpError(404, 'That person is not on this team.')
+    if (m.rows[0].role === 'owner') throw bad('An owner cannot be removed.')
+    await db.query('DELETE FROM memberships WHERE dog_id = $1 AND user_id = $2 AND role <> $3', [dog.id, id, 'owner'])
+    res.json({ ok: true })
   })
 
   // -- invites
@@ -391,6 +467,20 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     await db.query('INSERT INTO invites (token_hash, dog_id, role, created_by, created_at, expires_at) VALUES ($1, $2, $3, $4, $5, $6)', [sha(token), dog.id, role, req.user.id, iso(now), expiresAt])
     const p = `/?invite=${token}`
     res.status(201).json({ token, role, expiresAt, path: p, url: origin(req) + p })
+  })
+  // Open invites for the owner. The id is the stored hash of the token, which
+  // cannot be turned back into the link, so it is safe to use as a handle.
+  api.get('/dogs/:slug/invites', auth, async (req, res) => {
+    const { dog } = await dogFor(req.params.slug, req.user.id, { owner: true })
+    const { rows } = await db.query('SELECT token_hash, role, created_at, expires_at FROM invites WHERE dog_id = $1 AND used_by IS NULL AND expires_at > $2 ORDER BY created_at DESC, token_hash ASC', [dog.id, iso(Date.now())])
+    res.json({ invites: rows.map((r) => ({ id: r.token_hash, role: r.role, createdAt: iso(r.created_at), expiresAt: iso(r.expires_at) })) })
+  })
+  api.delete('/dogs/:slug/invites/:id', auth, async (req, res) => {
+    const { dog } = await dogFor(req.params.slug, req.user.id, { owner: true })
+    if (!/^[a-f0-9]{64}$/.test(req.params.id)) throw new HttpError(404, 'No open invite like that.')
+    const d = await db.query('DELETE FROM invites WHERE token_hash = $1 AND dog_id = $2 AND used_by IS NULL RETURNING token_hash', [req.params.id, dog.id])
+    if (!d.rows[0]) throw new HttpError(404, 'No open invite like that.')
+    res.json({ ok: true })
   })
   const TOKEN_RE = /^[A-Za-z0-9_-]{20,200}$/
   async function inviteFor(token) {
@@ -449,7 +539,6 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     res.status(201).json({ walk: (await walksOut(rows, req.user.id, { full: true }))[0] })
   })
 
-  const ID_RE = /^[0-9a-f-]{36}$/
   // Members only. Anyone else gets the same 404 as for a walk that does not exist.
   async function walkFor(id, userId) {
     if (!ID_RE.test(id)) throw new HttpError(404, 'No such walk.')
@@ -460,6 +549,19 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   api.get('/walks/:id', auth, async (req, res) => {
     const w = await walkFor(req.params.id, req.user.id)
     res.json({ walk: (await walksOut([w], req.user.id, { full: true }))[0] })
+  })
+  // The person who logged a walk can delete it, and so can the dog's owner.
+  api.delete('/walks/:id', auth, async (req, res) => {
+    const w = await walkFor(req.params.id, req.user.id)
+    if (w.user_id !== req.user.id) {
+      const m = await db.query('SELECT role FROM memberships WHERE dog_id = $1 AND user_id = $2', [w.dog_id, req.user.id])
+      if (!m.rows[0] || m.rows[0].role !== 'owner') throw new HttpError(403, 'Only the person who logged this walk or the dog\'s owner can delete it.')
+    }
+    await db.tx(async (t) => {
+      await t.query('DELETE FROM paws WHERE walk_id = $1', [w.id])
+      await t.query('DELETE FROM walks WHERE id = $1', [w.id])
+    })
+    res.json({ ok: true })
   })
   const pawState = async (walkId, userId) => {
     const { counts, mine } = await pawCounts([walkId], userId)
@@ -511,7 +613,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   // -- public
   async function publicDog(slug) {
     if (!SLUG_RE.test(slug)) return null
-    const { rows } = await db.query('SELECT * FROM dogs WHERE slug = $1', [slug])
+    const { rows } = await db.query(`SELECT ${DOG_COLS} FROM dogs WHERE slug = $1`, [slug])
     const dog = rows[0]
     // Private dogs look exactly like dogs that do not exist.
     if (!dog || !dog.is_public) return null
@@ -520,7 +622,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
       'SELECT w.id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, u.name AS user_name, m.role FROM walks w JOIN users u ON u.id = w.user_id LEFT JOIN memberships m ON m.dog_id = w.dog_id AND m.user_id = w.user_id WHERE w.dog_id = $1 ORDER BY w.started_at DESC, w.id DESC LIMIT 10', [dog.id])
     const { counts } = await pawCounts(w.rows.map((r) => r.id), null)
     return {
-      slug: dog.slug, name: dog.name, breed: dog.breed, bio: dog.bio, shareRoutes: !!dog.share_routes,
+      slug: dog.slug, name: dog.name, breed: dog.breed, bio: dog.bio, shareRoutes: !!dog.share_routes, photoUrl: photoUrl(dog.slug, dog.photo_v, true),
       totals: { lifetime: await totals(dog.id), week: await totals(dog.id, since) },
       walks: w.rows.map((r) => {
         const out = {
@@ -537,6 +639,14 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const dog = await publicDog(req.params.slug)
     if (!dog) throw new HttpError(404, 'No public dog with that address.')
     res.json({ dog })
+  })
+
+  // Public dogs only. A private dog's photo answers exactly like a missing one.
+  api.get('/public/dogs/:slug/photo', async (req, res) => {
+    const slug = req.params.slug
+    const { rows } = SLUG_RE.test(slug) ? await db.query('SELECT photo FROM dogs WHERE slug = $1 AND is_public = TRUE AND photo IS NOT NULL', [slug]) : { rows: [] }
+    if (!rows[0]) throw new HttpError(404, 'No public photo at that address.')
+    sendPhoto(res, rows[0].photo, 'public, max-age=300')
   })
 
   api.use((req, res) => res.status(404).json({ error: 'Not found.' }))

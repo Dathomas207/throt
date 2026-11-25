@@ -29,7 +29,7 @@ export default function WelcomeHero() {
       raf = requestAnimationFrame(tick)
       if (now - last < 33) return
       last = now
-      const e = now - start, n = Math.floor(e / LOOP_MS), k = Math.min(1, ((e % LOOP_MS) / LOOP_MS) / 0.9)
+      const e = Math.max(0, now - start), n = Math.floor(e / LOOP_MS), k = Math.min(1, ((e % LOOP_MS) / LOOP_MS) / 0.9)
       if (n !== laps) { laps = n; setLap(n) }
       const p = el.getPointAtLength(k * len)
       setT(k); setPos({ x: p.x, y: p.y })
@@ -44,7 +44,7 @@ export default function WelcomeHero() {
     setTimeout(() => setBoop(false), 420)
     setTimeout(() => setBursts((b) => b.filter((x) => x.id !== id)), 900)
   }
-  const w = WALKERS[lap % WALKERS.length]
+  const w = WALKERS[Math.abs(lap) % WALKERS.length]
   const min = 48 * t, mm = Math.floor(min), ss = String(Math.floor((min - mm) * 60)).padStart(2, '0')
   return (
     <div className="whero">

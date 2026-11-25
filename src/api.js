@@ -56,9 +56,37 @@ export const api = {
   del: (p) => request('DELETE', p),
 }
 
+// Dog photos. The team endpoint needs the session token, which an <img> tag cannot
+// send, so each photo is fetched once here and handed out as an object URL. The
+// key is the photoUrl from the API, which changes whenever the photo does.
+const photos = new Map()
+const photoReady = new Map()
+const forget = (url) => { const u = photoReady.get(url); if (u && u.startsWith('blob:')) { try { URL.revokeObjectURL(u) } catch (e) {} } photos.delete(url); photoReady.delete(url) }
+export const peekPhoto = (url) => photoReady.get(url) || ''
+export function loadPhoto(url) {
+  if (!/^\/api\//.test(url || '')) return Promise.reject(new Error('No photo.'))
+  if (!photos.has(url)) {
+    const headers = token ? { authorization: 'Bearer ' + token } : {}
+    const p = fetch(BASE + url, { headers }).then(async (res) => {
+      if (!res.ok || !/^image\/(jpeg|png|webp)/.test(res.headers.get('content-type') || '')) throw new Error('No photo.')
+      const src = URL.createObjectURL(await res.blob())
+      photoReady.set(url, src)
+      return src
+    })
+    photos.set(url, p)
+    // A failed load is forgotten so the next screen can try again.
+    p.catch(() => { if (photos.get(url) === p) photos.delete(url) })
+  }
+  return photos.get(url)
+}
+// After an upload the browser already holds the picture, so it is shown without a second download.
+export function primePhoto(url, src) { if (url && src) { photoReady.set(url, src); photos.set(url, Promise.resolve(src)) } }
+function clearPhotos() { for (const url of [...photos.keys(), ...photoReady.keys()]) forget(url) }
+
 export async function signOut() {
   try { if (token) await request('DELETE', '/session') } catch (e) {}
   setToken(null)
+  clearPhotos()
   // Drop anything an older service worker may have cached for this person.
   try { if (typeof caches !== 'undefined') (await caches.keys()).forEach((k) => caches.delete(k)) } catch (e) {}
 }

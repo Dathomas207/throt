@@ -72,6 +72,32 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS sessions_user ON sessions (user_id)`,
 ]
 
+// Columns added after the first release. CREATE TABLE IF NOT EXISTS leaves an
+// existing table alone, so these are added one by one at startup. The check runs
+// first; if two instances start together the loser's duplicate-column error is ignored.
+const COLUMNS = [
+  ['dogs', 'photo', 'TEXT'],
+  // Short content hash of the photo. Lets lists build a photo URL without reading the photo.
+  ['dogs', 'photo_v', 'TEXT'],
+]
+const isDuplicateColumn = (e) => e && (e.code === '42701' || /already exists|duplicate column/i.test(e.message || ''))
+export async function migrate(query) {
+  for (const sql of SCHEMA) await query(sql)
+  await addColumns(query)
+}
+export async function addColumns(query) {
+  // Table, column and type come from the fixed list above, never from a request.
+  for (const [table, column, type] of COLUMNS) {
+    let has = false
+    try {
+      const r = await query('SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND column_name = $2', [table, column])
+      has = r.rows.length > 0
+    } catch (e) {}
+    if (has) continue
+    try { await query(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`) } catch (e) { if (!isDuplicateColumn(e)) throw e }
+  }
+}
+
 function sslFor(url) {
   const mode = (process.env.DATABASE_SSL || '').toLowerCase()
   if (mode === 'off' || mode === 'disable') return false
@@ -100,7 +126,7 @@ export async function createDb(url = process.env.DATABASE_URL) {
     pool = new Pool()
     kind = 'pg-mem'
   }
-  for (const sql of SCHEMA) await pool.query(sql)
+  await migrate((text, params = []) => pool.query(text, params))
   return {
     kind,
     query: (text, params = []) => pool.query(text, params),

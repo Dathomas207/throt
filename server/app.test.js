@@ -6,7 +6,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { createDb } from './db.js'
+import { createDb, migrate, addColumns } from './db.js'
 import { createApp, LIMITS, slugify } from './app.js'
 import { esc } from './publicPage.js'
 
@@ -478,4 +478,295 @@ test('the server serves the built frontend with an SPA fallback, but not for /ap
   assert.ok(sw.text.includes("startsWith('/api/')"))
   assert.equal((await call('GET', '/api/me')).headers.get('cache-control'), 'no-store')
   assert.equal(home.headers.get('x-content-type-options'), 'nosniff')
+})
+
+// ---- profile editing, photos, team and walk housekeeping ----------------------
+const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+const fakeImage = (sig, size) => { const b = Buffer.alloc(size, 7); sig.copy(b); return b }
+const dataUrl = (type, buf) => `data:${type};base64,${buf.toString('base64')}`
+const bytes = async (p, token) => {
+  const res = await fetch(base + p, { headers: token ? { authorization: `Bearer ${token}` } : {} })
+  return { status: res.status, type: res.headers.get('content-type') || '', cache: res.headers.get('cache-control') || '', buf: Buffer.from(await res.arrayBuffer()) }
+}
+const join = async (ownerToken, slug, token, role = 'walker') => {
+  const inv = await call('POST', `/api/dogs/${slug}/invites`, { token: ownerToken, body: { role } })
+  assert.equal(inv.status, 201, inv.text)
+  assert.equal((await call('POST', `/api/invites/${inv.json.token}/accept`, { token })).status, 200)
+}
+
+test('the startup migration can run again on the same database', async () => {
+  const q = (t, p = []) => db.query(t, p)
+  await addColumns(q)
+  await addColumns(q)
+  // pg-mem cannot repeat CREATE TABLE IF NOT EXISTS on a table that exists, and it
+  // always starts empty anyway. The whole startup sequence is repeated on real Postgres.
+  if (db.kind === 'postgres') { await migrate(q); await migrate(q) }
+  const cols = await db.query('SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND column_name = $2', ['dogs', 'photo'])
+  assert.equal(cols.rows.length, 1)
+})
+
+test('the owner can edit every profile field, and renaming a dog keeps its address', async () => {
+  const owner = await signIn('Rena Owner', 'ren-owner')
+  const dog = await makeDog(owner.token, `Biscuit ${tag}`)
+  const p = `/api/dogs/${dog.slug}`
+  const r = await call('PATCH', p, { token: owner.token, body: { name: 'Sir Barks', breed: 'Mutt', birthday: '2021-05-30', weight: 41.5, bio: 'Renamed.', public: true, shareRoutes: true } })
+  assert.equal(r.status, 200, r.text)
+  assert.equal(r.json.dog.name, 'Sir Barks')
+  assert.equal(r.json.dog.slug, dog.slug, 'the slug does not follow the name')
+  assert.equal(r.json.dog.breed, 'Mutt')
+  assert.equal(r.json.dog.birthday, '2021-05-30')
+  assert.equal(r.json.dog.weight, 41.5)
+  assert.equal(r.json.dog.shareRoutes, true)
+  assert.equal(r.json.dog.photoUrl, null)
+  assert.equal((await call('GET', p, { token: owner.token })).json.dog.name, 'Sir Barks')
+  const page = await call('GET', `/d/${dog.slug}`)
+  assert.equal(page.status, 200)
+  assert.ok(page.text.includes('Sir Barks'))
+  assert.equal((await call('GET', `/api/dogs/${slugify('Sir Barks')}`, { token: owner.token })).status, 404, 'no page appears at the new name')
+  const me = await call('GET', '/api/me', { token: owner.token })
+  assert.deepEqual(me.json.dogs.map((d) => [d.slug, d.name]), [[dog.slug, 'Sir Barks']])
+  assert.equal((await call('PATCH', p, { token: owner.token, body: { name: '  ' } })).status, 400)
+  assert.equal((await call('PATCH', p, { token: owner.token, body: { name: 'x'.repeat(LIMITS.dogName + 1) } })).status, 400)
+  assert.equal((await call('PATCH', p, { token: owner.token, body: { slug: 'taken' } })).status, 400, 'a slug in the body changes nothing')
+})
+
+test('dog photo: type and size limits, bytes from a dedicated endpoint, a versioned URL in JSON, and removal', async () => {
+  const owner = await signIn('Phoebe Owner', 'ph-owner')
+  const walker = await signIn('Phil Walker', 'ph-walker')
+  const stranger = await signIn('Stray Person', 'ph-stranger')
+  const dog = await makeDog(owner.token, `Snap ${tag}`)
+  const p = `/api/dogs/${dog.slug}`
+  await join(owner.token, dog.slug, walker.token)
+  assert.equal(dog.photoUrl, null)
+  assert.equal((await bytes(`${p}/photo`, owner.token)).status, 404, 'no photo yet')
+
+  const png = fakeImage(PNG_SIG, 2000)
+  const patch = (photo, token = owner.token) => call('PATCH', p, { token, body: { photo } })
+  for (const badPhoto of [
+    'not a data url', 42, {}, '',
+    dataUrl('image/svg+xml', Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>')),
+    dataUrl('image/gif', Buffer.from('GIF89a')),
+    dataUrl('text/html', Buffer.from('<script>alert(1)</script>')),
+    'data:image/png;base64,', 'data:image/png;base64,@@@@', 'data:image/png;charset=utf-8;base64,AAAA', 'data:image/png,rawbytes',
+    dataUrl('image/jpeg', png), dataUrl('image/png', Buffer.from('<html><script>alert(1)</script></html>')),
+  ]) {
+    const r = await patch(badPhoto)
+    assert.equal(r.status, 400, `${String(badPhoto).slice(0, 40)} -> ${r.text}`)
+  }
+  assert.equal((await patch(dataUrl('image/png', png), walker.token)).status, 403, 'only the owner sets the photo')
+  assert.equal((await call('GET', p, { token: owner.token })).json.dog.photoUrl, null, 'nothing was stored by the rejected tries')
+
+  const ok = await patch(dataUrl('image/png', png))
+  assert.equal(ok.status, 200, ok.text)
+  assert.match(ok.json.dog.photoUrl, new RegExp(`^/api/dogs/${dog.slug}/photo\\?v=[a-f0-9]{12}$`))
+  assert.ok(!JSON.stringify(ok.json).includes('base64'), 'the photo itself is not in the JSON')
+  const got = await bytes(ok.json.dog.photoUrl, owner.token)
+  assert.equal(got.status, 200)
+  assert.match(got.type, /^image\/png/)
+  assert.match(got.cache, /max-age=300/)
+  assert.ok(got.buf.equals(png), 'the decoded bytes come back unchanged')
+  assert.equal((await bytes(ok.json.dog.photoUrl, walker.token)).status, 200, 'team members can load it')
+  assert.equal((await bytes(ok.json.dog.photoUrl, stranger.token)).status, 403)
+  assert.equal((await bytes(ok.json.dog.photoUrl)).status, 401)
+
+  // Lists carry the URL only.
+  assert.equal((await call('POST', `${p}/walks`, { token: walker.token, body: walk() })).status, 201)
+  assert.equal((await call('POST', `${p}/walks`, { token: owner.token, body: walk({ title: 'Second' }) })).status, 201)
+  for (const path of ['/api/me', p, `/api/feed?dog=${dog.slug}`, '/api/feed']) {
+    const r = await call('GET', path, { token: owner.token })
+    assert.equal(r.status, 200)
+    assert.ok(!r.text.includes('base64') && r.text.length < 20000, `${path} carries no image data`)
+    assert.ok(r.text.includes(ok.json.dog.photoUrl), `${path} carries the photo URL`)
+  }
+  const feed = await call('GET', `/api/feed?dog=${dog.slug}`, { token: walker.token })
+  assert.ok(feed.json.walks.length === 2 && feed.json.walks.every((w) => w.dog.photoUrl === ok.json.dog.photoUrl))
+
+  // Public: the bytes, the JSON and the page all point at the public endpoint.
+  const pub = await call('GET', `/api/public/dogs/${dog.slug}`)
+  assert.match(pub.json.dog.photoUrl, new RegExp(`^/api/public/dogs/${dog.slug}/photo\\?v=[a-f0-9]{12}$`))
+  assert.ok(!pub.text.includes('base64'))
+  const pubBytes = await bytes(pub.json.dog.photoUrl)
+  assert.equal(pubBytes.status, 200)
+  assert.match(pubBytes.type, /^image\/png/)
+  assert.match(pubBytes.cache, /public, max-age=300/)
+  assert.ok(pubBytes.buf.equals(png))
+  const page = await call('GET', `/d/${dog.slug}`)
+  assert.ok(page.text.includes(`<img class="av" src="/api/public/dogs/${dog.slug}/photo?v=`), 'the page shows the photo')
+  assert.match(page.text, /alt="Photo of Snap [0-9a-f]+"/)
+  assert.match(page.text, new RegExp(`<meta property="og:image" content="http://[^"]+/api/public/dogs/${dog.slug}/photo\\?v=[a-f0-9]{12}">`))
+  assert.ok(!/<script/i.test(page.text))
+
+  // A new photo gets a new version and the right content type.
+  const jpg = fakeImage(Buffer.from([0xff, 0xd8, 0xff, 0xe0]), 900)
+  const second = await patch(dataUrl('image/jpeg', jpg))
+  assert.equal(second.status, 200)
+  assert.notEqual(second.json.dog.photoUrl, ok.json.dog.photoUrl)
+  assert.match((await bytes(second.json.dog.photoUrl, owner.token)).type, /^image\/jpeg/)
+  const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.from([4, 0, 0, 0]), Buffer.from('WEBPVP8 '), Buffer.alloc(40, 1)])
+  assert.equal((await patch(dataUrl('image/webp', webp))).status, 200)
+  assert.match((await bytes(`/api/public/dogs/${dog.slug}/photo`)).type, /^image\/webp/)
+
+  // Size: exactly at the cap is fine, one byte over is a 400, far over is cut off by the body limit.
+  assert.equal((await patch(dataUrl('image/png', fakeImage(PNG_SIG, LIMITS.photoBytes)))).status, 200)
+  const over = await patch(dataUrl('image/png', fakeImage(PNG_SIG, LIMITS.photoBytes + 1)))
+  assert.equal(over.status, 400, over.text)
+  assert.match(over.json.error, /300 KB/)
+  assert.equal((await patch(dataUrl('image/png', fakeImage(PNG_SIG, 700 * 1024)))).status, 413)
+  // The larger body limit is for this one route only.
+  const big = await call('POST', `${p}/walks`, { token: owner.token, body: walk({ note: 'x'.repeat(410 * 1024) }) })
+  assert.equal(big.status, 413)
+  const bigMe = await call('PATCH', '/api/me', { token: owner.token, body: { name: 'x'.repeat(410 * 1024) } })
+  assert.equal(bigMe.status, 413)
+
+  // A private dog's public photo looks like a missing one. The team still sees it.
+  assert.equal((await call('PATCH', p, { token: owner.token, body: { public: false } })).status, 200)
+  const priv = await call('GET', `/api/public/dogs/${dog.slug}/photo`)
+  assert.equal(priv.status, 404)
+  assert.ok(priv.json && priv.json.error)
+  assert.equal((await bytes(`${p}/photo`, walker.token)).status, 200)
+  assert.equal((await call('PATCH', p, { token: owner.token, body: { public: true } })).status, 200)
+  assert.equal((await bytes(`/api/public/dogs/${dog.slug}/photo`)).status, 200)
+
+  // Removal.
+  assert.equal((await patch(null, walker.token)).status, 403)
+  const gone = await patch(null)
+  assert.equal(gone.status, 200)
+  assert.equal(gone.json.dog.photoUrl, null)
+  assert.equal((await bytes(`${p}/photo`, owner.token)).status, 404)
+  assert.equal((await bytes(`/api/public/dogs/${dog.slug}/photo`)).status, 404)
+  assert.equal((await call('GET', `/api/public/dogs/${dog.slug}`)).json.dog.photoUrl, null)
+  const page2 = await call('GET', `/d/${dog.slug}`)
+  assert.ok(!page2.text.includes('<img'))
+  assert.match(page2.text, /og:image" content="http:\/\/[^"]+\/icon-512\.png"/)
+  assert.equal((await bytes(`/api/public/dogs/no-such-dog-${tag}/photo`)).status, 404)
+  assert.equal((await bytes('/api/public/dogs/Bad_Slug!/photo')).status, 404)
+})
+
+test('PATCH /api/me changes the display name, with validation', async () => {
+  const a = await signIn('Old Name', 'me-a')
+  const b = await signIn('Other Person', 'me-b')
+  assert.equal((await call('PATCH', '/api/me', { body: { name: 'Nobody' } })).status, 401)
+  const r = await call('PATCH', '/api/me', { token: a.token, body: { name: '  New   Name ', email: mail('me-b'), id: b.id } })
+  assert.equal(r.status, 200, r.text)
+  assert.deepEqual(r.json.user, { id: a.id, name: 'New Name', email: mail('me-a') })
+  assert.equal((await call('GET', '/api/me', { token: a.token })).json.user.name, 'New Name')
+  assert.equal((await call('GET', '/api/me', { token: b.token })).json.user.name, 'Other Person', 'nobody else is renamed')
+  for (const name of ['', '   ', 42, null, undefined, 'x'.repeat(LIMITS.name + 1)]) {
+    assert.equal((await call('PATCH', '/api/me', { token: a.token, body: { name } })).status, 400, String(name).slice(0, 20))
+  }
+  assert.equal((await call('PATCH', '/api/me', { token: a.token, body: [] })).status, 400)
+  assert.equal((await call('GET', '/api/me', { token: a.token })).json.user.name, 'New Name')
+  // The new name shows on walks and the team.
+  const dog = await makeDog(a.token, `Namey ${tag}`)
+  await call('POST', `/api/dogs/${dog.slug}/walks`, { token: a.token, body: walk() })
+  const d = await call('GET', `/api/dogs/${dog.slug}`, { token: a.token })
+  assert.equal(d.json.team[0].name, 'New Name')
+  assert.equal(d.json.walks[0].by.name, 'New Name')
+})
+
+test('an owner can remove a team member but not themselves, and nobody else can', async () => {
+  const owner = await signIn('Tess Owner', 'rm-owner')
+  const pat = await signIn('Pat Walker', 'rm-pat')
+  const sue = await signIn('Sue Family', 'rm-sue')
+  const stranger = await signIn('Stray Two', 'rm-stranger')
+  const dog = await makeDog(owner.token, `Teamy ${tag}`)
+  const p = `/api/dogs/${dog.slug}`
+  await join(owner.token, dog.slug, pat.token)
+  await join(owner.token, dog.slug, sue.token, 'family')
+  const w = await call('POST', `${p}/walks`, { token: pat.token, body: walk() })
+  assert.equal(w.status, 201)
+
+  assert.equal((await call('DELETE', `${p}/members/${sue.id}`, { token: pat.token })).status, 403, 'a member cannot remove a member')
+  assert.equal((await call('DELETE', `${p}/members/${pat.id}`, { token: pat.token })).status, 403)
+  assert.equal((await call('DELETE', `${p}/members/${pat.id}`, { token: stranger.token })).status, 403)
+  assert.equal((await call('DELETE', `${p}/members/${pat.id}`)).status, 401)
+  assert.equal((await call('DELETE', `${p}/members/${owner.id}`, { token: owner.token })).status, 400, 'the owner cannot remove themselves')
+  assert.equal((await call('DELETE', `${p}/members/${stranger.id}`, { token: owner.token })).status, 404)
+  assert.equal((await call('DELETE', `${p}/members/not-an-id`, { token: owner.token })).status, 404)
+  assert.equal((await call('GET', p, { token: owner.token })).json.team.length, 3)
+
+  const r = await call('DELETE', `${p}/members/${pat.id}`, { token: owner.token })
+  assert.equal(r.status, 200, r.text)
+  const d = await call('GET', p, { token: owner.token })
+  assert.deepEqual(d.json.team.map((m) => m.name).sort(), ['Sue Family', 'Tess Owner'])
+  assert.equal(d.json.walks.length, 1, 'their walks stay with the dog')
+  assert.equal((await call('GET', p, { token: pat.token })).status, 403, 'the removed person loses access')
+  assert.equal((await call('GET', `/api/walks/${w.json.walk.id}`, { token: pat.token })).status, 404)
+  assert.deepEqual((await call('GET', '/api/me', { token: pat.token })).json.dogs, [])
+  assert.equal((await call('DELETE', `${p}/members/${pat.id}`, { token: owner.token })).status, 404, 'already gone')
+  assert.equal((await call('GET', p, { token: sue.token })).status, 200, 'others are untouched')
+})
+
+test('an owner can list and cancel a pending invite', async () => {
+  const owner = await signIn('Ivy Owner', 'ci-owner')
+  const other = await signIn('Otto Owner', 'ci-other')
+  const pat = await signIn('Pat Walker', 'ci-pat')
+  const sue = await signIn('Sue Family', 'ci-sue')
+  const dog = await makeDog(owner.token, `Invy ${tag}`)
+  const otherDog = await makeDog(other.token, `Elsewhere ${tag}`)
+  const p = `/api/dogs/${dog.slug}`
+  const a = await call('POST', `${p}/invites`, { token: owner.token, body: { role: 'walker' } })
+  const b = await call('POST', `${p}/invites`, { token: owner.token, body: { role: 'family' } })
+  const list = await call('GET', `${p}/invites`, { token: owner.token })
+  assert.equal(list.status, 200)
+  assert.equal(list.json.invites.length, 2)
+  assert.deepEqual(list.json.invites.map((i) => i.role).sort(), ['family', 'walker'])
+  assert.ok(!list.text.includes(a.json.token) && !list.text.includes(b.json.token), 'the list never repeats a link token')
+  assert.ok(!list.text.includes('@'), 'no emails')
+  const idA = crypto.createHash('sha256').update(a.json.token).digest('hex')
+  assert.ok(list.json.invites.some((i) => i.id === idA))
+
+  await join(owner.token, dog.slug, pat.token)
+  assert.equal((await call('GET', `${p}/invites`, { token: pat.token })).status, 403)
+  assert.equal((await call('DELETE', `${p}/invites/${idA}`, { token: pat.token })).status, 403)
+  assert.equal((await call('DELETE', `${p}/invites/${idA}`, { token: other.token })).status, 403)
+  assert.equal((await call('DELETE', `/api/dogs/${otherDog.slug}/invites/${idA}`, { token: other.token })).status, 404, 'another owner cannot cancel it through their own dog')
+  assert.equal((await call('DELETE', `${p}/invites/nope`, { token: owner.token })).status, 404)
+  assert.equal((await call('GET', `/api/invites/${a.json.token}`)).json.open, true)
+
+  const r = await call('DELETE', `${p}/invites/${idA}`, { token: owner.token })
+  assert.equal(r.status, 200, r.text)
+  assert.equal((await call('GET', `/api/invites/${a.json.token}`)).status, 404, 'the link is dead')
+  assert.equal((await call('POST', `/api/invites/${a.json.token}/accept`, { token: sue.token })).status, 404)
+  assert.equal((await call('DELETE', `${p}/invites/${idA}`, { token: owner.token })).status, 404)
+  // The other invite still works, and a used invite is not listed or cancellable.
+  assert.equal((await call('POST', `/api/invites/${b.json.token}/accept`, { token: sue.token })).status, 200)
+  const idB = crypto.createHash('sha256').update(b.json.token).digest('hex')
+  assert.equal((await call('DELETE', `${p}/invites/${idB}`, { token: owner.token })).status, 404)
+  const left = (await call('GET', `${p}/invites`, { token: owner.token })).json.invites
+  assert.ok(!left.some((i) => i.id === idA || i.id === idB))
+  assert.equal((await call('GET', p, { token: sue.token })).status, 200, 'cancelling an invite removes nobody')
+})
+
+test('a member can delete their own walk and the owner can delete any walk on the dog', async () => {
+  const owner = await signIn('Wes Owner', 'dw-owner')
+  const pat = await signIn('Pat Walker', 'dw-pat')
+  const sue = await signIn('Sue Family', 'dw-sue')
+  const stranger = await signIn('Stray Three', 'dw-stranger')
+  const dog = await makeDog(owner.token, `Walky ${tag}`)
+  const p = `/api/dogs/${dog.slug}`
+  await join(owner.token, dog.slug, pat.token)
+  await join(owner.token, dog.slug, sue.token, 'family')
+  const post = async (token, title) => (await call('POST', `${p}/walks`, { token, body: walk({ title }) })).json.walk.id
+  const mine = await post(pat.token, 'Pat one')
+  const mine2 = await post(pat.token, 'Pat two')
+  const owners = await post(owner.token, 'Owner one')
+  assert.equal((await call('POST', `/api/walks/${mine}/paw`, { token: sue.token })).status, 200)
+
+  assert.equal((await call('DELETE', `/api/walks/${mine}`)).status, 401)
+  assert.equal((await call('DELETE', `/api/walks/${mine}`, { token: stranger.token })).status, 404, 'a non-member cannot tell the walk exists')
+  assert.equal((await call('DELETE', `/api/walks/${mine}`, { token: sue.token })).status, 403, 'another member cannot delete it')
+  assert.equal((await call('DELETE', `/api/walks/${owners}`, { token: pat.token })).status, 403, 'a member cannot delete the owner\'s walk')
+  assert.equal((await call('DELETE', '/api/walks/not-an-id', { token: owner.token })).status, 404)
+  assert.equal((await call('GET', `/api/feed?dog=${dog.slug}`, { token: owner.token })).json.walks.length, 3)
+
+  assert.equal((await call('DELETE', `/api/walks/${mine}`, { token: pat.token })).status, 200, 'their own walk')
+  assert.equal((await call('GET', `/api/walks/${mine}`, { token: pat.token })).status, 404)
+  assert.equal((await call('DELETE', `/api/walks/${mine}`, { token: pat.token })).status, 404)
+  assert.equal((await db.query('SELECT COUNT(*) AS n FROM paws WHERE walk_id = $1', [mine])).rows[0].n * 1, 0, 'its paws go with it')
+  assert.equal((await call('DELETE', `/api/walks/${mine2}`, { token: owner.token })).status, 200, 'the owner deletes a member\'s walk')
+  const d = await call('GET', p, { token: owner.token })
+  assert.deepEqual(d.json.walks.map((w) => w.title), ['Owner one'])
+  assert.equal(d.json.totals.lifetime.outings, 1)
+  assert.equal((await call('GET', `/api/public/dogs/${dog.slug}`)).json.dog.walks.length, 1)
 })

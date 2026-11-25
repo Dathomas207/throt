@@ -23,6 +23,9 @@ export const ROUTES = {
   danehy: { name: 'Danehy Park lap', miles: 1.8, minutes: 41, note: 'Open fields · fenced dog run', pts: loop([42.3889, -71.1370], 0.0022, 0.0034, 70, 1) },
   fells: { name: 'Sheepfold and Skyline', miles: 5.9, minutes: 142, note: 'Hilly · off-leash meadow · rocky', pts: loop([42.4530, -71.1090], 0.0085, 0.011, 110, 0.4) },
 }
+// Distances are measured from the drawn geometry so the number always matches the line on the map.
+function lineMiles(pts) { let d = 0; for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], R = 3958.8, r = Math.PI / 180, x = Math.sin(((b[0] - a[0]) * r) / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(((b[1] - a[1]) * r) / 2) ** 2; d += 2 * R * Math.asin(Math.sqrt(x)) } return d }
+for (const k of Object.keys(ROUTES)) { const m = lineMiles(ROUTES[k].pts); ROUTES[k].miles = Math.round(m * 10) / 10; ROUTES[k].minutes = Math.max(5, Math.round(m * 20)) }
 export const PLACES = [
   { id: 'fresh', name: 'Fresh Pond Reservation', kind: 'Dog park and trail', at: [42.3847, -71.1487], tags: ['Off-leash area', 'Water access', 'Shade', 'Quiet before 8 AM'], dogs: 38, top: 'Moose', topVisits: 9, routes: ['pond', 'meadow'] },
   { id: 'danehy', name: 'Danehy Park', kind: 'Park with dog run', at: [42.3889, -71.1370], tags: ['Fenced run', 'Open fields', 'Lights at night'], dogs: 27, top: 'Juno', topVisits: 7, routes: ['danehy'] },
@@ -47,11 +50,13 @@ export const SEED = [
   { id: 's7', dog: 'Biscuit', by: 'dale', type: 'Swim', title: 'Dock diving practice', daysAgo: 5, time: '4:20 PM', place: 'Fresh Pond', route: 'meadow', miles: 0.8, minutes: 35, sniffs: 5, paws: 40, comments: 5 },
   { id: 's8', dog: 'Biscuit', by: 'dale', type: 'Training', title: 'Loose-leash practice', daysAgo: 6, time: '7:30 AM', place: 'Neighborhood', route: 'danehy', miles: 0.9, minutes: 22, sniffs: 6, paws: 9, comments: 1 },
 ]
+for (const a of SEED) { if (a.route && ROUTES[a.route] && a.type !== 'Daycare') { a.miles = ROUTES[a.route].miles; a.minutes = ROUTES[a.route].minutes } }
 export const PACK = [
   { id: 'p1', dog: 'Moose', breed: 'Bernese Mountain Dog', byName: 'Priya', type: 'Walk', title: 'Ninth pond lap this week', daysAgo: 0, time: '6:40 AM', place: 'Fresh Pond', route: 'pond', miles: 2.4, minutes: 55, sniffs: 21, paws: 18, comments: 3, color: '#1F5AE8', ink: '#FFFFFF' },
   { id: 'p2', dog: 'Juno', breed: 'Border Collie', byName: 'Pat', type: 'Walk', title: 'Pack walk, four dogs deep', daysAgo: 0, time: '12:30 PM', place: 'Danehy Park', route: 'danehy', miles: 1.8, minutes: 41, sniffs: 9, paws: 27, comments: 4, color: '#0F1B2D', ink: '#C8F031' },
   { id: 'p3', dog: 'Pickle', breed: 'Dachshund', byName: 'Marco', type: 'Walk', title: 'Short legs, long loop', daysAgo: 1, time: '5:50 PM', place: 'Pacific Street', route: 'meadow', miles: 1.0, minutes: 31, sniffs: 24, paws: 35, comments: 7, color: '#FF8A5B', ink: '#0F1B2D' },
 ]
+for (const x of PACK) { if (x.route && ROUTES[x.route]) { x.miles = ROUTES[x.route].miles; x.minutes = ROUTES[x.route].minutes } }
 export const CONNECTIONS = [
   { id: 'tag', name: 'Trot Tag', group: 'On the collar', what: 'A small Bluetooth tag on Biscuit’s collar. Any phone on the care team that hears it credits the walk to Biscuit, so Pat and Sue never have to pick a dog.', real: 'Needs the native iPhone app and a beacon tag.', on: true },
   { id: 'airtag', name: 'Apple AirTag', group: 'On the collar', what: 'Apple does not let other apps read an AirTag. Paste the Share Item Location link from Find My and Trot attaches it to a Lost Dog alert.', real: 'Works today with a pasted link.', input: 'Share Item Location link' },

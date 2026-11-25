@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Ic, Paw, Av, Stat, Range, Card, whoName, ptsOf, DogSwitch, personColor, firstName, ROLE_LABEL, copyText } from '../ui.jsx'
+import { Ic, Paw, Av, Stat, Range, Card, whoName, ptsOf, DogSwitch, personColor, firstName, ROLE_LABEL, copyText, Confirm } from '../ui.jsx'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine } from '../data.js'
 
 export default function People(props) { return props.real ? <RealPeople {...props} /> : <DemoPeople {...props} /> }
@@ -13,17 +13,48 @@ function RealPeople({ real, setToast }) {
   const [link, setLink] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const owner = dog.role === 'owner'
   const total = totals.week.minutes
   const rows = team.map((m, i) => ({ ...m, color: personColor(i)[0], ink: personColor(i)[1] })).sort((a, b) => b.week.minutes - a.week.minutes)
   const mine = (team.find((m) => m.you) || { week: { minutes: 0, outings: 0, miles: 0 }, role: '' })
   const share = total ? Math.round((mine.week.minutes / total) * 100) : 0
-  const owner = dog.role === 'owner'
+  // Open invites, for the owner. `ask` is the row waiting on a confirm step.
+  const [invites, setInvites] = useState([])
+  const [ask, setAsk] = useState(null)
+  const loadInvites = async () => { if (!owner) { setInvites([]); return } try { setInvites((await real.listInvites()).invites) } catch (e) {} }
+  useEffect(() => { setAsk(null); loadInvites() }, [dog.slug, owner])
   const create = async () => {
     if (busy) return
     setBusy(true); setErr('')
-    try { const r = await real.createInvite(role); setLink(location.origin + r.path) } catch (e) { setErr(e.message) }
+    try { const r = await real.createInvite(role); setLink(location.origin + r.path); loadInvites() } catch (e) { setErr(e.message) }
     setBusy(false)
   }
+  const confirmAsk = async () => {
+    const a = ask
+    if (!a || a.busy) return
+    setAsk({ ...a, busy: true, error: '' })
+    const r = a.kind === 'member' ? await real.removeMember(a.id) : await real.cancelInvite(a.id)
+    if (a.kind === 'invite') await loadInvites()
+    // An invite that is already gone (used or expired) counts as done.
+    if (r.error && r.status !== 404) { setAsk({ ...a, busy: false, error: r.error }); return }
+    setAsk(null)
+    setToast(a.kind === 'member' ? `${firstName(a.name)} is off ${dog.name}'s team` : 'Invite cancelled. That link no longer works.')
+  }
+  // Your own display name.
+  const [naming, setNaming] = useState(null)
+  const saveName = async (e) => {
+    e.preventDefault()
+    if (!naming || naming.busy) return
+    const name = naming.value.replace(/\s+/g, ' ').trim()
+    if (!name) { setNaming({ ...naming, error: 'Type the name you want the team to see.' }); return }
+    if (name.length > 60) { setNaming({ ...naming, error: 'Keep your name to 60 characters or fewer.' }); return }
+    if (name === real.user.name) { setNaming(null); return }
+    setNaming({ ...naming, busy: true, error: '' })
+    const r = await real.renameMe(name)
+    if (r.error) { setNaming({ ...naming, busy: false, error: r.error }); return }
+    setNaming(null); setToast(`You now show as ${firstName(r.user.name)}`)
+  }
+  const day = (v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   const copy = async () => setToast((await copyText(link)) ? 'Invite link copied' : 'Copy did not work here. Select the link and copy it.')
   const close = () => { setSheet(false); setLink(''); setErr('') }
   return (
@@ -39,14 +70,35 @@ function RealPeople({ real, setToast }) {
       <div className="list">
         <div className="eyebrow dark padx">LAST 7 DAYS</div>
         {rows.map((r) => (
-          <div key={r.id} className="card prow">
+          <div key={r.id} className="card"><div className="prow">
             <Av t={(r.name.trim()[0] || '?').toUpperCase()} s={44} bg={r.color} c={r.ink} sq={r.role === 'daycare'} />
             <div className="grow"><div className="row between"><b>{r.name}{r.you && <span className="you">You</span>}</b><span className="num">{total ? Math.round((r.week.minutes / total) * 100) : 0}%</span></div><div className="meta">{r.role === 'owner' ? `${dog.name}'s human` : ROLE_LABEL[r.role] || r.role}</div><div className="bar thin"><i style={{ width: (total ? (r.week.minutes / total) * 100 : 0) + '%' }} /></div><div className="meta">{r.week.outings} {r.week.outings === 1 ? 'outing' : 'outings'} · {fmtTime(r.week.minutes)} · {r.week.miles.toFixed(1)} mi</div></div>
           </div>
+            {owner && !r.you && r.role !== 'owner' && (ask && ask.kind === 'member' && ask.id === r.id
+              ? <div className="rowfoot"><Confirm text={`Remove ${r.name} from ${dog.name}'s team? They lose access to ${dog.name}'s walks and routes. Walks they already logged stay on ${dog.name}'s page.`} yes={`Remove ${firstName(r.name)}`} no="Keep" busy={ask.busy} error={ask.error} onYes={confirmAsk} onNo={() => setAsk(null)} /></div>
+              : <div className="rowfoot"><button className="tbtn" onClick={() => setAsk({ kind: 'member', id: r.id, name: r.name })}>Remove {firstName(r.name)} from the team</button></div>)}
+          </div>
         ))}
+        {owner && invites.length > 0 && <div className="card padc"><div className="eyebrow dark">INVITES NOT USED YET</div>
+          {invites.map((i) => <div key={i.id} className="invrow">
+            <div className="row between g8"><span className="grow"><b>{ROLE_LABEL[i.role] || i.role} invite</b><small>Made {day(i.createdAt)} · expires {day(i.expiresAt)}</small></span>
+              {!(ask && ask.kind === 'invite' && ask.id === i.id) && <button className="tbtn" aria-label={`Cancel the ${ROLE_LABEL[i.role] || i.role} invite made ${day(i.createdAt)}`} onClick={() => setAsk({ kind: 'invite', id: i.id })}>Cancel invite</button>}</div>
+            {ask && ask.kind === 'invite' && ask.id === i.id && <Confirm text="Cancel this invite? The link stops working at once. Nobody already on the team is affected." yes="Cancel invite" no="Keep it" busy={ask.busy} error={ask.error} onYes={confirmAsk} onNo={() => setAsk(null)} />}
+          </div>)}
+        </div>}
         {owner
           ? <button className="rrow box" onClick={() => setSheet(true)}><span className="ricon"><Ic n="plus" s={20} c="#1F5AE8" /></span><span className="grow"><b>Invite someone</b><small>Walkers, family and daycare can join {dog.name}'s team with a link</small></span></button>
           : <p className="meta padx">Only {dog.name}'s owner can invite people.</p>}
+        <div className="card padc"><div className="eyebrow dark">YOU</div>
+          {naming
+            ? <form className="wform" onSubmit={saveName} noValidate>
+              <div className="field lightf"><label htmlFor="me-name">Your name</label><input id="me-name" value={naming.value} onChange={(e) => setNaming({ ...naming, value: e.target.value, error: '' })} maxLength={80} autoComplete="name" autoFocus aria-invalid={naming.error ? true : undefined} aria-describedby="me-name-note" />
+                {naming.error ? <p className="ferr" id="me-name-note" role="alert">{naming.error}</p> : <p className="fhint" id="me-name-note">Your first name is what shows next to {dog.name}'s walks, as in "with {firstName(naming.value) || 'Pat'}".</p>}</div>
+              <div className="row g8"><button className="cta small" type="submit" disabled={naming.busy}>{naming.busy ? 'Saving' : 'Save name'}</button><button className="cta small white bordered" type="button" onClick={() => setNaming(null)} disabled={naming.busy}>Cancel</button></div>
+            </form>
+            : <div className="row between g8"><span className="grow yourow"><b>{real.user.name}</b><small>Shows as "with {firstName(real.user.name)}" on walks you log</small></span><button className="tbtn" onClick={() => setNaming({ value: real.user.name, busy: false, error: '' })}>Edit name</button></div>}
+          <button className="rrow box line" onClick={real.signOut}><span className="grow"><b>Sign out</b><small>On this device</small></span></button>
+        </div>
       </div>
       {sheet && <div className="scrim" onClick={close}><div className="modal" role="dialog" aria-label={`Invite someone to ${dog.name}'s team`} onClick={(e) => e.stopPropagation()}>
         <div className="grab" /><h2>Invite someone to {dog.name}'s team</h2>
