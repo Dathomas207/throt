@@ -12,6 +12,7 @@ import { registerCompete } from './routesCompete.js'
 import { registerRegistration } from './routesRegistration.js'
 import { registerFriends } from './routesFriends.js'
 import { registerPhotos, WALK_PHOTO_LIMITS } from './routesPhotos.js'
+import { registerWeather } from './routesWeather.js'
 
 import { geoRouter } from './geo.js'
 
@@ -793,6 +794,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   registerRegistration(kit)
   registerFriends(kit)
   registerPhotos(kit)
+  registerWeather(kit)
   // Read-only lookups, no sign-in. They sit on the API router, so only the per-address read limit applies.
   api.use('/geo', geoRouter(db))
 

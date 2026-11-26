@@ -3,6 +3,7 @@ import { Ic, Paw, Av, DogAv, Stat, Range, Card, whoName, ptsOf, DogSwitch, Gear,
 import { api } from '../api.js'
 import { HomeAlerts } from './LostDog.jsx'
 import { TodayHero, TodayTiles, TodayIdeas } from './Today.jsx'
+import WalkTimes from './WalkTimes.jsx'
 import { FriendsRow, FriendToggle, realFriendsModel, demoFriendsModel, demoFriendActs } from './Friends.jsx'
 import { CardPhotos } from './Photos.jsx'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine, DEMO_DOGS, demoDogByName } from '../data.js'
@@ -49,6 +50,7 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSetti
       <DogSwitch dogs={dogs} active={dog.slug} onPick={real.switchDog} />
       <HomeAlerts real={real} setToast={setToast} />
       <TodayHero name={dog.name} photoUrl={dog.photoUrl} banner={banner} onWalk={() => setTab('record')} onDog={() => setTab('dog')} status={totals.week.outings > 0 ? `${totals.week.outings} ${totals.week.outings === 1 ? 'outing' : 'outings'} and ${totals.week.miles.toFixed(1)} miles in the last 7 days` : 'No outings in the last 7 days yet'} />
+      <WalkTimes name={dog.name} onWalk={() => setTab('record')} />
       <TodayTiles name={dog.name} setTab={setTab} openCompete={openCompete} />
       <FriendsRow m={fm} />
       <TodayIdeas name={dog.name} setTab={setTab} openCompete={openCompete} />
@@ -87,6 +89,7 @@ function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, setToast,
       <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Demo, viewing as {PEOPLE[me].name}</div><Gear onClick={openSettings} /></div></header>
       <DemoSwitch dd={dd} setDk={setDk} />
       <TodayHero name={D.name} demo banner={banner} onWalk={() => setTab('record')} onDog={() => setTab('dog')} status={`${week.walks} outings and ${week.miles.toFixed(1)} miles this week · ${D.streak} day streak`}><Range min={todayMin} light dog={D} /></TodayHero>
+      <WalkTimes name={D.name} hasApi={hasApi} onWalk={() => setTab('record')} />
       <TodayTiles name={D.name} setTab={setTab} openCompete={openCompete} />
       <FriendsRow m={fm} />
       <TodayIdeas name={D.name} setTab={setTab} openCompete={openCompete} hasApi={hasApi} />

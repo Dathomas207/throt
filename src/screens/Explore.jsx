@@ -435,7 +435,7 @@ export default function Explore({ setTab, setToast, dogName, account }) {
   const listHead = parks.sample ? 'Sample dog places' : cat ? cat.label : places.length ? `${places.length} dog ${places.length === 1 ? 'place' : 'places'}` : firstLoad || updating ? 'Dog places' : parks.failed ? 'No places to show' : 'Nothing mapped here yet'
   const listMeta = cat
     ? (places.length ? `${places.length} on the map here${user ? ', nearest first' : ''}${parks.sample ? ' · demo data, not live' : ''}` : grp.status !== 'done' || grp.updating ? '' : grp.failed ? 'These could not be loaded just now.' : cat.empty + '.' + (needsDogTag ? ' A place only shows here when OpenStreetMap says dogs are allowed, and few are tagged so far.' : ''))
-    : parks.sample ? 'Demo data, not live' : places.length ? `From OpenStreetMap${comm.length && layers.community ? ' and Trot members' : ''}${user ? ', nearest first' : ''}` : firstLoad || updating ? '' : parks.failed ? 'Try again, move the map or search another place.' : 'No dog places in this area on OpenStreetMap. Move the map, search a city or try Near me.'
+    : parks.sample ? 'Demo data, not live' : places.length ? `${comm.length && layers.community ? "From Trot's index and OpenStreetMap" : 'From OpenStreetMap'}${user ? ', nearest first' : ''}` : firstLoad || updating ? '' : parks.failed ? 'Try again, move the map or search another place.' : 'No dog places in this area on OpenStreetMap. Move the map, search a city or try Near me.'
   const sheetStyle = { height: (dragH != null ? dragH : snapH[snap]) + 'px' }
   const directions = (at) => `https://www.google.com/maps/dir/?api=1&destination=${at[0].toFixed(6)},${at[1].toFixed(6)}`
   const hereNote = (l) => (l.from === 'you' ? 'starts where you are' : 'starts at the middle of the map, not your location')
@@ -630,7 +630,7 @@ export default function Explore({ setTab, setToast, dogName, account }) {
           {trailList.map((x) => <button key={x.id} className="rrow" onClick={() => openLine('trail:' + x.id)}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{x.name}</b><small>{[x.kind, ...x.labels.slice(0, 2), x.partial ? 'partial' : ''].filter(Boolean).join(' · ')}</small></span><span className="num">{x.miles.toFixed(1)} mi</span></button>)}
         </>)}
         {!b.on && !add && !dk && filter !== 'trails' && (<>
-          {(summary || updating) && <div className="asum">{summary && <span>{summary}</span>}{updating && <Updating />}</div>}
+          {(summary || (updating && !comm.length)) && <div className="asum">{summary && <span>{summary}</span>}{updating && !comm.length && <Updating />}</div>}
           {parks.sample && <div className="mnote"><span className="grow"><b>Showing sample places.</b> Live map data could not be loaded, so these are demo places around Cambridge, MA.</span><button onClick={retry}>Retry</button></div>}
           {parks.failed && <div className={places.length ? 'mnote info' : 'mnote'}><span className="grow">{places.length ? <>Showing listed places. More from OpenStreetMap could not be loaded just now.</> : <><b>Places could not be loaded.</b> The map data service did not answer for this area. Nothing is shown rather than guessed.</>}</span><button onClick={retry}>Retry</button></div>}
           {(parks.refreshFailed || more.refreshFailed) && <div className="mnote info"><span className="grow">Showing places saved from an earlier visit. They could not be refreshed just now.</span><button onClick={retry}>Retry</button></div>}
