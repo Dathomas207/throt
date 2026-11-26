@@ -115,7 +115,7 @@ function DemoApp({ leaveDemo, signedIn, hasApi }) {
   return (
     <div className="shell">
       <main className="screen">
-        {tab === 'home' && <Home {...ctx} />}
+        {tab === 'home' && <Home {...ctx} hasApi={hasApi} />}
         {tab === 'explore' && <Explore {...ctx} dogName={dd.dog.name} />}
         {tab === 'record' && <Record {...ctx} dogName={dd.dog.name} />}
         {tab === 'people' && <People {...ctx} />}
@@ -123,7 +123,7 @@ function DemoApp({ leaveDemo, signedIn, hasApi }) {
       </main>
       {tab !== 'record' && (
         <nav className="tabs" aria-label="Main">
-          <Tab on={tab === 'home'} l="Home" i="home" go={() => setTab('home')} />
+          <Tab on={tab === 'home'} l="Today" i="home" go={() => setTab('home')} />
           <Tab on={tab === 'explore'} l="Explore" i="map" go={() => setTab('explore')} />
           <button className="rec" aria-label={`Walk ${dd.dog.name}`} onClick={() => setTab('record')}><Paw s={28} c="#0F1B2D" /></button>
           <Tab on={tab === 'people'} l="People" i="users" go={() => setTab('people')} />
@@ -287,7 +287,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
         </main>
         {tab !== 'record' && (
           <nav className="tabs" aria-label="Main">
-            <Tab on={tab === 'home'} l="Home" i="home" go={() => setTab('home')} />
+            <Tab on={tab === 'home'} l="Today" i="home" go={() => setTab('home')} />
             <Tab on={tab === 'explore'} l="Explore" i="map" go={() => setTab('explore')} />
             <button className="rec" aria-label={`Walk ${dog.name}`} onClick={() => setTab('record')}><Paw s={28} c="#0F1B2D" /></button>
             <Tab on={tab === 'people'} l="People" i="users" go={() => setTab('people')} />

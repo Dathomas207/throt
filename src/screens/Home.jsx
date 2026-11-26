@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Ic, Paw, Av, DogAv, Stat, Range, Card, whoName, ptsOf, DogSwitch, Gear, TypeIc, usePhoto } from '../ui.jsx'
 import { api } from '../api.js'
 import { HomeAlerts } from './LostDog.jsx'
+import { TodayHero, TodayTiles, TodayIdeas } from './Today.jsx'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine, DEMO_DOGS, demoDogByName } from '../data.js'
 
 export default function Home(props) { return props.real ? <RealHome {...props} /> : <DemoHome {...props} /> }
@@ -32,11 +33,10 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSetti
       <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Signed in as {user.name}</div><Gear onClick={openSettings} /></div></header>
       <DogSwitch dogs={dogs} active={dog.slug} onPick={real.switchDog} />
       <HomeAlerts real={real} setToast={setToast} />
-      <section className="hero">
-        <div className="row g14"><button className="doglink" aria-label={`Open ${dog.name}'s profile`} onClick={() => setTab('dog')}><DogAv name={dog.name} photoUrl={dog.photoUrl} s={56} bg="#C8F031" c="#0F1B2D" /></button><div className="grow"><div className="eyebrow">{dog.name.toUpperCase()}, LAST 7 DAYS</div><div className="row g20"><Stat light l="MILES" v={totals.week.miles.toFixed(1)} /><Stat light l="OUTINGS" v={totals.week.outings} /><Stat light l="TIME OUT" v={fmtTime(totals.week.minutes)} /></div></div></div>
-        <button className="cta" onClick={() => setTab('record')}><Paw s={22} c="#0F1B2D" />Walk {dog.name}</button>
-      </section>
-      <CompeteCard open={openCompete} name={dog.name} />
+      <TodayHero name={dog.name} photoUrl={dog.photoUrl} onWalk={() => setTab('record')} onDog={() => setTab('dog')} status={totals.week.outings > 0 ? `${totals.week.outings} ${totals.week.outings === 1 ? 'outing' : 'outings'} and ${totals.week.miles.toFixed(1)} miles in the last 7 days` : 'No outings in the last 7 days yet'} />
+      <TodayTiles name={dog.name} setTab={setTab} openCompete={openCompete} />
+      <TodayIdeas name={dog.name} setTab={setTab} openCompete={openCompete} />
+      <div className="tjournal"><h2>{dog.name}'s days</h2></div>
       <div className="seg" role="tablist"><button role="tab" aria-selected={scope === 'dog'} className={scope === 'dog' ? 'on' : ''} onClick={() => real.setScope('dog')}>{dog.name}</button>{many && <button role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'on' : ''} onClick={() => real.setScope('all')}>All my dogs</button>}<button role="tab" aria-selected={scope === 'pack'} className={scope === 'pack' ? 'on' : ''} onClick={() => real.setScope('pack')}>The pack</button></div>
       {scope === 'pack' ? <div className="list">
         <p className="meta padx">Recent outings from other public dogs on Trot. Demo dogs are made up and labelled.</p>
@@ -54,7 +54,7 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSetti
 
 const DemoSwitch = ({ dd, setDk }) => <div className="dogswitch" role="group" aria-label="Switch dog">{Object.values(DEMO_DOGS).map((d) => <button key={d.key} className={`chip flat ${d.key === dd.key ? 'on' : ''}`} aria-pressed={d.key === dd.key} onClick={() => setDk(d.key)}>{d.dog.name}</button>)}</div>
 
-function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, me, openSettings, openCompete, dd, setDk, onDog }) {
+function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, me, openSettings, openCompete, dd, setDk, onDog, hasApi }) {
   const [feed, setFeed] = useState('biscuit')
   const D = dd.dog
   // Dale's own dogs are never in "the pack".
@@ -63,12 +63,10 @@ function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, me, openS
     <div className="scroll">
       <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Demo, viewing as {PEOPLE[me].name}</div><Gear onClick={openSettings} /></div></header>
       <DemoSwitch dd={dd} setDk={setDk} />
-      <section className="hero">
-        <div className="row g14"><button className="doglink" aria-label={`Open ${D.name}'s profile`} onClick={() => setTab('dog')}><DogAv name={D.name} demo s={56} bg="#C8F031" c="#0F1B2D" /></button><div className="grow"><div className="eyebrow">{D.name.toUpperCase()} THIS WEEK</div><div className="row g20"><Stat light l="MILES" v={week.miles.toFixed(1)} /><Stat light l="OUTINGS" v={week.walks} /><Stat light l="STREAK" v={D.streak + ' d'} /></div></div></div>
-        <Range min={todayMin} light dog={D} />
-        <button className="cta" onClick={() => setTab('record')}><Paw s={22} c="#0F1B2D" />Walk {D.name}</button>
-      </section>
-      <CompeteCard open={openCompete} name={D.name} />
+      <TodayHero name={D.name} demo onWalk={() => setTab('record')} onDog={() => setTab('dog')} status={`${week.walks} outings and ${week.miles.toFixed(1)} miles this week · ${D.streak} day streak`}><Range min={todayMin} light dog={D} /></TodayHero>
+      <TodayTiles name={D.name} setTab={setTab} openCompete={openCompete} />
+      <TodayIdeas name={D.name} setTab={setTab} openCompete={openCompete} hasApi={hasApi} />
+      <div className="tjournal"><h2>{D.name}'s days</h2></div>
       <div className="seg" role="tablist"><button role="tab" aria-selected={feed === 'biscuit'} className={feed === 'biscuit' ? 'on' : ''} onClick={() => setFeed('biscuit')}>{D.name}</button><button role="tab" aria-selected={feed === 'pack'} className={feed === 'pack' ? 'on' : ''} onClick={() => setFeed('pack')}>The pack</button></div>
       <div className="list">{list.map((a) => <Card key={a.id} a={a} pawed={pawed} paw={paw} setOpen={setOpen} onDog={onDog} />)}</div>
     </div>
