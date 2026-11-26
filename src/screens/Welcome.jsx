@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import WelcomeHero from './WelcomeHero.jsx'
 import { Paw } from '../ui.jsx'
-import { api, setToken, pendingInvite, clearInvite } from '../api.js'
+import './friends.css'
+import { api, setToken, pendingInvite, clearInvite, pendingFriend, clearFriend } from '../api.js'
 
 // Accepts a pending invite for the signed-in person. Returns the dog's slug, or
 // null with a message when the link is no longer good.
@@ -63,6 +64,16 @@ export default function Welcome({ user, onDemo, onReady, notice }) {
     return () => { on = false }
   }, [token])
   const invited = !!(token && inv && inv.open)
+  // Arrived from an "Add as a friend" link. The link is kept until this person is signed in with a dog.
+  const [friend, setFriend] = useState(null)
+  useEffect(() => {
+    const f = pendingFriend()
+    if (!f) return
+    let on = true
+    api.friends.publicDog(f).then((r) => on && setFriend(r.dog.name), (e) => { if (e.status === 404) clearFriend() })
+    return () => { on = false }
+  }, [])
+  const friendNote = friend && <p className="wnote fnote" role="status">You can add {friend} as a friend once you are signed in{user ? ' and have a dog page of your own' : ''}. We will ask you right after.</p>
   const signIn = async (e) => {
     e.preventDefault()
     if (busy) return
@@ -86,6 +97,7 @@ export default function Welcome({ user, onDemo, onReady, notice }) {
       {step === 'start' && (
         <div className="wform">
           {token && inv && inv.dead && <p className="formerr" role="alert">This invite link has expired or was already used. Ask for a new one.</p>}
+          {friendNote}
           {invited
             ? <><h1 className="wh">{inv.dogName} wants you on the team</h1><p className="wp">Sign in to join {inv.dogName}'s care team. Walks you take together count toward {inv.dogName}'s week.</p>
               <button className="cta" onClick={() => setStep('account')}><Paw s={22} c="#0F1B2D" />Join {inv.dogName}'s team</button></>
@@ -102,6 +114,7 @@ export default function Welcome({ user, onDemo, onReady, notice }) {
           <label className="field"><span>Your name</span><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required maxLength={60} autoComplete="name" /></label>
           <label className="field"><span>Email</span><input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required maxLength={254} autoComplete="email" inputMode="email" /></label>
           <p className="wnote">Trial sign-in. No password yet.</p>
+          {friendNote}
           {err && <p className="formerr" role="alert">{err}</p>}
           <button className="cta" type="submit" disabled={busy}>{busy ? 'Signing in' : 'Continue'}</button>
           <button className="wlink" type="button" onClick={() => { setErr(''); setStep('start') }}>Back</button>
@@ -111,6 +124,7 @@ export default function Welcome({ user, onDemo, onReady, notice }) {
         <div className="wform">
           <h1 className="wh">Now, your dog</h1>
           <p className="wp">This makes a page for your dog. You can add walkers and family after.</p>
+          {friendNote}
           {err && <p className="formerr" role="alert">{err}</p>}
           <DogForm onDone={dogDone} />
           <p className="wnote">The page is public by default: name, breed, bio, totals and recent outings, with no maps. You can make it private in Settings.</p>

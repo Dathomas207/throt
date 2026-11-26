@@ -89,6 +89,7 @@ function RealPeople({ real, setToast, openSettings, openCompete, pawed, paw, set
             {ask && ask.kind === 'invite' && ask.id === i.id && <Confirm text="Cancel this invite? The link stops working at once. Nobody already on the team is affected." yes="Cancel invite" no="Keep it" busy={ask.busy} error={ask.error} onYes={confirmAsk} onNo={() => setAsk(null)} />}
           </div>)}
         </div>}
+        <button className="rrow box" onClick={real.friends.open}><span className="ricon"><Paw s={20} c="#1F5AE8" /></span><span className="grow"><b>{dog.name}'s dog friends</b><small>{real.friends.list.length ? `${real.friends.list.length} ${real.friends.list.length === 1 ? 'friend' : 'friends'}. ` : ''}Find dogs by name, see suggestions, or send {dog.name}'s invite link</small></span></button>
         {owner
           ? <button className="rrow box" onClick={() => setSheet(true)}><span className="ricon"><Ic n="plus" s={20} c="#1F5AE8" /></span><span className="grow"><b>Invite someone</b><small>Walkers, family and daycare can join {dog.name}'s team with a link</small></span></button>
           : <p className="meta padx">Only {dog.name}'s owner can invite people.</p>}
@@ -123,7 +124,7 @@ function RealPeople({ real, setToast, openSettings, openCompete, pawed, paw, set
   )
 }
 
-function DemoPeople({ week, me, setToast, acts, pawed, paw, setOpen, openSettings, openCompete, dd, onDog }) {
+function DemoPeople({ week, me, setToast, acts, pawed, paw, setOpen, openSettings, openCompete, openFriends, dd, onDog }) {
   const N = dd.dog.name
   const [person, setPerson] = useState(null)
   const [invite, setInvite] = useState(false)
@@ -150,6 +151,7 @@ function DemoPeople({ week, me, setToast, acts, pawed, paw, setOpen, openSetting
             <div className="grow"><div className="row between"><b>{r.name}{r.id === me && <span className="you">You</span>}</b><span className="num">{week.total ? Math.round((r.min / week.total) * 100) : 0}%</span></div><div className="meta">{r.role}</div><div className="bar thin"><i style={{ width: (week.total ? (r.min / week.total) * 100 : 0) + '%' }} /></div><div className="meta">{r.n} {r.n === 1 ? "outing" : "outings"} · {fmtTime(r.min)} · {r.mi.toFixed(1)} mi</div></div>
           </button>
         ))}
+        <button className="rrow box" onClick={openFriends}><span className="ricon"><Paw s={20} c="#1F5AE8" /></span><span className="grow"><b>{N}'s dog friends</b><small>Sample friends, suggestions and search by dog name</small></span></button>
         <button className="rrow box" onClick={() => setInvite(true)}><span className="ricon"><Ic n="plus" s={20} c="#1F5AE8" /></span><span className="grow"><b>Add someone to {N}'s team</b><small>Walkers, family, daycare, the vet</small></span></button>
         <button className="rrow box" onClick={openSettings}><span className="grow"><b>View the app as someone else</b><small>The demo switch for Dale, Pat and Sue is in Settings, under Demo tools</small></span></button>
       </div>

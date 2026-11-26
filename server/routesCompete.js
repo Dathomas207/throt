@@ -83,7 +83,7 @@ const SIZE_LABEL = { small: 'Small dogs (under 25 lb)', medium: 'Medium dogs (25
 const same = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase()
 
 export function registerCompete(kit) {
-  const { api, db, auth, userFor, dogFor, HttpError, bad, iso, num, firstName, photoUrl, parseRoute, thin, pawCounts, demoOnBoards } = kit
+  const { api, db, auth, userFor, dogFor, HttpError, bad, iso, num, firstName, photoUrl, parseRoute, thin, pawCounts, demoOnBoards, walkPhotos } = kit
   const WALK = 'started_at, miles, minutes, place, user_id, type, max_speed, sprints'
   const walksOf = async (dogId, win) => (win
     ? await db.query(`SELECT ${WALK} FROM walks WHERE dog_id = $1 AND started_at >= $2 AND started_at < $3 LIMIT 5000`, [dogId, iso(win.start), iso(win.end)])
@@ -217,20 +217,23 @@ export function registerCompete(kit) {
   })
 
   // -- the pack: recent outings of public dogs, with exactly what their public pages show
+  // One shape for every feed of other people's dogs (the pack and the friends feed). First names only, no route unless the dog shares routes.
+  kit.PUBLIC_WALK_SQL = 'SELECT w.id, w.dog_id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, d.slug, d.name AS dog_name, d.breed, d.photo_v, d.is_demo, d.share_routes, u.name AS user_name, m.role FROM walks w JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id LEFT JOIN memberships m ON m.dog_id = w.dog_id AND m.user_id = w.user_id'
+  kit.publicWalksOut = async (page) => {
+    const ids = page.map((r) => r.id)
+    const { counts } = await pawCounts(ids, null)
+    const shots = await walkPhotos(ids, { pub: true })
+    return page.map((r) => ({
+      id: r.id, dog: { slug: r.slug, name: r.dog_name, breed: r.breed, photoUrl: photoUrl(r.slug, r.photo_v, true), isDemo: !!r.is_demo },
+      with: r.role === 'daycare' ? r.user_name : firstName(r.user_name), type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs),
+      startedAt: iso(r.started_at), paws: counts[r.id] || 0, route: r.share_routes ? thin(parseRoute(r.route), 120) : null, photos: shots[r.id] || [],
+    }))
+  }
   api.get('/pack', async (req, res) => {
     const user = await userFor(req)
     const own = new Set(user ? (await db.query('SELECT dog_id FROM memberships WHERE user_id = $1', [user.id])).rows.map((r) => r.dog_id) : [])
-    const { rows } = await db.query(
-      'SELECT w.id, w.dog_id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, d.slug, d.name AS dog_name, d.breed, d.photo_v, d.is_demo, d.share_routes, u.name AS user_name, m.role FROM walks w JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id LEFT JOIN memberships m ON m.dog_id = w.dog_id AND m.user_id = w.user_id WHERE d.is_public = TRUE ORDER BY w.started_at DESC, w.id DESC LIMIT 80')
-    const page = rows.filter((r) => !own.has(r.dog_id)).slice(0, 30)
-    const { counts } = await pawCounts(page.map((r) => r.id), null)
-    res.json({
-      walks: page.map((r) => ({
-        id: r.id, dog: { slug: r.slug, name: r.dog_name, breed: r.breed, photoUrl: photoUrl(r.slug, r.photo_v, true), isDemo: !!r.is_demo },
-        with: r.role === 'daycare' ? r.user_name : firstName(r.user_name), type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs),
-        startedAt: iso(r.started_at), paws: counts[r.id] || 0, route: r.share_routes ? thin(parseRoute(r.route), 120) : null,
-      })),
-    })
+    const { rows } = await db.query(`${kit.PUBLIC_WALK_SQL} WHERE d.is_public = TRUE ORDER BY w.started_at DESC, w.id DESC LIMIT 80`)
+    res.json({ walks: await kit.publicWalksOut(rows.filter((r) => !own.has(r.dog_id)).slice(0, 30)) })
   })
 
   kit.tzOf = tzOf

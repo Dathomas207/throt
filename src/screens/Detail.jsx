@@ -4,6 +4,8 @@ import { drawCard, shareCard } from '../share.js'
 import { Ic, Paw, Av, DogAv, Stat, Range, Card, whoName, ptsOf, whenOf, Confirm, statsOf, SPEED_NOTE, TypeIc } from '../ui.jsx'
 import { DemoPhoto, hasDemoPhoto } from '../portraits.jsx'
 import { api } from '../api.js'
+import { Gallery, PhotoPicker, UploadRows, makePicks } from './Photos.jsx'
+import { OUTING_PHOTO_MAX } from '../photo.js'
 import { peekDemoRoute, resolveDemoRoute } from '../routing.js'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine } from '../data.js'
 
@@ -11,13 +13,32 @@ export default function Detail({ a, close, pawed, paw, conn, setToast, setTab, d
   const p = a.real ? null : PEOPLE[a.by]
   // Lists carry a thinned route. A saved walk's full route is fetched when it opens.
   const [full, setFull] = useState(null)
+  // Lists carry the first three photos. The full set, and which ones this person added, come with the outing itself.
+  // It is fetched again whenever a photo finishes uploading or is deleted.
+  const [shots, setShots] = useState(null)
+  const photoRev = real ? real.photos.rev : 0
+  useEffect(() => { setFull(null); setShots(null) }, [a.id])
   useEffect(() => {
-    setFull(null)
     if (!a.real) return
     let on = true
-    api.get(`/walks/${a.id}`).then((r) => { if (on && r.walk.route && r.walk.route.length > 1) setFull(r.walk.route) }, () => {})
+    api.get(`/walks/${a.id}`).then((r) => { if (!on) return; if (r.walk.route && r.walk.route.length > 1) setFull(r.walk.route); setShots(r.walk.photos || []) }, () => {})
     return () => { on = false }
-  }, [a.id, a.real])
+  }, [a.id, a.real, photoRev])
+  // In the demo a picked photo is shown from this device only. Nothing is uploaded.
+  const [local, setLocal] = useState([])
+  useEffect(() => { setLocal([]) }, [a.id])
+  const team = a.real && real ? real.dogs.find((d) => d.slug === a.dogSlug) : null
+  const photos = a.real ? shots || a.photos || [] : [...(a.photos || []), ...local]
+  const jobs = a.real && real ? real.photos.jobs.filter((j) => j.walkId === a.id) : []
+  const room = OUTING_PHOTO_MAX - photos.length - jobs.length
+  const canAdd = a.real ? !!team : !!setTab && a.dog === (dogName || 'Biscuit')
+  const pickPhotos = (files) => {
+    if (a.real) { real.photos.add(a.id, files); return }
+    setLocal((l) => [...l, ...makePicks(files).map((p) => ({ id: p.key, url: p.url, local: true }))])
+    setToast('Previewed on this device only. Saving photos needs an account.')
+  }
+  const canDeletePhoto = (p) => (a.real ? !!team && (p.mine || team.role === 'owner' || team.role === 'family') : !!p.local)
+  const deletePhoto = async (p) => { if (a.real) return real.photos.remove(a.id, p.id); setLocal((l) => l.filter((x) => x.id !== p.id)); return {} }
   // Demo activities carry a sketched line. It is swapped for one on real paths when the router answers.
   const demoKey = typeof a.route === 'string' && ROUTES[a.route] ? a.route : null
   const [routed, setRouted] = useState(() => (demoKey ? peekDemoRoute(demoKey) : null))
@@ -46,6 +67,12 @@ export default function Detail({ a, close, pawed, paw, conn, setToast, setTab, d
           <div className="padx"><div className="row g10">{mine ? <button className="doglink" aria-label={`Open ${a.dog}'s profile`} onClick={() => { close(); setTab('dog') }}>{av}</button> : av}<div>{mine ? <button className="dogname big doglink" onClick={() => { close(); setTab('dog') }}>{a.dog}</button> : <div className="dogname big">{a.dog}</div>}<div className="meta">{a.type === 'Daycare' ? 'at' : 'with'} <b>{whoName(a)}</b>{p ? ` · ${p.role}` : ''}</div></div></div>
             <h1 className="dtitle">{a.title}</h1><div className="meta">{whenOf(a)}{a.place ? ` · ${a.place}` : ''}</div>{a.note && <p className="note">{a.note}</p>}</div>
           {!a.real && hasDemoPhoto(a.id) && <div className="card"><DemoPhoto id={a.id} /></div>}
+          <Gallery photos={photos} title={a.title} canDelete={canDeletePhoto} onDelete={deletePhoto} />
+          {a.real && real && <UploadRows jobs={jobs} retry={real.photos.retry} dismiss={real.photos.dismiss} />}
+          {canAdd && <div className="photorow padx">
+            <PhotoPicker onPick={pickPhotos} room={room} setToast={setToast} />
+            <p className="fhint">{photos.length ? `${photos.length} of ${OUTING_PHOTO_MAX} photos. ` : ''}Opens your photo library so you can choose. Trot cannot browse your photos on its own. Each photo is shrunk on this device first, which also leaves out its location data.{a.real ? (team && team.public ? ` Photos show on ${a.dog}'s public page.` : '') : ' In the demo nothing is uploaded.'}</p>
+          </div>}
           <div className="card padc grid3">{statsOf(routed && !routed.approximate && !full && a.miles > 0 ? { ...a, miles: routed.miles, avgSpeed: a.minutes > 0 ? routed.miles / (a.minutes / 60) : a.avgSpeed } : a, true).map(([l, v]) => <Stat key={l} l={l} v={v} />)}<Stat l="PAWS" v={a.paws + (pawed[a.id] ? 1 : 0)} />{!a.real && <Stat l="OF DAILY RANGE" v={Math.round((a.minutes / DOG.rangeMax) * 100) + '%'} />}</div>
           {(a.maxSpeed > 0 || a.avgSpeed > 0) && a.type !== 'Daycare' && <p className="meta padx">{SPEED_NOTE}</p>}
           <button className={`cta ${pawed[a.id] ? 'white bordered' : ''}`} onClick={() => paw(a.id)}><Paw s={20} c="#0F1B2D" f={pawed[a.id] ? '#0F1B2D' : 'none'} />{pawed[a.id] ? 'Paw given' : 'Give a paw'}</button>

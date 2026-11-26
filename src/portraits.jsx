@@ -88,9 +88,8 @@ export function Portrait({ name }) {
   return <svg viewBox="0 0 96 96" role="img" aria-label={p.label}><rect width="96" height="96" fill={p.bg} /><p.Head /></svg>
 }
 
-// Illustrated stand-ins for the photo slot on two demo outings.
+// An illustrated stand-in for the photo slot on one demo outing. The sample photos on s1 and p0 are listed in src/data.js.
 const SCENES = {
-  s1: 'Biscuit lying on the grass after the walk',
   s4: 'Illustration: Biscuit asleep on a mat at daycare',
 }
 export const hasDemoPhoto = (id) => Object.prototype.hasOwnProperty.call(SCENES, id)

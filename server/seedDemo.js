@@ -56,6 +56,13 @@ export const DEMO_DOGS = [
   { slug: 'bruno', name: 'Bruno', breed: 'Boxer', weight: 66, bio: 'Greets every walk like it is the first one ever.', at: 'charlotte', owner: 'Theo', team: [], weeks: 4, level: 1, mix: ['Walk', 'Walk', 'Play time', 'Dog park', 'Run'], base: 2.0 },
   { slug: 'fig', name: 'Fig', breed: 'Miniature Poodle', weight: 13, bio: 'Small dog, big calendar.', at: 'charlotte', owner: 'Mabel', team: [['Josie', 'family']], weeks: 4, level: 1, mix: ['Walk', 'Walk', 'Training', 'Play time'], base: 1.2 },
 ]
+// Who follows whom among the demo dogs. Neighbours in the same city, with some pairs mutual and some one-way,
+// so friends lists, "friends with each other" and suggestions all have something to show.
+export const DEMO_FOLLOWS = {
+  biscuit: ['millie', 'otis', 'waffles', 'clementine'], millie: ['biscuit', 'otis', 'fig'], waffles: ['biscuit', 'bruno', 'fig'], otis: ['biscuit', 'millie', 'clementine'],
+  clementine: ['otis', 'bruno'], bruno: ['waffles', 'otis'], fig: ['millie', 'waffles', 'clementine'],
+  moose: ['juno', 'pickle'], juno: ['moose', 'tansy'], pickle: ['moose'], tansy: ['juno', 'pickle'],
+}
 const GPS = { Walk: [2.5, 3.2, 1.9, 2], Run: [5.0, 6.4, 1.6, 6], Hike: [2.1, 2.7, 1.7, 1], Fetch: [1.2, 1.8, 3.6, 9], 'Dog park': [1.0, 1.6, 3.4, 7] }
 const TIMED = { 'Play time': [20, 45, 8], Swim: [20, 40, 0], Training: [15, 30, 0], Agility: [25, 50, 10] }
 const TITLES = {
@@ -165,6 +172,7 @@ export async function seedDemo(db, { now = Date.now(), photoDir = '' } = {}) {
       if (old.rows.length) {
         const ph = old.rows.map((_, i) => `$${i + 1}`).join(', ')
         await t.query(`DELETE FROM paws WHERE walk_id IN (${ph})`, old.rows.map((r) => r.id))
+        await t.query(`DELETE FROM walk_photos WHERE walk_id IN (${ph})`, old.rows.map((r) => r.id))
         await t.query('DELETE FROM walks WHERE dog_id = $1', [id])
       }
       for (let i = 0; i < rows.length; i += 20) {
@@ -185,6 +193,13 @@ export async function seedDemo(db, { now = Date.now(), photoDir = '' } = {}) {
     walks += rows.length
     const joins = [['month-25', monthWindow(now).key], DEMO_DOGS.indexOf(dog) % 2 ? ['weekend-long', weekendWindow(now).key] : ['play-120', monthWindow(now).key]]
     for (const [key, period] of joins) await db.query('INSERT INTO challenge_joins (dog_id, challenge_key, period_key, joined_at) VALUES ($1, $2, $3, $4) ON CONFLICT (dog_id, challenge_key, period_key) DO NOTHING', [id, key, period, at])
+  }
+  // Friends between demo dogs are exactly what DEMO_FOLLOWS says. Follows a real person made are left alone.
+  const demoUsers = USERS.map(uid), marks = demoUsers.map((_, i) => `$${i + 2}`).join(', ')
+  for (const [slug, list] of Object.entries(DEMO_FOLLOWS)) {
+    const from = demoId('dog:' + slug), owner = DEMO_DOGS.find((d) => d.slug === slug).owner
+    await db.query(`DELETE FROM dog_follows WHERE follower_dog_id = $1 AND created_by IN (${marks})`, [from, ...demoUsers])
+    for (const other of list) await db.query('INSERT INTO dog_follows (follower_dog_id, followed_dog_id, created_by, created_at) VALUES ($1, $2, $3, $4) ON CONFLICT (follower_dog_id, followed_dog_id) DO NOTHING', [from, demoId('dog:' + other), uid(owner), at])
   }
   for (const [slug, title, kind, event, placement, daysAgo] of AWARDS) {
     const dog = DEMO_DOGS.find((d) => d.slug === slug)
@@ -216,6 +231,8 @@ export async function removeDemo(db) {
     await db.tx(async (t) => {
       const ws = (await t.query('SELECT id FROM walks WHERE dog_id = $1', [id])).rows.map((r) => r.id)
       if (ws.length) await t.query(`DELETE FROM paws WHERE walk_id IN (${ws.map((_, i) => `$${i + 1}`).join(', ')})`, ws)
+      if (ws.length) await t.query(`DELETE FROM walk_photos WHERE walk_id IN (${ws.map((_, i) => `$${i + 1}`).join(', ')})`, ws)
+      await t.query('DELETE FROM dog_follows WHERE follower_dog_id = $1 OR followed_dog_id = $1', [id])
       for (const table of ['walks', 'awards', 'challenge_joins', 'memberships', 'event_entries', 'health_entries', 'health_shares', 'documents', 'invites']) await t.query(`DELETE FROM ${table} WHERE dog_id = $1`, [id])
       await t.query('DELETE FROM dogs WHERE id = $1', [id])
     })

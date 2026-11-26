@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Ic, Paw, DogAv } from '../ui.jsx'
 import { api } from '../api.js'
 import { haversine } from '../data.js'
+import { WalkImg } from './Photos.jsx'
 import './today.css'
 
 // The home screen is the dog's day, not a dashboard: a greeting, what the dog could do
@@ -36,9 +37,12 @@ const fmtMi = (m) => (m < 0.1 ? 'Right here' : m < 10 ? m.toFixed(1) + ' mi' : M
 const day = (s) => { const d = new Date(String(s).slice(0, 10) + 'T12:00:00'); return Number.isNaN(d.getTime()) ? null : d }
 
 // The big greeting card. `status` is one line about today; children are extra rows (a progress bar, alerts).
-export function TodayHero({ name, photoUrl, demo, status, onWalk, onDog, children }) {
+// `banner` is the dog's most recent outing photo. It sits behind the card, dimmed, so the text stays readable.
+// With no photo the card is plain navy, as before.
+export function TodayHero({ name, photoUrl, demo, status, onWalk, onDog, banner, children }) {
   return (
-    <section className="today">
+    <section className={`today ${banner ? 'hasbanner' : ''}`}>
+      {banner && <div className="tbanner" aria-hidden="true"><WalkImg p={banner} /></div>}
       <div className="row g14">
         <button className="doglink" aria-label={`Open ${name}'s profile`} onClick={onDog}><DogAv name={name} photoUrl={photoUrl} demo={demo} s={76} bg="#C8F031" c="#0F1B2D" /></button>
         <div className="grow"><div className="eyebrow">{greeting().toUpperCase()}</div><h1 className="tname">{name}</h1>{status && <div className="tstatus">{status}</div>}</div>

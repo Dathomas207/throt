@@ -4,6 +4,8 @@ import { Ic, Av, Stat, Range } from '../ui.jsx'
 import { ROUTES, PEOPLE, ACTIVITY_TYPES, activityType, fmtTime, haversine } from '../data.js'
 import { takeHandoff, loadSavedRoutes, deleteSavedRoute, pathMiles, lineUpTo, peekDemoRoute, resolveDemoRoute, useHereLoop, locationHelp, DEFAULT_CENTER } from '../routing.js'
 import { trackStats, speedStats, demoSamples, distAt, samplesUpTo, activityStats, defaultTitle, MAX_ACCURACY_M, SPIKE_MPH } from '../metrics.js'
+import { PhotoPicker, PickStrip, makePicks } from './Photos.jsx'
+import { OUTING_PHOTO_MAX } from '../photo.js'
 import '../maps.css'
 
 const SPEED = 40
@@ -29,7 +31,7 @@ const TypeIc = ({ id, s = 18, c = 'currentColor' }) => <svg aria-hidden="true" w
 const lastViewCenter = () => { try { const v = JSON.parse(localStorage.getItem('trot-view-v2')); if (v && Array.isArray(v.at) && Number.isFinite(v.at[0]) && Number.isFinite(v.at[1])) return v.at } catch (e) {} return null }
 const mph = (v) => (Number(v) || 0).toFixed(1) + ' mph'
 
-export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast, meName, dogName }) {
+export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast, meName, dogName, publicDog }) {
   const [hand] = useState(() => { const h = takeHandoff(); return h && h.kind === 'demo' && !ROUTES[h.key] ? null : h })
   const [mode, setMode] = useState('setup')
   const [type, setType] = useState('Walk')
@@ -48,6 +50,12 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
   const [placeName, setPlaceName] = useState('')
   const [title, setTitle] = useState('')
   const [note, setNote] = useState('')
+  // Photos picked on the finish step. They are sent after the outing is saved, so a slow or failed photo never holds up the save.
+  const [picks, setPicks] = useState([])
+  const picksRef = useRef([])
+  picksRef.current = picks
+  useEffect(() => () => { picksRef.current.forEach((p) => { try { URL.revokeObjectURL(p.url) } catch (e) {} }) }, [])
+  const unpick = (key) => setPicks((ps) => { const p = ps.find((x) => x.key === key); if (p) { try { URL.revokeObjectURL(p.url) } catch (e) {} } return ps.filter((x) => x.key !== key) })
   const [panelRef, panelH] = useHeight()
   const T = activityType(type), timed = !T.gps
   const live = !timed && rk === 'gps'
@@ -128,8 +136,9 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
   const finish = () => { setPaused(true); setTitle(defaultTitle(T.label, titlePlace)); setMode('done') }
   const save = () => {
     const base = { id: 'm' + Date.now(), dog: dogName || 'Biscuit', by: me, type, title: title || T.label, daysAgo: 0, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), paws: 0, comments: 0, note, sniffs: 0, minutes: sec / 60 }
-    if (timed) { saveWalk({ ...base, place: placeName.trim(), route: null, pts: null, miles: 0, avgSpeed: 0, maxSpeed: 0, sprints: taps, movingMinutes: sec / 60, runMinutes: 0 }); return }
-    saveWalk({ ...base, place: live ? 'Live GPS' : r.place || r.name, route: demoKey, pts: live ? (gps.length > 1 ? gps : null) : walked, miles: Math.round(miles * 100) / 100, ...activityStats(st, sec / 60) })
+    const files = picks.map((p) => p.file)
+    if (timed) { saveWalk({ ...base, place: placeName.trim(), route: null, pts: null, miles: 0, avgSpeed: 0, maxSpeed: 0, sprints: taps, movingMinutes: sec / 60, runMinutes: 0 }, files); return }
+    saveWalk({ ...base, place: live ? 'Live GPS' : r.place || r.name, route: demoKey, pts: live ? (gps.length > 1 ? gps : null) : walked, miles: Math.round(miles * 100) / 100, ...activityStats(st, sec / 60) }, files)
   }
   const removeSaved = (x) => {
     if (del !== x.id) { setDel(x.id); return }
@@ -193,6 +202,11 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
     <label className="field"><span>Title</span><input value={title} onChange={(e) => setTitle(e.target.value)} /></label>
     {timed && <label className="field"><span>Where (optional)</span><input value={placeName} maxLength={60} onChange={(e) => setPlaceName(e.target.value)} /></label>}
     <label className="field"><span>How did {dn} do?</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Found a stick, met a friend…" /></label>
+    <div className="photorow">
+      <div className="row g8"><PhotoPicker light onPick={(files) => setPicks((ps) => [...ps, ...makePicks(files)].slice(0, OUTING_PHOTO_MAX))} room={OUTING_PHOTO_MAX - picks.length} setToast={setToast} /><span className="meta lightm">{picks.length ? `${picks.length} of ${OUTING_PHOTO_MAX} chosen` : `Optional, up to ${OUTING_PHOTO_MAX}`}</span></div>
+      <PickStrip picks={picks} onRemove={unpick} />
+      <p className="meta lightm">Opens your photo library so you can choose. Photos are added after the outing is saved{publicDog ? `, and show on ${dn}'s public page` : ''}.</p>
+    </div>
     <div className="row g12"><button className="cta white grow" onClick={() => setTab('home')}>Discard</button><button className="cta grow" onClick={save}>Save to {dn}</button></div>
   </>)
   if (timed) return (

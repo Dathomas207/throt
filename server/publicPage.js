@@ -20,6 +20,14 @@ const fmtDate = (iso) => {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
+// Photo addresses are built by the server from ids and a hex hash. They are escaped like everything else.
+// A strip that scrolls sideways with no script: one photo fills the card, more than one peek in from the right.
+function shots(w, dogName) {
+  const list = (Array.isArray(w.photos) ? w.photos : []).filter((p) => p && typeof p.url === 'string' && p.url.startsWith('/api/public/'))
+  if (!list.length) return ''
+  return `<div class="shots${list.length > 1 ? ' many' : ''}">${list.map((p, i) => `<img src="${esc(p.url)}" alt="Photo ${i + 1} of ${list.length} from ${esc(dogName)}'s outing: ${esc(w.title)}" width="${esc(Number(p.w) || 0)}" height="${esc(Number(p.h) || 0)}" loading="lazy">`).join('')}</div>`
+}
+
 // Route points are numbers that were validated on the way in. They are formatted
 // with toFixed here, so nothing but digits, dots, minus signs and spaces is emitted.
 function routeSvg(pts) {
@@ -58,6 +66,8 @@ h2{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--grey);margin:6
 .note{font-size:14px;line-height:1.45;color:#3A4250;margin:0;overflow-wrap:anywhere}
 .row{display:flex;gap:28px}.card .sl{color:var(--grey)}.card .sv{color:var(--ink);font-size:22px}
 .route{display:block;width:100%;height:120px;background:#E6EBEE}
+.shots{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}.shots img{display:block;flex:0 0 100%;width:100%;height:240px;object-fit:cover;scroll-snap-align:start;background:#E6EBEE}.shots.many img{flex-basis:86%}
+.addf{background:var(--volt);color:var(--ink);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}.addf p{margin:0;font-size:13.5px;line-height:1.45}.addf .cta{background:var(--ink);color:#fff}
 .cta{min-height:52px;border-radius:26px;background:var(--volt);color:var(--ink);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 20px;text-decoration:none}
 .cta:focus-visible,.logo:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .foot{padding:4px 16px 28px;font-size:12px;color:var(--grey);text-align:center}
@@ -111,7 +121,7 @@ export function renderNotFound() {
   })
 }
 
-export function renderDogPage(dog, baseUrl) {
+export function renderDogPage(dog, baseUrl, { add = false } = {}) {
   const url = baseUrl ? `${baseUrl}/d/${dog.slug}` : ''
   // photoUrl is built by the server from the slug and a hex version. It is escaped like everything else.
   const image = baseUrl ? `${baseUrl}${dog.photoUrl || '/icon-512.png'}` : ''
@@ -128,8 +138,11 @@ export function renderDogPage(dog, baseUrl) {
 <div class="row">${w.type !== 'Daycare' && w.miles > 0 ? `<div><div class="sl">DISTANCE</div><div class="sv">${esc(fmtMi(w.miles))} mi</div></div>` : ''}<div><div class="sl">TIME</div><div class="sv">${esc(fmtMin(w.minutes))}</div></div>${w.type !== 'Daycare' && w.maxSpeed > 0 ? `<div><div class="sl">TOP SPEED</div><div class="sv">${esc(Number(w.maxSpeed).toFixed(1))} mph</div></div>` : ''}<div><div class="sl">PAWS</div><div class="sv">${esc(w.paws)}</div></div></div>
 ${w.note ? `<p class="note">${esc(w.note)}</p>` : ''}
 </div>
+${shots(w, dog.name)}
 ${w.route ? routeSvg(w.route) : ''}
 </article>`).join('')
+  // Shown from an invite link (/d/:slug?add=1). The slug was matched against the slug pattern before the dog was found.
+  const addFriend = add ? `<div class="addf"><a class="cta" href="/?friend=${esc(encodeURIComponent(dog.slug))}">Add ${esc(dog.name)} as a friend on Trot</a><p>Opens Trot. Sign in, pick which of your dogs is making friends, and ${esc(dog.name)}'s outings show up in your Friends feed.</p></div>` : ''
   const KIND = { title: 'Title', ribbon: 'Ribbon', certificate: 'Certificate', trick: 'Trick', other: 'Award' }
   // Recorded by the owner, who chose to show them here. Trot does not check them.
   const awards = (dog.awards || []).map((a) => `<div class="award"><span class="rib" aria-hidden="true"></span><div><div class="aw">${esc(a.title)}</div><div class="meta">${esc([KIND[a.kind] || 'Award', a.placement, a.eventName, a.awardedOn ? fmtDate(a.awardedOn + 'T00:00:00Z') : ''].filter(Boolean).join(' · '))}</div></div></div>`).join('')
@@ -140,6 +153,7 @@ ${w.route ? routeSvg(w.route) : ''}
 <a class="logo" href="/">TROT</a>
 <div class="who">${dog.photoUrl ? `<img class="av" src="${esc(dog.photoUrl)}" alt="Photo of ${esc(dog.name)}" width="72" height="72">` : `<div class="av" aria-hidden="true">${esc(initial)}</div>`}<div><h1>${esc(dog.name)}</h1>${dog.breed || dog.city ? `<div class="sub">${esc([dog.breed, dog.city].filter(Boolean).join(' · '))}</div>` : ''}${dog.isDemo ? '<div class="demo">Demo dog</div>' : ''}</div></div>
 ${dog.lost ? `<div class="lostb" role="status">Reported lost${dog.lost.note ? `<p>${esc(dog.lost.note)}</p>` : ''}${dog.lost.foundPath ? `<a href="${esc(dog.lost.foundPath)}">I found ${esc(dog.name)}</a>` : ''}</div>` : ''}
+${addFriend}
 ${dog.bio ? `<p class="bio">${esc(dog.bio)}</p>` : ''}
 <div class="eyebrow">LIFETIME</div>
 <div class="stats">${stat('MILES', fmtMi(life.miles))}${stat('OUTINGS', life.outings)}${stat('TIME OUT', fmtMin(life.minutes))}</div>

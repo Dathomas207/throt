@@ -241,6 +241,29 @@ const SCHEMA = [
     agent TEXT NOT NULL DEFAULT '',
     read_at TIMESTAMPTZ
   )`,
+  // Dog friends: one dog follows another. Only public dogs can be followed. When both rows exist the two are "friends with each other".
+  `CREATE TABLE IF NOT EXISTS dog_follows (
+    follower_dog_id TEXT NOT NULL REFERENCES dogs(id) ON DELETE CASCADE,
+    followed_dog_id TEXT NOT NULL REFERENCES dogs(id) ON DELETE CASCADE,
+    created_by TEXT NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (follower_dog_id, followed_dog_id)
+  )`,
+  // Photos on an outing. JPEG only, kept as base64 text for this trial, the same way documents are.
+  // `hash` is a short content hash used in the photo's address and its cache headers.
+  `CREATE TABLE IF NOT EXISTS walk_photos (
+    id TEXT PRIMARY KEY,
+    walk_id TEXT NOT NULL REFERENCES walks(id) ON DELETE CASCADE,
+    added_by TEXT NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL,
+    width INTEGER NOT NULL,
+    height INTEGER NOT NULL,
+    bytes INTEGER NOT NULL,
+    data TEXT NOT NULL,
+    hash TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS dog_follows_followed ON dog_follows (followed_dog_id)`,
+  `CREATE INDEX IF NOT EXISTS walk_photos_walk ON walk_photos (walk_id)`,
   `CREATE INDEX IF NOT EXISTS dog_tags_dog ON dog_tags (dog_id)`,
   `CREATE INDEX IF NOT EXISTS tag_scans_dog ON tag_scans (dog_id, scanned_at)`,
   `CREATE INDEX IF NOT EXISTS documents_dog ON documents (dog_id)`,

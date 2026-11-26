@@ -10,6 +10,8 @@ import { registerDocs, DOC_LIMITS } from './routesDocs.js'
 import { registerShows } from './routesShows.js'
 import { registerCompete } from './routesCompete.js'
 import { registerRegistration } from './routesRegistration.js'
+import { registerFriends } from './routesFriends.js'
+import { registerPhotos, WALK_PHOTO_LIMITS } from './routesPhotos.js'
 
 import { geoRouter } from './geo.js'
 
@@ -196,7 +198,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', trustProxy)
-  const R = { sessionMax: 20, sessionWindowMs: 15 * 60e3, writeMax: 120, writeWindowMs: 60e3, readMax: 600, readWindowMs: 60e3, placeMax: 30, placeWindowMs: 3600e3, eventMax: 20, eventWindowMs: 3600e3, claimMax: 10, claimWindowMs: 3600e3, reportMax: 20, reportWindowMs: 3600e3, ...rate }
+  const R = { sessionMax: 20, sessionWindowMs: 15 * 60e3, writeMax: 120, writeWindowMs: 60e3, readMax: 600, readWindowMs: 60e3, placeMax: 30, placeWindowMs: 3600e3, eventMax: 20, eventWindowMs: 3600e3, claimMax: 10, claimWindowMs: 3600e3, reportMax: 20, reportWindowMs: 3600e3, searchMax: 30, searchWindowMs: 60e3, ...rate }
   const sessionLimit = limiter({ windowMs: R.sessionWindowMs, max: R.sessionMax })
   const writeLimit = limiter({ windowMs: R.writeWindowMs, max: R.writeMax })
   const readLimit = limiter({ windowMs: R.readWindowMs, max: R.readMax })
@@ -226,10 +228,16 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   const jsonPhotoBody = express.json({ limit: LIMITS.photoBody })
   // A document upload is the one large body. The caller has to be signed in before any of it is read.
   const jsonDocBody = express.json({ limit: DOC_LIMITS.body })
+  const jsonWalkPhotoBody = express.json({ limit: WALK_PHOTO_LIMITS.body })
   api.use(async (req, res, next) => {
     if (req.method === 'POST' && /^\/dogs\/[^/]+\/documents\/?$/.test(req.path)) {
       if (!(await userFor(req))) throw new HttpError(401, 'Sign in to continue.')
       return jsonDocBody(req, res, next)
+    }
+    // An outing photo is the other body above the default size. Same rule: signed in before any of it is read.
+    if (req.method === 'POST' && /^\/walks\/[^/]+\/photos\/?$/.test(req.path)) {
+      if (!(await userFor(req))) throw new HttpError(401, 'Sign in to continue.')
+      return jsonWalkPhotoBody(req, res, next)
     }
     return (req.method === 'PATCH' && /^\/dogs\/[^/]+\/?$/.test(req.path) ? jsonPhotoBody : jsonBody)(req, res, next)
   })
@@ -350,14 +358,30 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   // Performance statistics are optional. A missing one is null, never zero.
   const opt = (v) => (v == null ? null : num(v))
   const perf = (r) => ({ avgSpeed: opt(r.avg_speed), maxSpeed: opt(r.max_speed), sprints: opt(r.sprints), movingMinutes: opt(r.moving_minutes), runMinutes: opt(r.run_minutes) })
+  // Photos on outings, as { walkId: [{ id, url, w, h }] }, oldest first. Lists carry the first three, a
+  // single outing carries all of them. `pub` builds the address that needs no sign-in, which only
+  // answers for public dogs. With `userId` each photo also says whether that person added it.
+  const HASH_RE = /^[a-f0-9]{8,64}$/
+  const walkPhotoUrl = (walkId, id, hash, pub) => `/api/${pub ? 'public/' : ''}walks/${walkId}/photos/${id}${HASH_RE.test(hash || '') ? `?v=${hash}` : ''}`
+  async function walkPhotos(walkIds, { pub = false, limit = 3, userId = null } = {}) {
+    const out = {}
+    if (!walkIds.length) return out
+    const { rows } = await db.query(`SELECT id, walk_id, added_by, width, height, hash FROM walk_photos WHERE walk_id IN (${walkIds.map((_, i) => `$${i + 1}`).join(', ')}) ORDER BY created_at ASC, id ASC`, walkIds)
+    for (const r of rows) {
+      const list = out[r.walk_id] || (out[r.walk_id] = [])
+      if (list.length < limit) list.push({ id: r.id, url: walkPhotoUrl(r.walk_id, r.id, r.hash, pub), w: num(r.width), h: num(r.height), ...(userId ? { mine: r.added_by === userId } : {}) })
+    }
+    return out
+  }
   async function walksOut(rows, userId, { full = false } = {}) {
     const { counts, mine } = await pawCounts(rows.map((r) => r.id), userId)
+    const shots = await walkPhotos(rows.map((r) => r.id), full ? { limit: WALK_PHOTO_LIMITS.perWalk, userId } : {})
     return rows.map((r) => {
       const pts = parseRoute(r.route)
       return {
         id: r.id, dog: { slug: r.dog_slug, name: r.dog_name, photoUrl: photoUrl(r.dog_slug, r.dog_photo_v), isDemo: !!r.dog_is_demo }, by: { id: r.user_id, name: r.user_name, you: r.user_id === userId },
         type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs), ...perf(r),
-        startedAt: iso(r.started_at), route: full ? pts : thin(pts), paws: counts[r.id] || 0, pawed: !!mine[r.id],
+        startedAt: iso(r.started_at), route: full ? pts : thin(pts), paws: counts[r.id] || 0, pawed: !!mine[r.id], photos: shots[r.id] || [],
       }
     })
   }
@@ -413,6 +437,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const now = iso(Date.now())
     for (let attempt = 0; attempt < 6; attempt++) {
       const taken = new Set((await db.query('SELECT slug FROM dogs WHERE slug = $1 OR slug LIKE $2', [base, base + '-%'])).rows.map((r) => r.slug))
+      // "search" is an API path under /api/dogs, so no dog gets it as an address.
+      taken.add('search')
       let slug = base
       for (let n = 2; taken.has(slug); n++) slug = `${base}-${n}`
       const id = newId()
@@ -428,6 +454,9 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     }
     throw new HttpError(503, 'Could not pick an address for this dog. Try again.')
   })
+
+  // Registered ahead of /dogs/:slug so the word "search" is never read as a dog's address. The handler is in routesFriends.js.
+  api.get('/dogs/search', auth, (req, res) => kit.searchDogs(req, res))
 
   api.get('/dogs/:slug', auth, async (req, res) => {
     const { dog, role } = await dogFor(req.params.slug, req.user.id)
@@ -637,6 +666,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     }
     await db.tx(async (t) => {
       await t.query('DELETE FROM paws WHERE walk_id = $1', [w.id])
+      await t.query('DELETE FROM walk_photos WHERE walk_id = $1', [w.id])
       await t.query('DELETE FROM walks WHERE id = $1', [w.id])
     })
     res.json({ ok: true })
@@ -699,6 +729,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const w = await db.query(
       'SELECT w.id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, w.avg_speed, w.max_speed, w.sprints, w.moving_minutes, w.run_minutes, u.name AS user_name, m.role FROM walks w JOIN users u ON u.id = w.user_id LEFT JOIN memberships m ON m.dog_id = w.dog_id AND m.user_id = w.user_id WHERE w.dog_id = $1 ORDER BY w.started_at DESC, w.id DESC LIMIT 10', [dog.id])
     const { counts } = await pawCounts(w.rows.map((r) => r.id), null)
+    const shots = await walkPhotos(w.rows.map((r) => r.id), { pub: true, limit: WALK_PHOTO_LIMITS.perWalk })
     // Only the awards the owner chose to show.
     const aw = await db.query('SELECT title, kind, event_name, placement, awarded_on FROM awards WHERE dog_id = $1 AND is_public = TRUE ORDER BY awarded_on DESC, created_at DESC LIMIT 50', [dog.id])
     // The care team is shown for demo dogs only. Real dogs keep it private until there is a setting for it.
@@ -717,7 +748,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
         const out = {
           type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs), ...perf(r), startedAt: iso(r.started_at),
           // First names only for people. A daycare is a business, so its name is shown whole.
-          with: r.role === 'daycare' ? r.user_name : firstName(r.user_name), paws: counts[r.id] || 0,
+          with: r.role === 'daycare' ? r.user_name : firstName(r.user_name), paws: counts[r.id] || 0, photos: shots[r.id] || [],
         }
         if (dog.share_routes) out.route = thin(parseRoute(r.route), 300)
         return out
@@ -753,13 +784,15 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     res.set('X-Frame-Options', 'DENY')
     res.type('html')
   }
-  const kit = { api, app, db, auth, admin, isAdmin, isUnique, email, userFor, dogFor, memberItem, HttpError, bad, text, number, bool, object, sha, newToken, newId, iso, num, round, firstName, ageLabel, origin, ID_RE, TOKEN_RE, limiter, limited, readLimit, R, pageHeaders, photoUrl, parseRoute, thin, pawCounts, demoOnBoards }
+  const kit = { api, app, db, auth, admin, isAdmin, isUnique, email, userFor, dogFor, memberItem, HttpError, bad, text, number, bool, object, sha, newToken, newId, iso, num, round, firstName, ageLabel, origin, ID_RE, TOKEN_RE, limiter, limited, readLimit, R, pageHeaders, photoUrl, parseRoute, thin, pawCounts, demoOnBoards, walkFor, walkPhotos, walkPhotoUrl, SLUG_RE, sniff }
   registerCompete(kit)
   registerDocs(kit)
   registerHealth(kit)
   registerPlaces(kit)
   registerShows(kit)
   registerRegistration(kit)
+  registerFriends(kit)
+  registerPhotos(kit)
   // Read-only lookups, no sign-in. They sit on the API router, so only the per-address read limit applies.
   api.use('/geo', geoRouter(db))
 
@@ -782,7 +815,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     let dog = null
     try { dog = await publicDog(req.params.slug); if (dog) dog.lost = await kit.publicLost(dog.slug) } catch (e) { console.error(e); return res.status(500).send(renderNotFound()) }
     if (!dog) return res.status(404).set('Cache-Control', 'no-store').send(renderNotFound())
-    res.set('Cache-Control', 'public, max-age=60').send(renderDogPage(dog, origin(req)))
+    // ?add=1 is the friend invite link: the same page with an "Add as a friend" button on top.
+    res.set('Cache-Control', 'public, max-age=60').send(renderDogPage(dog, origin(req), { add: req.query.add === '1' }))
   })
   app.use('/d', (req, res) => { pageHeaders(res); res.status(404).send(renderNotFound()) })
 

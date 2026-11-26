@@ -3,6 +3,7 @@ import { RouteThumb } from './Map.jsx'
 import { ROUTES, DOG as BISCUIT, PEOPLE, dayLabel, fmtTime, activityType } from './data.js'
 import { loadPhoto, peekPhoto } from './api.js'
 import { Portrait, hasPortrait, DemoPhoto, hasDemoPhoto } from './portraits.jsx'
+import { CardPhotos } from './screens/Photos.jsx'
 
 const P = {
   home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z', map: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
@@ -82,6 +83,7 @@ export function Card({ a, pawed, paw, setOpen, onDog }) {
           {p && <Av t={p.name[0]} s={28} bg={p.color} c={p.ink} />}
         </div>}
         <div className="title"><TypeIc t={a.type} />{a.title}{a.dogDemo && <span className="tagx">Demo dog</span>}</div>
+        <CardPhotos photos={a.photos} title={a.title} />
         <div className="row g28 wraprow">{statsOf(a).slice(0, 4).map(([l, v]) => <Stat key={l} l={l} v={v} />)}</div>
         {a.note && <p className="note">{a.note}</p>}
       </button>
@@ -151,7 +153,7 @@ export function toAct(w, team) {
     real: true, id: w.id, dog: w.dog.name, dogSlug: w.dog.slug, dogPhoto: w.dog.photoUrl || null, dogDemo: !!w.dog.isDemo, avgSpeed: w.avgSpeed, maxSpeed: w.maxSpeed, sprints: w.sprints, movingMinutes: w.movingMinutes, byYou: !!w.by.you, by: w.by.id, byName: firstName(w.by.name), byColor, byInk,
     type: w.type, title: w.title, daysAgo, time, when: daysAgo > 6 ? `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${time}` : null,
     place: w.place, route: null, pts: w.route && w.route.length > 1 ? w.route : null, miles: w.miles, minutes: w.minutes, sniffs: w.sniffs,
-    paws: w.paws - (w.pawed ? 1 : 0), comments: null, note: w.note,
+    paws: w.paws - (w.pawed ? 1 : 0), comments: null, note: w.note, photos: w.photos || [],
   }
 }
 export function DogSwitch({ dogs, active, onPick }) {

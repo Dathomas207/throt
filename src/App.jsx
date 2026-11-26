@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Ic, Paw, Av, DogAv, RangeOff, toAct } from './ui.jsx'
 import { PEOPLE, SEED, CONNECTIONS, ACTIVITY_TYPES, DEMO_DOGS, demoDogByName } from './data.js'
 import DemoDogSheet from './screens/DemoDogSheet.jsx'
-import { api, probe, hasToken, setAuthLost, signOut, takeInviteFromUrl, pendingInvite, primePhoto } from './api.js'
+import { api, probe, hasToken, setAuthLost, signOut, takeInviteFromUrl, pendingInvite, primePhoto, takeFriendFromUrl, pendingFriend, clearFriend } from './api.js'
+import { fitJpeg, OUTING_PHOTO_MAX } from './photo.js'
+import FriendsScreen, { FriendConfirm, realFriendsModel, demoFriendsModel } from './screens/Friends.jsx'
 import Home from './screens/Home.jsx'
 import Explore from './screens/Explore.jsx'
 import Record from './screens/Record.jsx'
@@ -46,6 +48,8 @@ export default function App() {
     let on = true
     ;(async () => {
       const invite = takeInviteFromUrl()
+      // A friend link (/?friend=<dog>) waits in sessionStorage until someone is signed in with a dog of their own.
+      const friend = takeFriendFromUrl()
       const ok = await probe()
       if (!on) return
       if (!ok) { setPhase('demo'); return }
@@ -62,7 +66,7 @@ export default function App() {
           if (e.status !== 401) { setNotice(e.message); setPhase('welcome'); return }
         }
       }
-      setPhase(!invite && getLS(MODE) === 'demo' ? 'demo' : 'welcome')
+      setPhase(!invite && !friend && getLS(MODE) === 'demo' ? 'demo' : 'welcome')
     })()
     return () => { on = false }
   }, [enter])
@@ -82,7 +86,8 @@ function DemoApp({ leaveDemo, signedIn, hasApi }) {
   const saved = useMemo(load, [])
   const [tab, setTab] = useState('home')
   const [me, setMe] = useState(saved.me || 'dale')
-  const [mine, setMine] = useState(saved.mine || [])
+  // Photos picked in the demo are previews held by this tab only, so they are dropped from anything saved earlier.
+  const [mine, setMine] = useState(() => (saved.mine || []).map((a) => (a.photos ? { ...a, photos: undefined } : a)))
   const [pawed, setPawed] = useState(saved.pawed || {})
   const [conn, setConn] = useState(saved.conn || Object.fromEntries(CONNECTIONS.map((c) => [c.id, !!c.on])))
   const [open, setOpen] = useState(null)
@@ -95,7 +100,8 @@ function DemoApp({ leaveDemo, signedIn, hasApi }) {
   const setPlan = (p) => { setPlanState(p); setLS(PLAN, p) }
   const [settings, setSettings] = useState(false)
   const [compete, setCompete] = useState(null)
-  useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify({ me, mine, pawed, conn, level, dk })) } catch (e) {} }, [me, mine, pawed, conn, level, dk])
+  useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify({ me, mine: mine.map((a) => (a.photos ? { ...a, photos: undefined } : a)), pawed, conn, level, dk })) } catch (e) {} }, [me, mine, pawed, conn, level, dk])
+  const [friendsOpen, setFriendsOpen] = useState(false)
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 2600); return () => clearTimeout(t) }, [toast])
   // The demo has two dogs, Biscuit and Millie. Every screen shows the selected one.
   const [sheetDog, setSheetDog] = useState(null)
@@ -107,10 +113,16 @@ function DemoApp({ leaveDemo, signedIn, hasApi }) {
   }, [acts])
   const todayMin = acts.filter((a) => a.daysAgo === 0 && a.type !== 'Daycare').reduce((s, a) => s + a.minutes, 0)
   const paw = (id) => setPawed((p) => ({ ...p, [id]: !p[id] }))
-  const saveWalk = (a0) => { const a = { ...a0, dog: dd.dog.name }; setMine((m) => [a, ...m]); setTab('home'); setOpen(a) }
+  const saveWalk = (a0, files) => {
+    // In the demo a picked photo is only previewed from this device. Nothing is uploaded.
+    const photos = (files || []).slice(0, OUTING_PHOTO_MAX).map((f, i) => ({ id: `${a0.id}-p${i}`, url: URL.createObjectURL(f), local: true }))
+    const a = { ...a0, dog: dd.dog.name, ...(photos.length ? { photos } : {}) }
+    setMine((m) => [a, ...m]); setTab('home'); setOpen(a)
+    if (photos.length) setToast('Photos are previewed here only. Saving them needs an account.')
+  }
   // A tapped dog: one of the two demo dogs opens its own profile, any other opens a sample profile sheet.
   const onDog = (a) => { const name = typeof a === 'string' ? a : a.dog; const d = demoDogByName(name); if (d) { setDk(d.key); setOpen(null); setCompete(null); setTab('dog') } else setSheetDog(name) }
-  const ctx = { saveWalk, me, setMe, acts, week, todayMin, pawed, paw, conn, setConn, setOpen, setTab, setToast, mine, setMine, level, dd, setDk, onDog, openSettings: () => setSettings(true), openCompete: (t) => setCompete(t || 'boards') }
+  const ctx = { saveWalk, me, setMe, acts, week, todayMin, pawed, paw, conn, setConn, setOpen, setTab, setToast, mine, setMine, level, dd, setDk, onDog, openSettings: () => setSettings(true), openCompete: (t) => setCompete(t || 'boards'), openFriends: () => setFriendsOpen(true) }
   const reset = () => { setMine([]); setPawed({}); setMe('dale'); setConn(Object.fromEntries(CONNECTIONS.map((c) => [c.id, !!c.on]))); setLevel(1); setPlan('free'); setDk('biscuit'); setLS('trot-demo-joins', null); setToast('Demo reset') }
   return (
     <div className="shell">
@@ -131,7 +143,8 @@ function DemoApp({ leaveDemo, signedIn, hasApi }) {
         </nav>
       )}
       {compete && <Compete close={() => setCompete(null)} start={compete} acts={acts} setToast={setToast} hasApi={hasApi} demoName={dd.dog.name} onDog={onDog} />}
-      {sheetDog && <DemoDogSheet name={sheetDog} close={() => setSheetDog(null)} />}
+      {friendsOpen && <FriendsScreen m={demoFriendsModel(dd, { setToast, onDog: (n) => { setFriendsOpen(false); onDog(n) }, open: () => {} })} close={() => setFriendsOpen(false)} />}
+      {sheetDog && <DemoDogSheet name={sheetDog} close={() => setSheetDog(null)} fm={demoFriendsModel(dd, { setToast, onDog, open: () => {} })} />}
       {settings && <Settings close={() => setSettings(false)} demoName={dd.dog.name} setToast={setToast} plan={plan} setPlan={setPlan} level={level} setLevel={setLevel} conn={conn} setConn={setConn} me={me} setMe={setMe} reset={reset} leaveDemo={leaveDemo} signedIn={signedIn} />}
       {open && <Detail a={open} {...ctx} dogName={dd.dog.name} close={() => setOpen(null)} />}
       {toast && <div className="toast" role="status">{toast}</div>}
@@ -166,6 +179,74 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
   const dogs = me.dogs
   const all = scope === 'all' && dogs.length > 1
 
+  // ---- dog friends: the active dog's list, a few suggestions, and the invite link ----
+  const [fr, setFr] = useState({ loaded: false, list: [], suggestions: [], canManage: false, invite: null })
+  const [frRev, setFrRev] = useState(0)
+  const [friendsOpen, setFriendsOpen] = useState(false)
+  const [friendAsk, setFriendAsk] = useState(null)
+  const frSeq = useRef(0)
+  const loadFriends = useCallback(async () => {
+    const n = ++frSeq.current
+    try {
+      const [l, s] = await Promise.all([api.friends.list(slug), api.friends.suggestions(slug)])
+      if (n === frSeq.current) setFr({ loaded: true, list: l.friends, suggestions: s.suggestions, canManage: l.canManage, invite: l.invite })
+    } catch (e) { if (n === frSeq.current) setFr((f) => ({ ...f, loaded: true })) }
+  }, [slug])
+  useEffect(() => { setFr({ loaded: false, list: [], suggestions: [], canManage: false, invite: null }); loadFriends() }, [loadFriends])
+  // `from` is the dog doing the following: the active dog unless the invite sheet picked another.
+  const addFriend = async (d, from = slug, { quiet } = {}) => {
+    try {
+      const r = await api.friends.add(from, d.slug)
+      if (from === slug) await loadFriends()
+      setFrRev((n) => n + 1)
+      if (!quiet) setToast(r.friend.mutual ? `${dog.name} and ${r.friend.name} are now friends with each other` : `${r.friend.name} is now one of ${dog.name}'s friends`)
+      return { friend: r.friend }
+    } catch (e) { if (!quiet) setToast(e.message); return { error: e.message } }
+  }
+  const removeFriend = async (d) => {
+    try { await api.friends.remove(slug, d.slug); await loadFriends(); setFrRev((n) => n + 1); setToast(`${d.name} is no longer one of ${dog.name}'s friends`); return {} }
+    catch (e) { return { error: e.message } }
+  }
+  // Someone arrived from an "Add as a friend" link. The dog is looked up by its public page, then the person confirms.
+  useEffect(() => {
+    const f = pendingFriend()
+    if (!f) return
+    let on = true
+    api.friends.publicDog(f).then((r) => { if (on) setFriendAsk({ slug: r.dog.slug, name: r.dog.name, breed: r.dog.breed, city: r.dog.city, photoUrl: r.dog.photoUrl }) },
+      (e) => { if (e.status === 404) { clearFriend(); if (on) setToast('That friend link is for a dog page that is private or no longer there.') } })
+    return () => { on = false }
+  }, [])
+
+  // ---- outing photos: each picked file is shrunk here, then sent, one at a time ----
+  const [jobs, setJobs] = useState([])
+  const [photoRev, setPhotoRev] = useState(0)
+  const jobSeq = useRef(0), queue = useRef(Promise.resolve()), reloadNow = useRef(() => {})
+  const setJob = (key, p) => setJobs((js) => js.map((j) => (j.key === key ? { ...j, ...p } : j)))
+  const dropJob = (key) => setJobs((js) => { const j = js.find((x) => x.key === key); if (j) { try { URL.revokeObjectURL(j.preview) } catch (e) {} } return js.filter((x) => x.key !== key) })
+  const runJob = async (job) => {
+    setJob(job.key, { status: 'shrinking', pct: 0, error: '' })
+    try {
+      const shot = await fitJpeg(job.file)
+      setJob(job.key, { status: 'uploading' })
+      await api.photos.upload(job.walkId, shot.dataUrl, (pct) => setJob(job.key, { pct }))
+      dropJob(job.key)
+      setPhotoRev((n) => n + 1)
+      return true
+    } catch (e) { setJob(job.key, { status: 'error', error: e.message || 'That photo did not work. Try another one.' }); return false }
+  }
+  // Never awaited by the save: the outing is already stored when the first photo starts.
+  const addPhotos = (walkId, files) => {
+    const fresh = files.slice(0, OUTING_PHOTO_MAX).map((file) => ({ key: `j${++jobSeq.current}`, walkId, file, preview: URL.createObjectURL(file), status: 'waiting', pct: 0, error: '' }))
+    if (!fresh.length) return
+    setJobs((js) => [...js, ...fresh])
+    queue.current = queue.current.then(async () => { let ok = 0; for (const j of fresh) if (await runJob(j)) ok++; if (ok) reloadNow.current() })
+  }
+  const retryPhoto = (key) => { const j = jobs.find((x) => x.key === key); if (j) queue.current = queue.current.then(async () => { if (await runJob(j)) reloadNow.current() }) }
+  const deletePhoto = async (walkId, id) => {
+    try { await api.photos.remove(walkId, id) } catch (e) { if (e.status !== 404) return { error: e.message } }
+    setPhotoRev((n) => n + 1); setToast('Photo deleted'); reload(); return {}
+  }
+
   const reload = useCallback(async () => {
     const n = ++seq.current
     try {
@@ -175,6 +256,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
     } catch (e) { if (n === seq.current && e.status !== 401) setErr(e.message) }
   }, [slug, all])
   useEffect(() => { reload() }, [reload])
+  reloadNow.current = reload
   const switchDog = (s) => { if (s === slug) return; setData(null); setFeed({ walks: [], cursor: null, loaded: false, more: false }); setOpen(null); pickDog(s) }
   const more = async () => {
     if (!feed.cursor || feed.more) return
@@ -215,7 +297,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
   }
 
   const dog = data ? data.dog : dogs.find((d) => d.slug === slug) || dogs[0]
-  const saveWalk = async (a) => {
+  const saveWalk = async (a, files) => {
     if (saving.current) return
     saving.current = true
     try {
@@ -233,6 +315,8 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
       })
       await reload()
       setTab('home'); setOpen(toAct(r.walk, team)); setToast(`Saved to ${dog.name}`)
+      // Photos go up after the outing is saved. A photo that fails never undoes the save.
+      if (files && files.length) addPhotos(r.walk.id, files)
     } catch (e) { setToast(e.status ? `Not saved. ${e.message}` : 'Not saved. Check your connection and tap Save again.') } finally { saving.current = false }
   }
   const refreshMe = async (pick) => { const m = await api.get('/me'); setMe(m); if (pick) switchDog(pick); return m }
@@ -270,7 +354,9 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
     </div></div>
   )
   const todayMin = data.weekWalks.filter((w) => w.type !== 'Daycare' && new Date(w.startedAt).toDateString() === new Date().toDateString()).reduce((s, w) => s + w.minutes, 0)
-  const real = { user: me.user, dogs, dog, totals: data.totals, team, weekWalks: data.weekWalks, dogActs, switchDog, scope: scope === 'pack' ? 'pack' : all ? 'all' : 'dog', setScope, reload, hasMore: !!feed.cursor, more, loadingMore: feed.more, createInvite, patchDog, saveProfile, renameMe, listInvites, cancelInvite, removeMember, deleteWalk, refreshMe, signOut: doSignOut, toDemo, hasPendingInvite: !!pendingInvite() }
+  const real = { user: me.user, dogs, dog, totals: data.totals, team, weekWalks: data.weekWalks, dogActs, switchDog, scope: scope === 'pack' || scope === 'friends' ? scope : all ? 'all' : 'dog', setScope,
+    friends: { ...fr, rev: frRev, add: addFriend, remove: removeFriend, open: () => setFriendsOpen(true) },
+    photos: { jobs, rev: photoRev, add: addPhotos, retry: retryPhoto, dismiss: dropJob, remove: deletePhoto }, reload, hasMore: !!feed.cursor, more, loadingMore: feed.more, createInvite, patchDog, saveProfile, renameMe, listInvites, cancelInvite, removeMember, deleteWalk, refreshMe, signOut: doSignOut, toDemo, hasPendingInvite: !!pendingInvite() }
   // A tapped dog: one of your own opens its profile here, any other opens its public page.
   const onDog = (a) => { if (dogs.some((d) => d.slug === a.dogSlug)) { setOpen(null); switchDog(a.dogSlug); setTab('dog') } else window.open(`/d/${a.dogSlug}`, '_blank', 'noopener') }
   const ctx = { real, acts, pawed, paw, setOpen, setTab, setToast, conn: {}, onDog, openSettings: () => setSettings(true), openCompete: (t) => setCompete(t || 'boards') }
@@ -281,7 +367,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
           {tab === 'home' && <Home {...ctx} />}
           {tab === 'explore' && <Explore setTab={setTab} setToast={setToast} dogName={dog.name} account />}
           {/* Record looks `me` up in the demo PEOPLE table, so it stays a valid demo id. meName and dogName carry the real names. */}
-          {tab === 'record' && <Record me="dale" conn={{}} setTab={setTab} saveWalk={saveWalk} todayMin={todayMin} setToast={setToast} meName={me.user.name} dogName={dog.name} />}
+          {tab === 'record' && <Record me="dale" conn={{}} setTab={setTab} saveWalk={saveWalk} todayMin={todayMin} setToast={setToast} meName={me.user.name} dogName={dog.name} publicDog={!!dog.public} />}
           {tab === 'people' && <People {...ctx} />}
           {tab === 'dog' && <DogTab {...ctx} />}
         </main>
@@ -295,8 +381,10 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
           </nav>
         )}
         {compete && <Compete close={() => setCompete(null)} start={compete} real={real} setToast={setToast} />}
+        {friendsOpen && <FriendsScreen m={realFriendsModel(real, setToast)} close={() => setFriendsOpen(false)} />}
         {settings && <Settings close={() => setSettings(false)} real={real} setToast={setToast} plan={plan} setPlan={setPlan} />}
         {open && <Detail a={open} {...ctx} dogName={dog.name} close={() => setOpen(null)} />}
+        {friendAsk && <FriendConfirm target={friendAsk} real={real} done={(msg) => { setFriendAsk(null); if (msg) setToast(msg) }} />}
         {toast && <div className="toast" role="status">{toast}</div>}
       </div>
     </RangeOff.Provider>

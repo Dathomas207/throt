@@ -110,6 +110,25 @@ export function takeInviteFromUrl() {
 export function pendingInvite() { try { return sessionStorage.getItem(INVITE) || inviteMem } catch (e) { return inviteMem } }
 export function clearInvite() { inviteMem = null; try { sessionStorage.removeItem(INVITE) } catch (e) {} }
 
+// Friend links look like /?friend=<dog address>, reached from the "Add as a friend" button on a public
+// page. The address is kept in sessionStorage so it survives signing in, and is taken out of the address bar.
+const FRIEND = 'trot-friend'
+let friendMem = null
+export function takeFriendFromUrl() {
+  try {
+    const u = new URL(location.href)
+    const t = u.searchParams.get('friend')
+    if (t !== null) {
+      if (/^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/.test(t)) { friendMem = t; sessionStorage.setItem(FRIEND, t) }
+      u.searchParams.delete('friend')
+      history.replaceState(null, '', u.pathname + u.search + u.hash)
+    }
+  } catch (e) {}
+  return pendingFriend()
+}
+export function pendingFriend() { try { return sessionStorage.getItem(FRIEND) || friendMem } catch (e) { return friendMem } }
+export function clearFriend() { friendMem = null; try { sessionStorage.removeItem(FRIEND) } catch (e) {} }
+
 // ---- places, events, awards, documents, boards (appended) --------------------
 const qs = (o) => { const p = Object.entries(o || {}).filter(([, v]) => v !== undefined && v !== null && v !== ''); return p.length ? '?' + p.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&') : '' }
 const tz = () => new Date().getTimezoneOffset()
@@ -227,4 +246,36 @@ api.tags = {
   markRead: (slug, id) => request('POST', `/dogs/${slug}/tags/scans/${id}/read`, {}),
   lost: (slug) => request('GET', `/dogs/${slug}/lost`),
   setLost: (slug, lost, note) => request('PUT', `/dogs/${slug}/lost`, { lost, note: note || '' }),
+}
+
+// ---- dog friends and outing photos (appended) --------------------------------
+// A dog follows other public dogs. The owner and family manage the list; the rest of the team can read it.
+api.friends = {
+  list: (slug) => request('GET', `/dogs/${slug}/friends`),
+  add: (slug, other) => request('PUT', `/dogs/${slug}/friends/${other}`, {}),
+  remove: (slug, other) => request('DELETE', `/dogs/${slug}/friends/${other}`),
+  feed: (slug) => request('GET', `/dogs/${slug}/friends/feed`),
+  suggestions: (slug) => request('GET', `/dogs/${slug}/friends/suggestions`),
+  search: (q, slug) => request('GET', `/dogs/search${qs({ q, dog: slug })}`),
+  publicDog: (slug) => request('GET', `/public/dogs/${slug}`),
+}
+// Photos on an outing. Each one goes up as a JPEG data URL that src/photo.js has already shrunk.
+api.photos = {
+  remove: (walkId, id) => request('DELETE', `/walks/${walkId}/photos/${id}`),
+  upload: (walkId, dataUrl, onProgress) => new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest()
+    x.open('POST', `${BASE}/api/walks/${walkId}/photos`)
+    x.setRequestHeader('content-type', 'application/json'); x.setRequestHeader('accept', 'application/json')
+    if (token) x.setRequestHeader('authorization', 'Bearer ' + token)
+    x.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)) }
+    x.onerror = () => reject(new ApiError(0, 'Cannot reach Trot. Check your connection and try again.'))
+    x.onload = () => {
+      let data = null
+      try { data = JSON.parse(x.responseText) } catch (e) {}
+      if (x.status >= 200 && x.status < 300 && data) return resolve(data)
+      if (x.status === 401) { setToken(null); if (onAuthLost) onAuthLost() }
+      reject(new ApiError(x.status, (data && data.error) || (x.status === 413 ? 'That photo is too big to send.' : 'The upload did not work. Try again.')))
+    }
+    x.send(JSON.stringify({ photo: dataUrl }))
+  }),
 }

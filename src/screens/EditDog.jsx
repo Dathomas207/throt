@@ -103,11 +103,11 @@ export default function EditDog({ dog, onSave, onClose }) {
           <div className="photopick">
             <Av t={initial} s={84} bg="#0F1B2D" c="#C8F031" src={shown} alt={shown ? `Photo of ${f.name.trim() || dog.name}` : ''} />
             <div className="grow pickcol">
-              <label className="cta small white bordered filebtn">{reading ? 'Reading photo' : shown ? 'Change photo' : 'Add a photo'}<input type="file" accept="image/*" onChange={pick} disabled={busy || reading} aria-describedby="photo-note" /></label>
+              <label className="cta small white bordered filebtn">{reading ? 'Reading photo' : shown ? 'Change photo' : 'Add from Photos'}<input type="file" accept="image/*" onChange={pick} disabled={busy || reading} aria-describedby="photo-note" /></label>
               {shown && <button type="button" className="tbtn" onClick={() => { setPhoto(null); setPhotoErr('') }} disabled={busy}>Remove photo</button>}
             </div>
           </div>
-          {photoErr ? <p className="ferr" id="photo-note" role="alert">{photoErr}</p> : <p className="fhint" id="photo-note">Cropped to a square and shrunk on this device before it is sent. {f.public ? `Shown on ${dog.name}'s public page.` : 'Only the care team sees it while the page is private.'}</p>}
+          {photoErr ? <p className="ferr" id="photo-note" role="alert">{photoErr}</p> : <p className="fhint" id="photo-note">Opens your photo library, or the camera if you choose it. Cropped to a square and shrunk on this device before it is sent. {f.public ? `Shown on ${dog.name}'s public page.` : 'Only the care team sees it while the page is private.'}</p>}
           <Field label="Dog's name" error={errs.name}><input value={f.name} onChange={set('name')} maxLength={60} autoComplete="off" /></Field>
           <Field label="Breed (optional)" error={errs.breed}><input value={f.breed} onChange={set('breed')} maxLength={80} autoComplete="off" /></Field>
           <Field label="Birthday (optional)" error={errs.birthday} hint={f.birthday ? 'Age is worked out from the birthday.' : 'Not sure of the date? Leave this empty and type an age below.'}><input type="date" value={f.birthday} onChange={set('birthday')} max={today()} /></Field>

@@ -216,3 +216,14 @@ export const DEMO_ID = {
     ],
   },
 }
+
+// ---- dog friends and outing photos in the demo (appended) ----------------------
+// Which pack dogs each of the two demo dogs follows. DEMO_MUTUAL lists the ones that follow back.
+// Static: adding or removing a friend in the demo only says that it needs an account.
+export const DEMO_FRIENDS = { biscuit: ['Millie', 'Moose', 'Juno'], millie: ['Biscuit', 'Pickle', 'Moose'] }
+export const DEMO_MUTUAL = { biscuit: ['Millie', 'Moose'], millie: ['Biscuit', 'Pickle'] }
+// Two sample outing photos, from the pictures already shipped in public/. Everything else in the demo has none.
+const demoShot = (id, file, w, h, pos) => ({ id, url: ((import.meta.env && import.meta.env.BASE_URL) || '/') + file, w, h, pos })
+SEED.find((a) => a.id === 's1').photos = [demoShot('s1-a', 'biscuit-wide.jpg', 1024, 1024, '50% 35%')]
+PACK.find((a) => a.id === 'p0').photos = [demoShot('p0-a', 'millie.jpg', 512, 512, '50% 30%')]
+MILLIE_SEED[0].photos = PACK.find((a) => a.id === 'p0').photos
