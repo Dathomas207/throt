@@ -5,7 +5,7 @@ services:
   - type: web
     name: trot-app
     runtime: node
-    plan: free
+    plan: starter
     region: virginia
     branch: main
     autoDeploy: true
@@ -24,7 +24,7 @@ services:
 
 databases:
   - name: trot-db
-    plan: free
+    plan: basic-256mb
     region: virginia
     databaseName: trot_db
     user: trot_db_user
