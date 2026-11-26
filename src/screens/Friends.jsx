@@ -3,6 +3,7 @@ import { Ic, DogAv, Confirm, copyText, daysAgoOf } from '../ui.jsx'
 import { api, clearFriend } from '../api.js'
 import { PACK, DEMO_BOARD, DEMO_DOGS, DEMO_FRIENDS, DEMO_MUTUAL, dayLabel } from '../data.js'
 import './friends.css'
+import { track } from '../usage.js'
 
 // Dog friends. A dog follows other dogs: "friends" here means the dogs this dog follows, and when both
 // follow each other the app says "Friends with each other". Trot is a web app, so it cannot read the
@@ -143,7 +144,7 @@ export default function FriendsScreen({ m, close }) {
   }
   const isFriend = (d) => m.friends.some((f) => f.slug === d.slug)
   const addBtn = (d) => (m.canManage ? (isFriend(d) || d.following ? <span className="fdone"><Ic n="check" s={16} c="#1F5AE8" />Friends</span> : <button className="cta small" onClick={() => add(d)} disabled={!!busy} aria-label={`Add ${d.name} as a friend`}>{busy === d.slug ? 'Adding' : 'Add'}</button>) : null)
-  const copy = async () => m.setToast((await copyText(m.invite.url)) ? 'Invite link copied' : 'Copy did not work here. Select the link and copy it.')
+  const copy = async () => { const ok = await copyText(m.invite.url); if (ok) track('invite_link_copied'); m.setToast(ok ? 'Invite link copied' : 'Copy did not work here. Select the link and copy it.') }
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
   const share = async () => { try { await navigator.share({ title: `${m.dogName} on Trot`, text: `Add ${m.dogName} as a friend on Trot`, url: m.invite.url }) } catch (e) { if (!e || e.name !== 'AbortError') copy() } }
   return (

@@ -262,6 +262,43 @@ const SCHEMA = [
     data TEXT NOT NULL,
     hash TEXT NOT NULL
   )`,
+  // First-party usage counts. No IP address, no location, no email and no free text from people. `ua` is the
+  // device family only ("Safari on iPhone or iPad"), `props` is a small JSON object of fixed keys.
+  // A signed-out or demo visit carries a random id from that browser's localStorage instead of a user.
+  `CREATE TABLE IF NOT EXISTS usage_events (
+    id TEXT PRIMARY KEY,
+    at TIMESTAMPTZ NOT NULL,
+    user_id TEXT,
+    anon_id TEXT,
+    name TEXT NOT NULL,
+    dog_id TEXT,
+    props TEXT NOT NULL DEFAULT '{}',
+    ua TEXT NOT NULL DEFAULT '',
+    app_version TEXT NOT NULL DEFAULT ''
+  )`,
+  // The in-app notification center. `link` is a small JSON object that says where a tap goes.
+  // `dedupe_key` keeps one row per person for things that can repeat (paws on one outing, a reminder for one date).
+  `CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,
+    dog_id TEXT,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL DEFAULT '',
+    link TEXT,
+    created_at TIMESTAMPTZ NOT NULL,
+    read_at TIMESTAMPTZ,
+    dedupe_key TEXT,
+    UNIQUE (user_id, dedupe_key)
+  )`,
+  // Which groups of notifications a person turned off, as a JSON list. No row means all on.
+  `CREATE TABLE IF NOT EXISTS notification_prefs (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    off TEXT NOT NULL DEFAULT '[]',
+    updated_at TIMESTAMPTZ NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS usage_events_at ON usage_events (at)`,
+  `CREATE INDEX IF NOT EXISTS notifications_user ON notifications (user_id, created_at)`,
   `CREATE INDEX IF NOT EXISTS dog_follows_followed ON dog_follows (followed_dog_id)`,
   `CREATE INDEX IF NOT EXISTS walk_photos_walk ON walk_photos (walk_id)`,
   `CREATE INDEX IF NOT EXISTS dog_tags_dog ON dog_tags (dog_id)`,

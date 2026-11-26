@@ -3,6 +3,7 @@ import { getConfig } from './config.js'
 // Real walking routes from the public OSRM foot profile, with a geometric fallback.
 // Parsing and geometry are pure functions so they can be tested without the network.
 import { haversine, ROUTES } from './data.js'
+import { track, locationPermission, geoError } from './usage.js'
 
 export const DEFAULT_CENTER = [35.186, -80.812] // Eastover, Charlotte
 export const OSRM_BASE = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/'
@@ -250,8 +251,9 @@ export function locateNow(opts = {}) {
     let done = false
     const end = (v) => { if (done) return; done = true; clearTimeout(timer); if (v.at) rememberFix(v.at, v.accuracy); resolve(v) }
     const timer = setTimeout(() => end({ error: 'timeout' }), total)
-    const ok = (p) => end({ at: [p.coords.latitude, p.coords.longitude], accuracy: p.coords.accuracy, cached: false })
-    const why = (e) => (e && e.code === 1 ? 'denied' : e && e.code === 3 ? 'timeout' : 'unavailable')
+    const ok = (p) => { locationPermission('granted'); end({ at: [p.coords.latitude, p.coords.longitude], accuracy: p.coords.accuracy, cached: false }) }
+    // Only the browser's error code is recorded, never a position.
+    const why = (e) => { geoError(e); return e && e.code === 1 ? 'denied' : e && e.code === 3 ? 'timeout' : 'unavailable' }
     try {
       const geo = typeof navigator !== 'undefined' && navigator.geolocation
       if (!geo) return end({ error: 'unsupported' })
@@ -287,6 +289,7 @@ export function useHereLoop() {
     setLoop({ miles, status: 'locating' })
     const r = await locateNow()
     if (!alive.current || id !== req.current) return
+    track('loop_from_here', { result: r.error || 'ok' })
     if (r.error) { setLoop({ miles, status: 'nofix', reason: r.error }); return }
     route(r.at, 'you', miles, 45)
   }
@@ -306,7 +309,7 @@ export function locate(timeoutMs = 6000) {
     const timer = setTimeout(() => end(null), timeoutMs + 500)
     try {
       if (!navigator.geolocation) return end(null)
-      navigator.geolocation.getCurrentPosition((p) => { rememberFix([p.coords.latitude, p.coords.longitude], p.coords.accuracy); end([p.coords.latitude, p.coords.longitude]) }, () => end(null), { enableHighAccuracy: false, timeout: timeoutMs, maximumAge: 120000 })
+      navigator.geolocation.getCurrentPosition((p) => { locationPermission('granted'); rememberFix([p.coords.latitude, p.coords.longitude], p.coords.accuracy); end([p.coords.latitude, p.coords.longitude]) }, (e) => { geoError(e); end(null) }, { enableHighAccuracy: false, timeout: timeoutMs, maximumAge: 120000 })
     } catch (e) { end(null) }
   })
 }

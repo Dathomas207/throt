@@ -5,6 +5,9 @@ import { CONNECTIONS, PEOPLE } from '../data.js'
 import { api } from '../api.js'
 import { COMMUNITY_KIND, REPORT_REASONS, relativeDate } from '../osm.js'
 import '../maps.css'
+import ErrorBoundary from '../ErrorBoundary.jsx'
+import { track } from '../usage.js'
+import { NotificationPrefs, MetricsSection, MeasuresNote, Diagnostics } from './SettingsMore.jsx'
 
 export const PLANS = [
   { id: 'free', name: 'Free', price: '$0', items: ['One dog', 'Phone tracking', 'Feed and paws', 'Care team of up to three', 'Public dog page', 'Story cards', 'Places map'] },
@@ -70,9 +73,9 @@ function AdminSection({ setToast }) {
 // One screen for the account, tracking level, connections, plans and, in the demo, the demo tools.
 // `real` is set when signed in. Everything else is the demo's local state.
 export default function Settings({ close, real, setToast, plan, setPlan, level, setLevel, conn, setConn, me, setMe, reset, leaveDemo, signedIn, demoName = 'Biscuit' }) {
-  const back = useRef(null)
+  const back = useRef(null), diagOpen = useRef(false)
   useEffect(() => { if (back.current) back.current.focus() }, [])
-  useEffect(() => { const k = (e) => { if (e.key === 'Escape') close() }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [close])
+  useEffect(() => { const k = (e) => { if (e.key === 'Escape') { if (diagOpen.current) setDiag(false); else close() } }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [close])
   const dog = real ? real.dog : null
   const owner = !!dog && dog.role === 'owner'
   const name = dog ? dog.name : demoName
@@ -81,6 +84,17 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
   const [sheet, setSheet] = useState(null)
   const [adding, setAdding] = useState(false)
   const [naming, setNaming] = useState(null)
+  const [diag, setDiag] = useState(false)
+  diagOpen.current = diag
+  // Counted once per visit to Settings, when the plans actually scroll into view.
+  const plansRef = useRef(null)
+  useEffect(() => {
+    const el = plansRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { track('plan_viewed'); io.disconnect() } }, { threshold: 0.4 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
   const pickLevel = async (n) => {
     if (n === cur || busy) return
     if (!real) { setLevel(n); setToast(`${name} is on Level ${n}: ${LEVELS[n - 1].name}`); return }
@@ -128,6 +142,9 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
         </Section>
 
         {real && real.user.isAdmin && <AdminSection setToast={setToast} />}
+        {real && real.user.isAdmin && <MetricsSection />}
+
+        <NotificationPrefs real={real} setToast={setToast} />
 
         {real && <Section title={`${name.toUpperCase()}'S PUBLIC PAGE`} id="set-page">
           {dog.public && <a className="rrow" href={path} target="_blank" rel="noopener"><span className="ricon"><Ic n="link" s={20} c="#1F5AE8" /></span><span className="grow"><b>Open {name}'s public page</b><small>{url.replace(/^https?:\/\//, '')}</small></span></a>}
@@ -164,12 +181,17 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
         </Section>
 
         <Section title="PLANS" id="set-plans">
-          <div className="row between g8"><p className="meta grow">A preview of the plans. Billing is not live, nothing is charged, and no feature is locked.</p><span className="badge on">Current: {planName(plan)}</span></div>
+          <div className="row between g8" ref={plansRef}><p className="meta grow">A preview of the plans. Billing is not live, nothing is charged, and no feature is locked.</p><span className="badge on">Current: {planName(plan)}</span></div>
           {PLANS.map((p) => <div key={p.id} className={`plan ${plan === p.id ? 'on' : ''}`}>
             <div className="row between g8"><b>{p.name}</b><span className="num">{p.price}</span></div>
             <ul>{p.items.map((i) => <li key={i}>{i}</li>)}</ul>
             {plan === p.id ? <span className="badge on self"><Ic n="check" s={14} />Your plan on this device</span> : <button className="cta small white bordered" aria-label={`Choose plan: ${p.name}`} onClick={() => choose(p)}>Choose plan</button>}
           </div>)}
+        </Section>
+
+        <MeasuresNote />
+        <Section title="HELP AND DIAGNOSTICS" id="set-help">
+          <button className="rrow" onClick={() => setDiag(true)}><span className="ricon"><Ic n="file" s={20} c="#1F5AE8" /></span><span className="grow"><b>Help and diagnostics</b><small>App version, what this device supports, recent errors, and a report you can copy</small></span></button>
         </Section>
 
         {!real && <Section title="DEMO TOOLS" id="set-demo">
@@ -178,6 +200,7 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
           <button className="rrow box line" onClick={reset}><span className="grow"><b>Reset demo data</b><small>Clears saved walks, paws, connections, level and plan on this device</small></span></button>
         </Section>}
       </div></div>
+      {diag && <ErrorBoundary name="diagnostics" kind="sheet" onClose={() => setDiag(false)}><Diagnostics close={() => setDiag(false)} setToast={setToast} /></ErrorBoundary>}
       {sheet && <div className="scrim" onClick={() => setSheet(null)}><div className="modal" role="dialog" aria-label={sheet.name} onClick={(e) => e.stopPropagation()}>
         <div className="grab" /><h2>{sheet.name}</h2><p>{sheet.what}</p><p className="meta"><b>For real:</b> {sheet.real}</p>
         {sheet.input && <label className="field lightf"><span>{sheet.input}</span><input placeholder="https://find.apple.com/…" /></label>}

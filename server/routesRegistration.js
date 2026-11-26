@@ -343,6 +343,8 @@ export function registerRegistration(kit) {
       const agent = agentFamily(req.get('user-agent'))
       await db.query("INSERT INTO tag_scans (id, tag_id, dog_id, scanned_at, kind, finder_name, message, contact, lat, lng, agent) VALUES ($1, $2, $3, $4, 'found', $5, $6, $7, $8, $9, $10)",
         [newId(), t.id, t.dog_id, iso(Date.now()), f.name, f.message, f.contact, f.lat, f.lng, agent === 'bot' ? 'Unknown device' : agent])
+      // High priority, and it cannot be turned off. The message and contact stay in tag activity; this only points there.
+      await kit.notifyDogPeople(t.dog_id, { kind: 'found_report', title: `Someone found ${t.name}`, body: `${f.name ? `${f.name} sent` : 'A finder sent'} a report from ${t.name}'s Trot Tag${f.lat != null ? ', with a location' : ''}. Open tag activity to read it.`, link: { to: 'tag', dog: t.slug } })
       if (json) return res.status(201).type('json').send(JSON.stringify({ ok: true }))
       res.redirect(303, `/t/${t.code}?sent=1`)
     } catch (e) { console.error(e); say(500, 'Something went wrong on our side.', renderTagGone()) }

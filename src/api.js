@@ -1,11 +1,13 @@
 // Small fetch client for the Trot API. The session token lives in localStorage.
 // On static hosting there is no API: probe() answers false and the app stays in
 // demo-only mode without showing anything about it.
+import { configureUsage, captureError, track } from './usage.js'
 const BASE = ((import.meta.env && import.meta.env.VITE_API_BASE) || '').replace(/\/+$/, '')
 const TOKEN = 'trot-token'
 let token = null
 try { token = localStorage.getItem(TOKEN) || null } catch (e) {}
 let onAuthLost = null
+configureUsage({ base: BASE, getToken: () => token })
 
 export const hasToken = () => !!token
 export function setToken(t) {
@@ -32,20 +34,46 @@ export async function probe(ms = 3000) {
   } catch (e) { return false } finally { clearTimeout(timer) }
 }
 
+// Usage events that follow from a successful call, so no screen has to remember to count them.
+// Each entry is [method, path, event name or a function of the answer]. Nothing from the request body is sent.
+const COUNTED = [
+  ['POST', /^\/session$/, (r) => (r && r.created ? 'sign_up' : 'sign_in')],
+  ['POST', /^\/dogs$/, 'dog_created'],
+  ['PUT', /^\/dogs\/[^/]+\/friends\/[^/]+$/, (r) => (r && r.already ? null : 'friend_added')],
+  ['DELETE', /^\/dogs\/[^/]+\/friends\/[^/]+$/, 'friend_removed'],
+  ['POST', /^\/dogs\/[^/]+\/invites$/, 'care_invite_sent'],
+  ['POST', /^\/invites\/[^/]+\/accept$/, (r) => (r && r.already ? null : 'care_invite_accepted')],
+  ['POST', /^\/places\/[^/]+\/confirm$/, 'place_confirmed'],
+  ['POST', /^\/places\/[^/]+\/claim$/, 'place_claim_sent'],
+  ['POST', /^\/places\/[^/]+\/report$/, 'place_reported'],
+  ['PUT', /^\/events\/[^/]+\/entries\/[^/]+$/, 'event_marked'],
+  ['POST', /^\/dogs\/[^/]+\/tags$/, 'tag_created'],
+  ['PUT', /^\/dogs\/[^/]+\/lost$/, (r) => (r && r.lost && r.lost.on ? 'lost_mode_on' : 'lost_mode_off')],
+  ['PUT', /^\/dogs\/[^/]+\/registration$/, 'registration_saved'],
+]
+function counted(method, path, data) {
+  const p = path.split('?')[0]
+  for (const [m, re, name] of COUNTED) if (m === method && re.test(p)) { const n = typeof name === 'function' ? name(data) : name; if (n) track(n); return }
+}
+// A failed call is recorded when the server broke (5xx) or could not be reached. A 4xx is the app working as designed.
+const failed = (method, path, status) => captureError('api', status ? `HTTP ${status}` : 'Network failure', { method, path, ...(status ? { status } : {}) })
+
 async function request(method, path, body) {
   const headers = { accept: 'application/json' }
   if (token) headers.authorization = 'Bearer ' + token
   if (body !== undefined) headers['content-type'] = 'application/json'
   let res
   try { res = await fetch(BASE + '/api' + path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined }) }
-  catch (e) { throw new ApiError(0, 'Cannot reach Trot. Check your connection and try again.') }
+  catch (e) { failed(method, path, 0); throw new ApiError(0, 'Cannot reach Trot. Check your connection and try again.') }
   let data = null
   try { data = await res.json() } catch (e) {}
   if (!res.ok) {
+    if (res.status >= 500) failed(method, path, res.status)
     const sent = !!headers.authorization
     if (res.status === 401 && sent) { setToken(null); if (onAuthLost) onAuthLost() }
     throw new ApiError(res.status, (data && data.error) || 'Something went wrong. Try again.')
   }
+  counted(method, path, data)
   return data
 }
 
@@ -200,12 +228,13 @@ api.documents = {
     x.setRequestHeader('content-type', 'application/json'); x.setRequestHeader('accept', 'application/json')
     if (token) x.setRequestHeader('authorization', 'Bearer ' + token)
     x.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)) }
-    x.onerror = () => reject(new ApiError(0, 'Cannot reach Trot. Check your connection and try again.'))
+    x.onerror = () => { failed('POST', '/dogs/x/documents', 0); reject(new ApiError(0, 'Cannot reach Trot. Check your connection and try again.')) }
     x.onload = () => {
       let data = null
       try { data = JSON.parse(x.responseText) } catch (e) {}
       if (x.status >= 200 && x.status < 300 && data) return resolve(data)
       if (x.status === 401) { setToken(null); if (onAuthLost) onAuthLost() }
+      if (x.status >= 500) failed('POST', '/dogs/x/documents', x.status)
       reject(new ApiError(x.status, (data && data.error) || (x.status === 413 ? 'That file is too big. The limit is 5 MB.' : 'The upload did not work. Try again.')))
     }
     x.send(JSON.stringify(input))
@@ -268,14 +297,30 @@ api.photos = {
     x.setRequestHeader('content-type', 'application/json'); x.setRequestHeader('accept', 'application/json')
     if (token) x.setRequestHeader('authorization', 'Bearer ' + token)
     x.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)) }
-    x.onerror = () => reject(new ApiError(0, 'Cannot reach Trot. Check your connection and try again.'))
+    x.onerror = () => { failed('POST', '/walks/x/photos', 0); reject(new ApiError(0, 'Cannot reach Trot. Check your connection and try again.')) }
     x.onload = () => {
       let data = null
       try { data = JSON.parse(x.responseText) } catch (e) {}
       if (x.status >= 200 && x.status < 300 && data) return resolve(data)
       if (x.status === 401) { setToken(null); if (onAuthLost) onAuthLost() }
+      if (x.status >= 500) failed('POST', '/walks/x/photos', x.status)
       reject(new ApiError(x.status, (data && data.error) || (x.status === 413 ? 'That photo is too big to send.' : 'The upload did not work. Try again.')))
     }
     x.send(JSON.stringify({ photo: dataUrl }))
   }),
 }
+
+// ---- notification center, usage metrics (appended) -----------------------------
+// In-app only. `before` is the nextBefore of the page above.
+api.notifications = {
+  list: (before) => request('GET', `/notifications${qs({ before, tz: tz() })}`),
+  read: (ids) => request('POST', '/notifications/read', { ids }),
+  readAll: () => request('POST', '/notifications/read', { all: true }),
+  remove: (id) => request('DELETE', `/notifications/${id}`),
+  prefs: () => request('GET', '/notifications/prefs'),
+  setPrefs: (patch) => request('PUT', '/notifications/prefs', patch),
+  // The same number GET /api/me carries, for the once-a-minute badge refresh.
+  unread: async () => (await request('GET', `/notifications/unread${qs({ tz: tz() })}`)).unread || 0,
+}
+// Admins only.
+api.admin.metrics = (days = 14, includeAdmins = false) => request('GET', `/admin/metrics${qs({ days, includeAdmins: includeAdmins ? 1 : undefined })}`)

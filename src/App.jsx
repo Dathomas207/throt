@@ -6,23 +6,30 @@ import { api, probe, hasToken, setAuthLost, signOut, takeInviteFromUrl, pendingI
 import { fitJpeg, OUTING_PHOTO_MAX } from './photo.js'
 import FriendsScreen, { FriendConfirm, realFriendsModel, demoFriendsModel } from './screens/Friends.jsx'
 import Home from './screens/Home.jsx'
+import ErrorBoundary from './ErrorBoundary.jsx'
+import { track, usageReady, setUsageMode, setUsageDog, setScreen, isStandalone, minutesBucket, milesBucket, captureError } from './usage.js'
 // The map screens and the sheets load on demand, so the Today screen appears without the map library.
-function onDemand(load, fallback) { const C = lazy(load); return function OnDemand(props) { return <Suspense fallback={fallback}><C {...props} /></Suspense> } }
+// Each one sits in its own error boundary, so a screen that breaks shows a calm card and the rest of the app keeps working.
+function onDemand(load, fallback, name, kind = 'screen') { const C = lazy(load); return function OnDemand(props) { return <ErrorBoundary name={name} kind={kind} onClose={props.close}><Suspense fallback={fallback}><C {...props} /></Suspense></ErrorBoundary> } }
 // Fetched shortly after the first screen is up, so the first tap on a tab does not wait.
-const warmScreens = () => { for (const f of [loadExplore, loadRecord, loadDetail, loadCompete, loadSettings]) f().catch(() => {}) }
+const warmScreens = () => { for (const f of [loadExplore, loadRecord, loadDetail, loadCompete, loadSettings, loadNotifications]) f().catch(() => {}) }
 const loadExplore = () => import('./screens/Explore.jsx')
 const loadRecord = () => import('./screens/Record.jsx')
 const loadDetail = () => import('./screens/Detail.jsx')
 const loadSettings = () => import('./screens/Settings.jsx')
 const loadCompete = () => import('./screens/Compete.jsx')
-const Explore = onDemand(loadExplore, <div className="scroll"><div className="card empty" role="status"><p>Loading</p></div></div>)
-const Record = onDemand(loadRecord, <div className="scroll"><div className="card empty" role="status"><p>Loading</p></div></div>)
+const loadNotifications = () => import('./screens/Notifications.jsx')
+const Explore = onDemand(loadExplore, <div className="scroll"><div className="card empty" role="status"><p>Loading</p></div></div>, 'explore')
+const Record = onDemand(loadRecord, <div className="scroll"><div className="card empty" role="status"><p>Loading</p></div></div>, 'record')
 import People from './screens/People.jsx'
 import DogTab from './screens/DogTab.jsx'
-const Detail = onDemand(loadDetail, null)
+const Detail = onDemand(loadDetail, null, 'outing', 'sheet')
 import Welcome, { acceptPendingInvite } from './screens/Welcome.jsx'
-const Settings = onDemand(loadSettings, null)
-const Compete = onDemand(loadCompete, null)
+const Settings = onDemand(loadSettings, null, 'settings', 'sheet')
+const Compete = onDemand(loadCompete, null, 'compete', 'sheet')
+const Notifications = onDemand(loadNotifications, null, 'notifications', 'sheet')
+// The screen name that goes with an error: the open sheet if there is one, otherwise the tab.
+const screenOf = (tab, sheets) => { for (const [name, on] of sheets) if (on) return name; return tab }
 
 const PLAN = 'trot-plan'
 
@@ -62,6 +69,8 @@ export default function App() {
       const friend = takeFriendFromUrl()
       const ok = await probe()
       if (!on) return
+      // Usage counting only runs against a real Trot API. On static hosting it stays a no-op.
+      usageReady(ok)
       if (!ok) { setPhase('demo'); return }
       setHasApi(true)
       setAuthLost(() => { setMe(null); setNotice('Your session ended. Sign in again.'); setPhase('welcome') })
@@ -82,9 +91,19 @@ export default function App() {
   }, [enter])
 
   const toDemo = () => { setLS(MODE, 'demo'); setPhase('demo') }
+  // One app_open per mode per page load: the demo, or a signed-in dog.
+  const opened = useRef({})
+  useEffect(() => {
+    const mode = phase === 'demo' ? 'demo' : phase === 'real' && me && slug ? 'signed_in' : null
+    if (!mode || opened.current[mode]) return
+    opened.current[mode] = true
+    track('app_open', { mode, standalone: isStandalone() })
+  }, [phase, me, slug])
   const toWelcome = () => { setLS(MODE, null); setNotice(''); setPhase(me && me.dogs.length ? 'real' : 'welcome') }
   const out = async () => { await signOut(); setMe(null); setSlug(null); setLS(DOGKEY, null); setNotice(''); setPhase('welcome') }
 
+  // The demo saves nothing, so usage.js only counts looking around while it is showing.
+  setUsageMode(phase === 'demo' || (phase === 'real' && !(me && slug)) ? 'demo' : 'real')
   if (phase === 'boot') return <div className="shell"><div className="welcome splash" role="status" aria-label="Loading Trot"><div className="wlogo">TROT</div></div></div>
   if (phase === 'welcome') return <div className="shell"><main className="screen"><Welcome user={me} notice={notice} onDemo={toDemo} onReady={enter} /></main></div>
   if (phase === 'real' && me && slug) return <RealApp key={me.user.id} me={me} setMe={setMe} slug={slug} pickDog={(s) => { setSlug(s); setLS(DOGKEY, s) }} notice={notice} signOut={out} toDemo={toDemo} />
@@ -112,6 +131,10 @@ function DemoApp({ leaveDemo, signedIn, hasApi }) {
   const [compete, setCompete] = useState(null)
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify({ me, mine: mine.map((a) => (a.photos ? { ...a, photos: undefined } : a)), pawed, conn, level, dk })) } catch (e) {} }, [me, mine, pawed, conn, level, dk])
   const [friendsOpen, setFriendsOpen] = useState(false)
+  // The bell in the demo: sample notifications, read-only. The badge clears for this visit once they are looked at.
+  const [notes, setNotes] = useState(false), [noteCount, setNoteCount] = useState(2)
+  useEffect(() => { track('tab_view', { tab }) }, [tab])
+  useEffect(() => { setScreen(screenOf(tab, [['outing', open], ['notifications', notes], ['settings', settings], ['compete', compete], ['friends', friendsOpen]])) }, [tab, open, notes, settings, compete, friendsOpen])
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 2600); return () => clearTimeout(t) }, [toast])
   // The demo has two dogs, Biscuit and Millie. Every screen shows the selected one.
   const [sheetDog, setSheetDog] = useState(null)
@@ -132,20 +155,22 @@ function DemoApp({ leaveDemo, signedIn, hasApi }) {
   }
   // A tapped dog: one of the two demo dogs opens its own profile, any other opens a sample profile sheet.
   const onDog = (a) => { const name = typeof a === 'string' ? a : a.dog; const d = demoDogByName(name); if (d) { setDk(d.key); setOpen(null); setCompete(null); setTab('dog') } else setSheetDog(name) }
-  const ctx = { saveWalk, me, setMe, acts, week, todayMin, pawed, paw, conn, setConn, setOpen, setTab, setToast, mine, setMine, level, dd, setDk, onDog, openSettings: () => setSettings(true), openCompete: (t) => setCompete(t || 'boards'), openFriends: () => setFriendsOpen(true) }
+  const ctx = { saveWalk, me, setMe, acts, week, todayMin, pawed, paw, conn, setConn, setOpen, setTab, setToast, mine, setMine, level, dd, setDk, onDog, openSettings: () => setSettings(true), openCompete: (t) => setCompete(t || 'boards'), openFriends: () => setFriendsOpen(true), unread: noteCount, openNotifications: () => { setNotes(true); setNoteCount(0) } }
   const reset = () => { setMine([]); setPawed({}); setMe('dale'); setConn(Object.fromEntries(CONNECTIONS.map((c) => [c.id, !!c.on]))); setLevel(1); setPlan('free'); setDk('biscuit'); setLS('trot-demo-joins', null); setToast('Demo reset') }
   return (
     <div className="shell">
       <main className="screen">
-        {tab === 'home' && <Home {...ctx} hasApi={hasApi} />}
-        {tab === 'explore' && <Explore {...ctx} dogName={dd.dog.name} />}
-        {tab === 'record' && <Record {...ctx} dogName={dd.dog.name} />}
-        {tab === 'people' && <People {...ctx} />}
-        {tab === 'dog' && <DogTab {...ctx} />}
+        <ErrorBoundary key={tab} name={tab}>
+          {tab === 'home' && <Home {...ctx} hasApi={hasApi} />}
+          {tab === 'explore' && <Explore {...ctx} dogName={dd.dog.name} />}
+          {tab === 'record' && <Record {...ctx} dogName={dd.dog.name} />}
+          {tab === 'people' && <People {...ctx} />}
+          {tab === 'dog' && <DogTab {...ctx} />}
+        </ErrorBoundary>
       </main>
       {tab !== 'record' && (
         <nav className="tabs" aria-label="Main">
-          <Tab on={tab === 'home'} l="Today" i="home" go={() => setTab('home')} />
+          <Tab on={tab === 'home'} l="Today" i="home" go={() => setTab('home')} dot={noteCount > 0} />
           <Tab on={tab === 'explore'} l="Explore" i="map" go={() => setTab('explore')} />
           <button className="rec" aria-label={`Walk ${dd.dog.name}`} onClick={() => setTab('record')}><Paw s={28} c="#0F1B2D" /></button>
           <Tab on={tab === 'people'} l="People" i="users" go={() => setTab('people')} />
@@ -155,6 +180,7 @@ function DemoApp({ leaveDemo, signedIn, hasApi }) {
       {compete && <Compete close={() => setCompete(null)} start={compete} acts={acts} setToast={setToast} hasApi={hasApi} demoName={dd.dog.name} onDog={onDog} />}
       {friendsOpen && <FriendsScreen m={demoFriendsModel(dd, { setToast, onDog: (n) => { setFriendsOpen(false); onDog(n) }, open: () => {} })} close={() => setFriendsOpen(false)} />}
       {sheetDog && <DemoDogSheet name={sheetDog} close={() => setSheetDog(null)} fm={demoFriendsModel(dd, { setToast, onDog, open: () => {} })} />}
+      {notes && <Notifications close={() => setNotes(false)} demoName={dd.dog.name} setToast={setToast} />}
       {settings && <Settings close={() => setSettings(false)} demoName={dd.dog.name} setToast={setToast} plan={plan} setPlan={setPlan} level={level} setLevel={setLevel} conn={conn} setConn={setConn} me={me} setMe={setMe} reset={reset} leaveDemo={leaveDemo} signedIn={signedIn} />}
       {open && <Detail a={open} {...ctx} dogName={dd.dog.name} close={() => setOpen(null)} />}
       {toast && <div className="toast" role="status">{toast}</div>}
@@ -187,6 +213,20 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
   const setPlan = (p) => { setPlanState(p); setLS(PLAN, p) }
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(''), 3200); return () => clearTimeout(t) }, [toast])
   const dogs = me.dogs
+  // ---- notifications: the unread count arrives with /api/me, then is checked every minute while the app is visible, and on focus ----
+  const [unread, setUnread] = useState(me.unread || 0)
+  const [notes, setNotes] = useState(false)
+  const [regNonce, setRegNonce] = useState(0), [placeFocus, setPlaceFocus] = useState(null)
+  useEffect(() => {
+    let on = true
+    const check = () => { if (document.visibilityState === 'hidden') return; api.notifications.unread().then((n) => { if (on) setUnread(n) }, () => {}) }
+    const t = setInterval(check, 60000)
+    window.addEventListener('focus', check); document.addEventListener('visibilitychange', check)
+    return () => { on = false; clearInterval(t); window.removeEventListener('focus', check); document.removeEventListener('visibilitychange', check) }
+  }, [])
+  useEffect(() => { setUsageDog(slug); return () => setUsageDog(null) }, [slug])
+  useEffect(() => { track('tab_view', { tab }) }, [tab])
+  useEffect(() => { setScreen(screenOf(tab, [['outing', open], ['notifications', notes], ['settings', settings], ['compete', compete]])) }, [tab, open, notes, settings, compete])
   const all = scope === 'all' && dogs.length > 1
 
   // ---- dog friends: the active dog's list, a few suggestions, and the invite link ----
@@ -236,7 +276,9 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
   const runJob = async (job) => {
     setJob(job.key, { status: 'shrinking', pct: 0, error: '' })
     try {
-      const shot = await fitJpeg(job.file)
+      let shot
+      // A photo the phone could not read or shrink is recorded by its message only. The picture never leaves the device.
+      try { shot = await fitJpeg(job.file) } catch (e) { captureError('photo', (e && e.message) || 'Photo could not be processed'); throw e }
       setJob(job.key, { status: 'uploading' })
       await api.photos.upload(job.walkId, shot.dataUrl, (pct) => setJob(job.key, { pct }))
       dropJob(job.key)
@@ -248,6 +290,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
   const addPhotos = (walkId, files) => {
     const fresh = files.slice(0, OUTING_PHOTO_MAX).map((file) => ({ key: `j${++jobSeq.current}`, walkId, file, preview: URL.createObjectURL(file), status: 'waiting', pct: 0, error: '' }))
     if (!fresh.length) return
+    track('photo_added', { count: fresh.length })
     setJobs((js) => [...js, ...fresh])
     queue.current = queue.current.then(async () => { let ok = 0; for (const j of fresh) if (await runJob(j)) ok++; if (ok) reloadNow.current() })
   }
@@ -323,6 +366,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
         ...(a.movingMinutes > 0 ? { movingMinutes: Math.min(clamp(a.movingMinutes, 1440), clamp(a.minutes, 1440)) } : {}),
         route: pts.length > 1 ? pts : null,
       })
+      track('walk_saved', { type: r.walk.type, minutes: minutesBucket(r.walk.minutes), miles: milesBucket(r.walk.miles), photos: Math.min(OUTING_PHOTO_MAX, (files || []).length), had_gps: pts.length > 1 })
       await reload()
       setTab('home'); setOpen(toAct(r.walk, team)); setToast(`Saved to ${dog.name}`)
       // Photos go up after the outing is saved. A photo that fails never undoes the save.
@@ -365,25 +409,45 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
   )
   const todayMin = data.weekWalks.filter((w) => w.type !== 'Daycare' && new Date(w.startedAt).toDateString() === new Date().toDateString()).reduce((s, w) => s + w.minutes, 0)
   const real = { user: me.user, dogs, dog, totals: data.totals, team, weekWalks: data.weekWalks, dogActs, switchDog, scope: scope === 'pack' || scope === 'friends' ? scope : all ? 'all' : 'dog', setScope,
-    friends: { ...fr, rev: frRev, add: addFriend, remove: removeFriend, open: () => setFriendsOpen(true) },
+    friends: { ...fr, rev: frRev, add: addFriend, remove: removeFriend, open: () => setFriendsOpen(true), reload: () => { loadFriends(); setFrRev((n) => n + 1) } },
     photos: { jobs, rev: photoRev, add: addPhotos, retry: retryPhoto, dismiss: dropJob, remove: deletePhoto }, reload, hasMore: !!feed.cursor, more, loadingMore: feed.more, createInvite, patchDog, saveProfile, renameMe, listInvites, cancelInvite, removeMember, deleteWalk, refreshMe, signOut: doSignOut, toDemo, hasPendingInvite: !!pendingInvite() }
   // A tapped dog: one of your own opens its profile here, any other opens its public page.
   const onDog = (a) => { if (dogs.some((d) => d.slug === a.dogSlug)) { setOpen(null); switchDog(a.dogSlug); setTab('dog') } else window.open(`/d/${a.dogSlug}`, '_blank', 'noopener') }
-  const ctx = { real, acts, pawed, paw, setOpen, setTab, setToast, conn: {}, onDog, openSettings: () => setSettings(true), openCompete: (t) => setCompete(t || 'boards') }
+  // Where a tapped notification goes. A dog named in the link becomes the one showing first, when it is one of yours.
+  const follow = async (link) => {
+    const mine = link.dog && dogs.some((d) => d.slug === link.dog)
+    if (mine && link.dog !== slug && link.to !== 'outing') switchDog(link.dog)
+    if (link.to === 'friends') { setTab('home'); setFriendsOpen(true) }
+    else if (link.to === 'outing') {
+      try { const r = await api.get(`/walks/${link.id}`); setOpen(toAct(r.walk, team)) }
+      catch (e) { setToast(e.status === 404 ? 'That outing is no longer there.' : e.message) }
+    } else if (link.to === 'registration' || link.to === 'tag') { setTab('dog'); setRegNonce((n) => n + 1) }
+    else if (link.to === 'dog') setTab('dog')
+    else if (link.to === 'people') setTab('people')
+    else if (link.to === 'events') setCompete('events')
+    else if (link.to === 'place') {
+      // Explore opens where it was last looking, so the place's own position is written there first.
+      if (Array.isArray(link.at) && Number.isFinite(link.at[0]) && Number.isFinite(link.at[1])) setLS('trot-view-v2', JSON.stringify({ at: link.at, zoom: 16 }))
+      setPlaceFocus({ id: link.id, n: Date.now() }); setTab('explore')
+    } else setTab('home')
+  }
+  const ctx = { real, acts, pawed, paw, setOpen, setTab, setToast, conn: {}, onDog, openSettings: () => setSettings(true), openCompete: (t) => setCompete(t || 'boards'), unread, openNotifications: () => setNotes(true), regNonce }
   return (
     <RangeOff.Provider value={true}>
       <div className="shell">
         <main className="screen">
+          <ErrorBoundary key={tab} name={tab}>
           {tab === 'home' && <Home {...ctx} />}
-          {tab === 'explore' && <Explore setTab={setTab} setToast={setToast} dogName={dog.name} account />}
+          {tab === 'explore' && <Explore setTab={setTab} setToast={setToast} dogName={dog.name} account focusPlace={placeFocus} />}
           {/* Record looks `me` up in the demo PEOPLE table, so it stays a valid demo id. meName and dogName carry the real names. */}
           {tab === 'record' && <Record me="dale" conn={{}} setTab={setTab} saveWalk={saveWalk} todayMin={todayMin} setToast={setToast} meName={me.user.name} dogName={dog.name} publicDog={!!dog.public} />}
           {tab === 'people' && <People {...ctx} />}
           {tab === 'dog' && <DogTab {...ctx} />}
+          </ErrorBoundary>
         </main>
         {tab !== 'record' && (
           <nav className="tabs" aria-label="Main">
-            <Tab on={tab === 'home'} l="Today" i="home" go={() => setTab('home')} />
+            <Tab on={tab === 'home'} l="Today" i="home" go={() => setTab('home')} dot={unread > 0} />
             <Tab on={tab === 'explore'} l="Explore" i="map" go={() => setTab('explore')} />
             <button className="rec" aria-label={`Walk ${dog.name}`} onClick={() => setTab('record')}><Paw s={28} c="#0F1B2D" /></button>
             <Tab on={tab === 'people'} l="People" i="users" go={() => setTab('people')} />
@@ -392,6 +456,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
         )}
         {compete && <Compete close={() => setCompete(null)} start={compete} real={real} setToast={setToast} />}
         {friendsOpen && <FriendsScreen m={realFriendsModel(real, setToast)} close={() => setFriendsOpen(false)} />}
+        {notes && <Notifications close={() => setNotes(false)} real={real} setToast={setToast} go={follow} onUnread={setUnread} />}
         {settings && <Settings close={() => setSettings(false)} real={real} setToast={setToast} plan={plan} setPlan={setPlan} />}
         {open && <Detail a={open} {...ctx} dogName={dog.name} close={() => setOpen(null)} />}
         {friendAsk && <FriendConfirm target={friendAsk} real={real} done={(msg) => { setFriendAsk(null); if (msg) setToast(msg) }} />}
@@ -400,4 +465,5 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
     </RangeOff.Provider>
   )
 }
-const Tab = ({ on, l, i, go }) => <button className={`tab ${on ? 'on' : ''}`} onClick={go}><Ic n={i} /><span>{l}</span></button>
+// `dot` marks the Today tab while there are unread notifications.
+const Tab = ({ on, l, i, go, dot }) => <button className={`tab ${on ? 'on' : ''}`} onClick={go} aria-label={dot ? `${l}, unread notifications` : undefined}><span className="tabic"><Ic n={i} />{dot && <span className="tabdot" aria-hidden="true" />}</span><span>{l}</span></button>

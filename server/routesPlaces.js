@@ -252,7 +252,10 @@ export function registerPlaces(kit) {
       if (!u.rows[0]) throw conflict(`This claim was already ${c.status}.`)
       if (status === 'approved') await t.query('UPDATE places SET managed_by = $1, managed_role = $2 WHERE id = $3', [c.user_id, c.role, c.place_id])
     })
-    res.json({ claim: claimOut((await db.query(`${CLAIM_SELECT} WHERE c.id = $1`, [id])).rows[0]) })
+    const row = (await db.query(`${CLAIM_SELECT} WHERE c.id = $1`, [id])).rows[0]
+    const at = (await db.query('SELECT lat, lng FROM places WHERE id = $1', [row.place_id])).rows[0] || {}
+    await kit.notify(row.user_id, { kind: status === 'approved' ? 'claim_approved' : 'claim_rejected', actorId: req.user.id, dedupeKey: `claim:${id}`, title: status === 'approved' ? `You now maintain ${row.place_name}` : `Your request to maintain ${row.place_name} was not approved`, body: status === 'approved' ? 'You can edit the dog policy, amenities and notes on its listing in Explore.' : 'You can still confirm the place or report a problem with its listing.', link: { to: 'place', id: row.place_id, ...(at.lat != null && at.lng != null ? { at: [kit.num(at.lat), kit.num(at.lng)] } : {}) } })
+    res.json({ claim: claimOut(row) })
   }
   // Approving makes the claimant the place's manager. An earlier manager, if any, is replaced.
   api.post('/admin/claims/:id/approve', auth, admin, (req, res) => decide(req, res, 'approved'))

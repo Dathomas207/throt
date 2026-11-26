@@ -7,6 +7,7 @@ import { trackStats, speedStats, demoSamples, distAt, samplesUpTo, activityStats
 import { PhotoPicker, PickStrip, makePicks } from './Photos.jsx'
 import { OUTING_PHOTO_MAX } from '../photo.js'
 import '../maps.css'
+import { track, locationPermission, geoError } from '../usage.js'
 
 const SPEED = 40
 const LOOPS = [1, 2, 3]
@@ -96,12 +97,13 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
         // A jump no dog or person could make is a GPS error. It is kept off the line and out of the speeds.
         if (!gapNext.current && dt > 0 && (step / dt) * 3600 > SPIKE_MPH) return
       }
+      if (count.current === 0) locationPermission('granted')
       const f = { t, at, acc: p.coords.accuracy, gap: gapNext.current }
       gapNext.current = false; last.current = f; count.current++
       setWeak(false); setFixes((g) => [...g, f])
     }
     // A lost signal in the middle of a walk should not throw the recording away.
-    const onErr = (e) => { if (count.current === 0 || (e && e.code === 1)) bail(); else setWeak(true) }
+    const onErr = (e) => { geoError(e, 'record'); if (count.current === 0 || (e && e.code === 1)) bail(); else setWeak(true) }
     try { watch.current = navigator.geolocation.watchPosition(onFix, onErr, { enableHighAccuracy: true, maximumAge: 2000 }) } catch (e) { bail() }
     return () => { try { navigator.geolocation.clearWatch(watch.current) } catch (e) {} }
   }, [mode, live])
@@ -147,7 +149,7 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
     if (rk === 'saved:' + x.id) setRk('pond')
     setToast(out.ok ? `Deleted ${x.name}` : 'This browser would not update saved routes.')
   }
-  const start = () => { setSec(0); last.current = null; count.current = 0; gapNext.current = false; setFixes([]); setWeak(false); setPaused(false); setFollow(true); setTaps(0); setMode('run') }
+  const start = () => { setSec(0); last.current = null; count.current = 0; gapNext.current = false; setFixes([]); setWeak(false); setPaused(false); setFollow(true); setTaps(0); setMode('run'); track('walk_started', { type, gps: live }) }
   const canStart = timed || live || !!r
   const meP = { ...(PEOPLE[me] || PEOPLE.dale), ...(meName ? { name: meName } : {}) }
   const dn = dogName || 'Biscuit'
@@ -207,7 +209,7 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
       <PickStrip picks={picks} onRemove={unpick} />
       <p className="meta lightm">Opens your photo library so you can choose. Photos are added after the outing is saved{publicDog ? `, and show on ${dn}'s public page` : ''}.</p>
     </div>
-    <div className="row g12"><button className="cta white grow" onClick={() => setTab('home')}>Discard</button><button className="cta grow" onClick={save}>Save to {dn}</button></div>
+    <div className="row g12"><button className="cta white grow" onClick={() => { track('walk_discarded'); setTab('home') }}>Discard</button><button className="cta grow" onClick={save}>Save to {dn}</button></div>
   </>)
   if (timed) return (
     <div className="fill navy tsession">

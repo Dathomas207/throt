@@ -60,6 +60,10 @@ export function registerFriends(kit) {
       await db.query('INSERT INTO dog_follows (follower_dog_id, followed_dog_id, created_by, created_at) VALUES ($1, $2, $3, $4) ON CONFLICT (follower_dog_id, followed_dog_id) DO NOTHING', [dog.id, other.id, req.user.id, iso(Date.now())])
     }
     const back = await db.query('SELECT 1 AS x FROM dog_follows WHERE follower_dog_id = $1 AND followed_dog_id = $2', [other.id, dog.id])
+    // The other dog's owner and family hear about a new friend once. Removing and adding again stays quiet.
+    if (!mine.has(other.id)) await kit.notifyDogPeople(other.id, back.rows[0]
+      ? { kind: 'friend_mutual', actorId: req.user.id, dedupeKey: `mutual:${dog.id}:${other.id}`, title: `${dog.name} and ${other.name} are now friends with each other`, body: `${dog.name} added ${other.name} back.`, link: { to: 'friends', dog: other.slug } }
+      : { kind: 'friend_added', actorId: req.user.id, dedupeKey: `friend:${dog.id}:${other.id}`, title: `${dog.name} added ${other.name} as a friend`, body: dog.is_public ? `Add ${dog.name} back to see their outings in ${other.name}'s friends feed.` : `${dog.name}'s page is private, so there is nothing to add back yet.`, link: { to: 'friends', dog: other.slug, ...(dog.is_public ? { other: dog.slug, otherName: dog.name } : {}) } })
     res.json({ friend: { ...pubDog(other), lastOuting: (await lastOutings([other.id]))[other.id] || null, mutual: !!back.rows[0] }, already: mine.has(other.id) })
   })
   // Removing a friend that is not there is the same as removing one that is. The answer never says

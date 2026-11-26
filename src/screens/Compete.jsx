@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Ic, Av, DogAv, Confirm, usePhoto } from '../ui.jsx'
 import { api } from '../api.js'
 import { DEMO_BOARD, DEMO_CHALLENGES, demoDogByName } from '../data.js'
+import { geoError } from '../usage.js'
 
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
 const day = (s) => new Date(s + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -123,7 +124,7 @@ function EventForm({ onDone, onCancel }) {
   const [f, setF] = useState({ name: '', kind: 'meetup', startsOn: '', endsOn: '', venue: '', city: '', region: '', url: '', description: '' })
   const [pin, setPin] = useState(null), [errs, setErrs] = useState({}), [err, setErr] = useState(''), [busy, setBusy] = useState(false)
   const set = (k) => (e) => { setF((x) => ({ ...x, [k]: e.target.value })); setErrs((x) => ({ ...x, [k]: undefined })); setErr('') }
-  const locate = () => { if (!navigator.geolocation) { setErr('This browser cannot share a location.'); return } navigator.geolocation.getCurrentPosition((p) => setPin([p.coords.latitude, p.coords.longitude]), () => setErr('Location was not shared. The event is still fine without it.')) }
+  const locate = () => { if (!navigator.geolocation) { setErr('This browser cannot share a location.'); return } navigator.geolocation.getCurrentPosition((p) => setPin([p.coords.latitude, p.coords.longitude]), (e) => { geoError(e, 'compete'); setErr('Location was not shared. The event is still fine without it.') }) }
   const submit = async (e) => {
     e.preventDefault()
     if (busy) return
@@ -168,7 +169,7 @@ function Events({ real, setToast, hasApi }) {
   }, [hasApi, near, dog && dog.slug])
   useEffect(() => { load() }, [load])
   if (!hasApi) return <div className="list"><div className="card empty"><b>Events need the Trot server</b><p>This copy of the demo runs without it, so there is no calendar to show. No sample events are shown in its place.</p></div></div>
-  const locate = () => { if (!navigator.geolocation) { setToast('This browser cannot share a location.'); return } navigator.geolocation.getCurrentPosition((p) => setNear([Math.round(p.coords.latitude * 1e3) / 1e3, Math.round(p.coords.longitude * 1e3) / 1e3]), () => setToast('Location was not shared, so all upcoming events are shown.')) }
+  const locate = () => { if (!navigator.geolocation) { setToast('This browser cannot share a location.'); return } navigator.geolocation.getCurrentPosition((p) => setNear([Math.round(p.coords.latitude * 1e3) / 1e3, Math.round(p.coords.longitude * 1e3) / 1e3]), (e) => { geoError(e, 'compete'); setToast('Location was not shared, so all upcoming events are shown.') }) }
   const entryOf = (e) => (dog ? e.entries.find((x) => x.dog === dog.slug) : null)
   const mark = async (e, body) => { setBusy(e.id); try { await api.events.mark(e.id, dog.slug, body); await load(); return true } catch (x) { setToast(x.message); return false } finally { setBusy('') } }
   const unmark = async (e) => { setBusy(e.id); try { await api.events.unmark(e.id, dog.slug); await load() } catch (x) { setToast(x.message) } setBusy('') }

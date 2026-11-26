@@ -237,3 +237,89 @@ Privacy rules. The server-side ones are covered by tests:
 6. Lost a tag? Tap **Retire this tag** and make a new one.
 
 Known gaps: the tag page only offers the found form while the dog is reported lost, so a finder who taps a tag before the owner notices can only be seen as a scan under Tag activity. A deployment needs `PUBLIC_URL` (or Render's own address) set so tag addresses carry the public host. The demo's Settings screen still describes an older idea of "Trot Tag" as a Bluetooth beacon; the tag built here is NFC and QR only.
+
+## Usage metrics, error capture and notifications
+
+### What Trot measures
+
+Trot counts a short, fixed list of events on its own server (`usage_events`). There is no third-party analytics, no ad tracker and no cookie. The browser helper is `src/usage.js` (`track(name, props)`); the server side is `server/routesUsage.js`.
+
+Privacy rules, enforced on the server and tested in `server/metrics-notifications.test.js`:
+
+- **No IP address, no location, no email, no free text from people.** A row holds: time, user id or a random browser id, event name, dog id, a small `props` object, the device family ("Safari on iPhone or iPad", never the user agent string) and the app version.
+- **The browser id** (`trot-anon` in localStorage) is only used signed out and in the demo. A signed-in event carries the user and not the browser id.
+- **Event names and prop keys are fixed lists.** Anything else is dropped. `props` is capped at 300 bytes.
+- **Numbers are buckets.** Minutes: `under_10`, `10_30`, `30_60`, `over_60`. Miles: `none`, `under_1`, `1_3`, `3_5`, `over_5`.
+- **Opt out with the browser.** When the browser sends Do Not Track or Global Privacy Control, `track()` sends nothing and no browser id is created.
+- **No API, no counting.** On static hosting `track()` is a no-op.
+- **The demo only counts looking around** (`app_open`, `tab_view`, `walk_started`, `walk_discarded`, `place_opened`, `route_built`, `loop_from_here`, `plan_viewed`, `notification_opened`, `location_permission`, `client_error`). Sign-ups, saved walks, friends and the rest come from real accounts only.
+- Rows older than 180 days are deleted.
+
+The events, and the props each one keeps:
+
+| Event | Props |
+| --- | --- |
+| `app_open` | `mode` (`demo` or `signed_in`), `standalone` (true when opened from the home screen) |
+| `sign_up`, `sign_in`, `dog_created` | none |
+| `tab_view` | `tab` |
+| `walk_started` | `type`, `gps` |
+| `walk_saved` | `type`, `minutes` bucket, `miles` bucket, `photos` count, `had_gps` |
+| `walk_discarded` | none |
+| `photo_added` | `count` |
+| `friend_added`, `friend_removed`, `invite_link_copied` | none |
+| `care_invite_sent`, `care_invite_accepted` | none |
+| `place_opened` | `category`, `curated` |
+| `place_confirmed`, `place_claim_sent`, `place_reported` | none |
+| `route_built` | none |
+| `loop_from_here` | `result` (`ok`, `denied`, `timeout`, `unavailable`, `unsupported`) |
+| `event_marked`, `tag_created`, `lost_mode_on`, `lost_mode_off`, `registration_saved` | none |
+| `plan_viewed` | none |
+| `notification_opened` | `kind` |
+| `location_permission` | `state` (`granted` or `denied`) |
+| `client_error` | `message`, `kind`, `screen`, `method`, `path`, `status`, `code`, `n` |
+
+`POST /api/usage` takes `{ v, anon | auth, events: [{ name, props, dog, ago }] }`: at most 20 events and 4 KB, signed in or out, rate limited per address (60 a minute). It always answers 204 and stores nothing it does not recognise. `navigator.sendBeacon` cannot set headers, so the batch goes as `text/plain` and a signed-in batch carries the session token in `auth`; the token is used to find the user and is never stored.
+
+### Client errors
+
+The app records window errors, unhandled promise rejections, React render errors (an error boundary around each lazy screen, each tab and the whole app shows a "Something went wrong on this screen" card with Try again), API calls that fail with a 5xx or cannot reach the server (never a 4xx), geolocation errors by code, and photos that could not be processed. Each becomes one `client_error` event:
+
+- `message` is the first 200 characters with emails, tokens, ids, coordinates and long digit runs masked, in the browser and again on the server.
+- `path` is a pattern with every id replaced (`/dogs/:id/walks`). Request bodies, coordinates and anything a person typed are never included.
+- The same error is sent once per session; a count of repeats (`n`) follows when the page is hidden.
+
+Settings, Help and diagnostics shows the app version (the short git commit, injected by Vite as `__APP_VERSION__` from `APP_VERSION`, `RENDER_GIT_COMMIT` or `git rev-parse`, otherwise `dev`), whether Trot runs as an installed app, online state, location permission, NFC reading, Web Share, the service worker state and the last 20 errors kept on that device. "Copy diagnostics" copies a plain text report with no personal data. "Send a test error" breaks that page on purpose to check the trail.
+
+### Admin metrics
+
+`GET /api/admin/metrics?days=14` (admins only, 403 for everyone else; `days` 1 to 90) answers daily active people, sign-ups and walks saved per day, the activation funnel for people who signed up in the window (signed up, created a dog, saved a first walk, saved a second walk, invited a care team member, added a friend), week-two return for the cohort that signed up 7 to 14 days ago (`rate` is null with the note "not enough data" under 5 people), top tabs, top events, and client errors grouped by message with a count and last seen. Days are UTC. Admins' own activity and events tied to demo seed dogs are left out; `?includeAdmins=1` puts the admins back. Everything is counted from `usage_events`, so people who opted out are not in it. Admins see the same numbers under Metrics in Settings.
+
+### Notification center
+
+In-app only: nothing is sent by push, email or text. Push needs the installed app and a later release.
+
+| Kind | Who gets it |
+| --- | --- |
+| `friend_added` | Owner and family of the dog that was added, with an "Add back" action while it is not mutual |
+| `friend_mutual` | Owner and family of the dog that was added back |
+| `paw` | Owner, family and whoever logged the outing. One row per outing, rewritten as more paws arrive |
+| `care_invite_accepted` | The person who made the invite |
+| `care_walk_logged` | Owner and family, when a walker or daycare logs an outing |
+| `found_report` | Owner and family. High priority, cannot be turned off. The finder's message and contact stay in tag activity |
+| `registration_due` | Owner and family, when a license or rabies date has passed or is 30 days or fewer away |
+| `event_reminder` | Owner and family, when an event the dog is going to starts within 3 days |
+| `claim_approved`, `claim_rejected` | The claimant |
+| `welcome` | Once, on first sign-in |
+
+Nobody is notified about their own action, and seeded demo people never get rows. The two reminders are not scheduled: they are written when the person next reads their list or `GET /api/me`, once per item and date.
+
+```
+GET    /api/notifications?before=&limit=30   -> { items, unread, nextBefore }
+GET    /api/notifications/unread             -> { unread }
+POST   /api/notifications/read               { ids: [...] } or { all: true }
+DELETE /api/notifications/:id
+GET    /api/notifications/prefs              -> { prefs: { friends, paws, care, reminders }, always, channels }
+PUT    /api/notifications/prefs              { friends?, paws?, care?, reminders? }
+```
+
+`GET /api/me` also carries `unread`, so the bell shows a number without a second request. The app checks again every 60 seconds while it is visible, and on focus. Server code can call `notify(db, userId, { kind, dogId, title, body, link, dedupeKey })` from `server/routesNotifications.js` anywhere; it respects the person's choices and never throws into its caller.

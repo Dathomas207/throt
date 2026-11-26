@@ -14,6 +14,8 @@ const P = {
   trophy: 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.500 20h7M10 17h4',
   file: 'M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5',
   heart: 'M12 20s-7-4.400-7-10a4 4 0 0 1 7-2.600A4 4 0 0 1 19 10c0 5.600-7 10-7 10z',
+  bell: 'M6 9.500a6 6 0 0 1 12 0c0 5 2 6.500 2 6.500H4s2-1.500 2-6.500zM10 19.500a2 2 0 0 0 4 0',
+  more: 'M12 6.500v.01M12 12v.01M12 17.500v.01',
 }
 export const Ic = ({ n, s = 22, c = 'currentColor', f = 'none' }) => <svg aria-hidden="true" width={s} height={s} viewBox="0 0 24 24" fill={f} stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={P[n]} /></svg>
 export const Paw = ({ s = 22, c = 'currentColor', f = 'none' }) => { const w = s <= 32 ? 7.500 : 5; return <svg aria-hidden="true" width={s} height={s} viewBox="6 10 88 78" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round"><g transform="rotate(-9 50 50)"><path d="M33 27C38 22 44 20 50 20C56 20 62 22 67 27M33 60C34 71 41 79 50 79C59 79 66 71 67 60" /><path d="M33 27C24 24 15 30 15 44C15 58 19 70 26 71C31 71 33 66 33 60V40" fill={f} /><path d="M67 27C76 24 85 30 85 44C85 58 81 70 74 71C69 71 67 66 67 60V40" fill={f} /><path d="M50 66v2M50 68c-2 4-7 4-9 1M50 68c2 4 7 4 9 1" strokeWidth={w * 0.8} /><circle cx="42" cy="46" r="2.500" fill={c} /><circle cx="58" cy="46" r="2.500" fill={c} /><path d="M46 58h8l-4 4.500z" fill={c} strokeWidth="3" /></g></svg> }
@@ -132,6 +134,8 @@ export const LEVELS = [
   { n: 3, name: 'Fitness tracker', adds: 'A connected collar adds the dog\'s own steps, all-day activity and sleep. Trot is not connected to any real tracker yet.' },
 ]
 export const LevelBadge = ({ n }) => { const l = LEVELS.find((x) => x.n === n) || LEVELS[0]; return <span className="lvl">Level {l.n} · {l.name}</span> }
+// The bell beside the gear. `n` is the unread count; over 99 shows as 99+.
+export const Bell = ({ onClick, n = 0 }) => <button type="button" className="round flat bellbtn" aria-label={n > 0 ? `Notifications, ${n} unread` : 'Notifications'} onClick={onClick}><Ic n="bell" s={24} c="#0F1B2D" />{n > 0 && <span className="bcount" aria-hidden="true">{n > 99 ? '99+' : n}</span>}</button>
 export const Gear = ({ onClick, light }) => <button type="button" className={`round gear ${light ? 'flat lightgear' : 'flat'}`} aria-label="Settings" onClick={onClick}><Ic n="gear" s={24} c={light ? '#fff' : '#0F1B2D'} /></button>
 
 // ---- signed-in mode helpers --------------------------------------------------

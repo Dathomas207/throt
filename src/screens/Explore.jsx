@@ -7,6 +7,7 @@ import { fetchPlaces, readPlaceCache, fetchTrails, samplePlaces, bboxAround, bbo
 import { routeLoop, routeThrough, locate, setHandoff, loadSavedRoutes, saveRoute, deleteSavedRoute, fmtDist, walkMinutes, peekDemoRoute, resolveDemoRoute, useHereLoop, locationHelp, DEFAULT_CENTER, MAX_WAYPOINTS, MAX_SAVED } from '../routing.js'
 import { searchPlaces, searchMode, MIN_QUERY } from '../search.js'
 import '../maps.css'
+import { track } from '../usage.js'
 
 // Water and Other have no chip of their own. They show under All.
 const CHIPS = CATEGORIES.filter((c) => c.id !== 'water' && c.id !== 'other')
@@ -94,7 +95,7 @@ function PlaceSearch({ near, onChoose }) {
 }
 
 // `account` is set when the screen belongs to a signed-in person's own page. The demo never has it.
-export default function Explore({ setTab, setToast, dogName, account }) {
+export default function Explore({ setTab, setToast, dogName, account, focusPlace }) {
   const dn = dogName || 'Biscuit'
   const t0 = useRef(performance.now()).current
   const first = useRef(readView()).current // the last area looked at, so the first paint is already there
@@ -246,7 +247,17 @@ export default function Explore({ setTab, setToast, dogName, account }) {
   const hereOn = !!(detail && detail.type === 'here')
 
   const closeDetail = () => { clearLoop(); here.clear(); setDetail(null); setDel(null); setAct(null) }
-  const openPlace = (id) => { clearLoop(); setAct(null); setHi(id); setDetail({ type: 'place', id }); if (snap === 'peek') setSnap('half') }
+  const openPlace = (id) => { clearLoop(); setAct(null); setHi(id); setDetail({ type: 'place', id }); if (snap === 'peek') setSnap('half'); const x = all.find((y) => y.id === id); if (x) track('place_opened', { category: x.category || 'other', curated: !!x.curated }) }
+  // A notification about a listing (a claim that was decided) arrives with that place's id. It opens once the list has it.
+  const focused = useRef(0)
+  useEffect(() => {
+    if (!focusPlace || focused.current === focusPlace.n) return
+    const x = comm.find((c) => c.cid === focusPlace.id)
+    if (!x) return
+    focused.current = focusPlace.n
+    if (x.curated ? !layers.places : !layers.community) setLayer(x.curated ? 'places' : 'community', true)
+    openPlace(x.id)
+  }, [focusPlace, comm])
   const openLine = (id) => { clearLoop(); const [type, ...rest] = id.split(':'); setDetail({ type, id: rest.join(':') }); setDel(null); if (snap === 'peek') setSnap('half') }
   // List and map stay linked: a row tap highlights and centers the pin, a pin tap highlights the row and scrolls to it.
   const rowTap = (x) => { if (hi === x.id) { openPlace(x.id); return } setHi(x.id); setFocus({ id: x.id, n: Date.now() }) }
@@ -294,6 +305,7 @@ export default function Explore({ setTab, setToast, dogName, account }) {
     const route = await routeThrough(wps, { signal: ctl.signal })
     if (!alive.current || id !== bReq.current) return
     setB((s) => ({ ...s, route, status: 'ready' }))
+    track('route_built')
   }
   const startBuild = () => {
     closeDetail(); setAdd(null); setHi(null); setLayersOpen(false); setB((s) => ({ ...s, on: true })); if (snap !== 'half') setSnap('half')

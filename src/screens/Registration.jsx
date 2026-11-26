@@ -53,11 +53,13 @@ const EntryRow = ({ reg, onOpen }) => {
 }
 
 // The dog tab's section for a real dog: alerts, the reminder banner, the entry row and the lost toggle.
-export function DogId({ real, setToast }) {
+export function DogId({ real, setToast, autoOpen }) {
   const { dog } = real
   const [state, reload] = useTagState(dog.slug)
   const [reg, setReg] = useState(null)
   const [open, setOpen] = useState(false), [busyId, setBusyId] = useState(null)
+  // A notification about a found report or a date that is due lands here with the page already open.
+  useEffect(() => { if (autoOpen) setOpen(true) }, [autoOpen])
   useEffect(() => { let on = true; setReg(null); api.registration.get(dog.slug).then((r) => { if (on) setReg(r) }, () => {}); return () => { on = false } }, [dog.slug])
   const onRead = async (s) => { setBusyId(s.id); try { await api.tags.markRead(dog.slug, s.id); await reload() } catch (e) { setToast(e.message) } setBusyId(null) }
   const onSet = async (lost, note) => {

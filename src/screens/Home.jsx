@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Ic, Paw, Av, DogAv, Stat, Range, Card, whoName, ptsOf, DogSwitch, Gear, TypeIc, usePhoto } from '../ui.jsx'
+import { Ic, Paw, Av, DogAv, Stat, Range, Card, whoName, ptsOf, DogSwitch, Gear, Bell, TypeIc, usePhoto } from '../ui.jsx'
 import { api } from '../api.js'
 import { HomeAlerts } from './LostDog.jsx'
 import { TodayHero, TodayTiles, TodayIdeas } from './Today.jsx'
@@ -26,7 +26,7 @@ function PackCard({ w, fm }) {
 }
 const CompeteCard = ({ open, name }) => <button className="rrow box competecard" onClick={() => open('boards')}><span className="ricon"><Ic n="trophy" s={20} c="#1F5AE8" /></span><span className="grow"><b>Compete</b><small>Leaderboards, challenges and events for {name}</small></span></button>
 
-function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSettings, openCompete, onDog }) {
+function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSettings, openCompete, onDog, unread, openNotifications }) {
   const { dog, dogs, totals, user } = real
   const many = dogs.length > 1
   const [pack, setPack] = useState(null)
@@ -46,7 +46,7 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSetti
   const banner = (real.dogActs.find((a) => a.photos && a.photos.length) || { photos: [] }).photos[0]
   return (
     <div className="scroll">
-      <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Signed in as {user.name}</div><Gear onClick={openSettings} /></div></header>
+      <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Signed in as {user.name}</div><Bell n={unread} onClick={openNotifications} /><Gear onClick={openSettings} /></div></header>
       <DogSwitch dogs={dogs} active={dog.slug} onPick={real.switchDog} />
       <HomeAlerts real={real} setToast={setToast} />
       <TodayHero name={dog.name} photoUrl={dog.photoUrl} banner={banner} onWalk={() => setTab('record')} onDog={() => setTab('dog')} status={totals.week.outings > 0 ? `${totals.week.outings} ${totals.week.outings === 1 ? 'outing' : 'outings'} and ${totals.week.miles.toFixed(1)} miles in the last 7 days` : 'No outings in the last 7 days yet'} />
@@ -77,7 +77,7 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSetti
 
 const DemoSwitch = ({ dd, setDk }) => <div className="dogswitch" role="group" aria-label="Switch dog">{Object.values(DEMO_DOGS).map((d) => <button key={d.key} className={`chip flat ${d.key === dd.key ? 'on' : ''}`} aria-pressed={d.key === dd.key} onClick={() => setDk(d.key)}>{d.dog.name}</button>)}</div>
 
-function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, setToast, me, openSettings, openCompete, openFriends, dd, setDk, onDog, hasApi }) {
+function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, setToast, me, openSettings, openCompete, openFriends, dd, setDk, onDog, hasApi, unread, openNotifications }) {
   const [feed, setFeed] = useState('biscuit')
   const D = dd.dog
   const fm = demoFriendsModel(dd, { setToast, onDog, open: openFriends })
@@ -86,7 +86,7 @@ function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, setToast,
   const list = feed === 'biscuit' ? acts : feed === 'friends' ? demoFriendActs(dd) : [...PACK.filter((x) => !demoDogByName(x.dog)), ...acts].sort((a, b) => a.daysAgo - b.daysAgo)
   return (
     <div className="scroll">
-      <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Demo, viewing as {PEOPLE[me].name}</div><Gear onClick={openSettings} /></div></header>
+      <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Demo, viewing as {PEOPLE[me].name}</div><Bell n={unread} onClick={openNotifications} /><Gear onClick={openSettings} /></div></header>
       <DemoSwitch dd={dd} setDk={setDk} />
       <TodayHero name={D.name} demo banner={banner} onWalk={() => setTab('record')} onDog={() => setTab('dog')} status={`${week.walks} outings and ${week.miles.toFixed(1)} miles this week · ${D.streak} day streak`}><Range min={todayMin} light dog={D} /></TodayHero>
       <WalkTimes name={D.name} hasApi={hasApi} onWalk={() => setTab('record')} />

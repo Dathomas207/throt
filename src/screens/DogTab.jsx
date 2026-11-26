@@ -24,7 +24,7 @@ function WeekBars({ days, title, meta }) {
 const dayOf = (d) => ({ l: new Date(Date.now() - d * 864e5).toLocaleDateString('en-US', { weekday: 'narrow' }), name: new Date(Date.now() - d * 864e5).toLocaleDateString('en-US', { weekday: 'long' }) })
 
 // Signed in: profile, totals, walks, health records, documents and awards from the API.
-function RealDogTab({ real, pawed, paw, setOpen, setToast, openSettings }) {
+function RealDogTab({ real, pawed, paw, setOpen, setToast, openSettings, regNonce }) {
   const { dog, totals, weekWalks, dogActs } = real
   const [sub, setSub] = useState('Activity')
   const [editing, setEditing] = useState(false)
@@ -46,7 +46,7 @@ function RealDogTab({ real, pawed, paw, setOpen, setToast, openSettings }) {
           ? <a className="publink" href={path} target="_blank" rel="noopener"><Ic n="link" s={18} c="#C8F031" /><span className="grow"><b>{dog.name}'s public page</b><small>{url.replace(/^https?:\/\//, '')}</small></span></a>
           : <button className="publink off" onClick={openSettings}><Ic n="link" s={18} c="#AEB7C4" /><span className="grow"><b>{dog.name}'s page is private</b><small>{owner ? 'Turn it on in Settings to share it' : 'Only the care team can see it'}</small></span></button>}
       </section>
-      <DogId real={real} setToast={setToast} />
+      <DogId real={real} setToast={setToast} autoOpen={regNonce} />
       <Subtabs sub={sub} setSub={setSub} />
       {sub === 'Activity' && <div className="list">
         <WeekBars days={days} title="Last 7 days" meta={`${totals.week.miles.toFixed(1)} mi · ${totals.week.outings} ${totals.week.outings === 1 ? 'outing' : 'outings'}`} />

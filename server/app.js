@@ -12,6 +12,8 @@ import { registerCompete } from './routesCompete.js'
 import { registerRegistration } from './routesRegistration.js'
 import { registerFriends } from './routesFriends.js'
 import { registerPhotos, WALK_PHOTO_LIMITS } from './routesPhotos.js'
+import { registerUsage } from './routesUsage.js'
+import { registerNotifications } from './routesNotifications.js'
 import { registerWeather } from './routesWeather.js'
 
 import { geoRouter } from './geo.js'
@@ -231,6 +233,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   const jsonDocBody = express.json({ limit: DOC_LIMITS.body })
   const jsonWalkPhotoBody = express.json({ limit: WALK_PHOTO_LIMITS.body })
   api.use(async (req, res, next) => {
+    // Usage batches bring their own 4 KB parser (routesUsage.js), so nothing larger is ever read for them.
+    if (req.method === 'POST' && /^\/usage\/?$/.test(req.path)) return next()
     if (req.method === 'POST' && /^\/dogs\/[^/]+\/documents\/?$/.test(req.path)) {
       if (!(await userFor(req))) throw new HttpError(401, 'Sign in to continue.')
       return jsonDocBody(req, res, next)
@@ -296,6 +300,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   const admins = new Set(String(adminEmails || '').split(',').map((e) => e.trim().toLowerCase()).filter((e) => e && !e.endsWith('.invalid')))
   const isAdmin = (u) => !!(u && u.email && admins.has(String(u.email).toLowerCase()))
   const admin = (req, res, next) => { if (!isAdmin(req.user)) throw new HttpError(403, 'Admins only.'); next() }
+  // The admins' user ids, so the metrics can leave their own activity out.
+  const adminIds = async () => { const list = [...admins]; return new Set(list.length ? (await db.query(`SELECT id FROM users WHERE LOWER(email) IN (${list.map((_, i) => `$${i + 1}`).join(', ')})`, list)).rows.map((r) => r.id) : []) }
   const auth = async (req, res, next) => {
     const u = await userFor(req)
     if (!u) throw new HttpError(401, 'Sign in to continue.')
@@ -409,6 +415,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const token = newToken()
     await db.query('DELETE FROM sessions WHERE expires_at < $1', [iso(now)])
     await db.query('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES ($1, $2, $3, $4)', [sha(token), user.id, iso(now), iso(now + SESSION_DAYS * DAY)])
+    // One welcome note on the first sign-in. It is keyed, so it is never written twice.
+    if (created) await kit.welcome(user.id)
     res.status(created ? 201 : 200).json({ token, user: { id: user.id, name: user.name, email: user.email, isAdmin: isAdmin(user) }, created })
   })
   api.delete('/session', auth, async (req, res) => {
@@ -419,7 +427,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   api.get('/me', auth, async (req, res) => {
     const { rows } = await db.query(
       `SELECT ${DOG_COLS_D}, m.role FROM memberships m JOIN dogs d ON d.id = m.dog_id WHERE m.user_id = $1 ORDER BY m.created_at ASC, d.slug ASC`, [req.user.id])
-    res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email, isAdmin: isAdmin(req.user) }, dogs: rows.map((d) => dogOut(d, d.role)) })
+    // The unread count rides along so the bell shows a number without a second request.
+    res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email, isAdmin: isAdmin(req.user) }, dogs: rows.map((d) => dogOut(d, d.role)), unread: await kit.unreadFor(req.user.id, req.query.tz) })
   })
 
   api.patch('/me', auth, async (req, res) => {
@@ -607,12 +616,13 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
       if (!u.rows[0]) throw new HttpError(410, 'This invite link has expired or was already used. Ask for a new one.')
       await t.query('INSERT INTO memberships (user_id, dog_id, role, created_at) VALUES ($1, $2, $3, $4)', [req.user.id, inv.dog_id, inv.role, now])
     })
+    await kit.notify(inv.created_by, { kind: 'care_invite_accepted', dogId: inv.dog_id, actorId: req.user.id, title: `${firstName(req.user.name)} joined ${inv.dog_name}'s care team`, body: `They accepted your invite as ${inv.role === 'daycare' ? 'daycare' : inv.role === 'family' ? 'family' : 'a walker'}.`, link: { to: 'people', dog: inv.slug } })
     out(inv.role, false)
   })
 
   // -- walks
   api.post('/dogs/:slug/walks', auth, async (req, res) => {
-    const { dog } = await dogFor(req.params.slug, req.user.id)
+    const { dog, role } = await dogFor(req.params.slug, req.user.id)
     const b = object(req.body)
     const type = b.type === undefined ? 'Walk' : b.type
     if (!WALK_TYPES.includes(type)) throw bad(`Type must be one of: ${WALK_TYPES.join(', ')}.`)
@@ -644,6 +654,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     await db.query('INSERT INTO walks (id, dog_id, user_id, type, title, note, place, miles, minutes, sniffs, started_at, route, created_at, avg_speed, max_speed, sprints, moving_minutes, run_minutes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)',
       [id, dog.id, req.user.id, type, title, note, place, round(miles, 100), round(minutes, 100), b.sniffs == null ? 0 : sniffs, iso(started), pts ? JSON.stringify(pts) : null, iso(now), avgSpeed == null ? null : round(avgSpeed, 10), maxSpeed == null ? null : round(maxSpeed, 10), sprints, movingMinutes == null ? null : round(movingMinutes, 100), runMinutes == null ? null : round(runMinutes, 100)])
     const { rows } = await db.query(`SELECT ${WALK_COLS} FROM walks w JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id WHERE w.id = $1`, [id])
+    // The owner and family hear about it when a walker or daycare logs an outing.
+    if (role === 'walker' || role === 'daycare') await kit.notifyDogPeople(dog.id, { kind: 'care_walk_logged', actorId: req.user.id, title: `${role === 'daycare' ? req.user.name : firstName(req.user.name)} logged ${type === 'Walk' ? 'a walk' : type === 'Daycare' ? 'a daycare day' : `an outing (${type})`} for ${dog.name}`, body: `${title} · ${Math.round(minutes)} min${miles > 0 ? ` · ${round(miles, 10)} mi` : ''}`, link: { to: 'outing', id, dog: dog.slug } })
     res.status(201).json({ walk: (await walksOut(rows, req.user.id, { full: true }))[0] })
   })
 
@@ -678,8 +690,20 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   }
   api.post('/walks/:id/paw', auth, async (req, res) => {
     const w = await walkFor(req.params.id, req.user.id)
+    const had = await db.query('SELECT 1 AS x FROM paws WHERE walk_id = $1 AND user_id = $2', [w.id, req.user.id])
     await db.query('INSERT INTO paws (walk_id, user_id, created_at) VALUES ($1, $2, $3) ON CONFLICT (walk_id, user_id) DO NOTHING', [w.id, req.user.id, iso(Date.now())])
-    res.json(await pawState(w.id, req.user.id))
+    const state = await pawState(w.id, req.user.id)
+    // One notification per outing per person. More paws rewrite it instead of stacking up.
+    if (!had.rows[0]) {
+      const who = (await db.query('SELECT user_id FROM paws WHERE walk_id = $1', [w.id])).rows.map((r) => r.user_id)
+      const people = new Set([...(await kit.dogPeople(w.dog_id)), w.user_id])
+      people.delete(req.user.id)
+      for (const id of people) {
+        const others = who.filter((u) => u !== id && u !== req.user.id).length
+        await kit.notify(id, { kind: 'paw', dogId: w.dog_id, actorId: req.user.id, dedupeKey: `paw:${w.id}`, refresh: true, title: `${firstName(req.user.name)}${others ? ` and ${others} ${others === 1 ? 'other' : 'others'}` : ''} pawed ${w.dog_name}'s outing`, body: w.title, link: { to: 'outing', id: w.id, dog: w.dog_slug } })
+      }
+    }
+    res.json(state)
   })
   api.delete('/walks/:id/paw', auth, async (req, res) => {
     const w = await walkFor(req.params.id, req.user.id)
@@ -785,7 +809,10 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     res.set('X-Frame-Options', 'DENY')
     res.type('html')
   }
-  const kit = { api, app, db, auth, admin, isAdmin, isUnique, email, userFor, dogFor, memberItem, HttpError, bad, text, number, bool, object, sha, newToken, newId, iso, num, round, firstName, ageLabel, origin, ID_RE, TOKEN_RE, limiter, limited, readLimit, R, pageHeaders, photoUrl, parseRoute, thin, pawCounts, demoOnBoards, walkFor, walkPhotos, walkPhotoUrl, SLUG_RE, sniff }
+  const kit = { api, app, db, auth, admin, isAdmin, adminIds, isUnique, email, userFor, dogFor, memberItem, HttpError, bad, text, number, bool, object, sha, newToken, newId, iso, num, round, firstName, ageLabel, origin, ID_RE, TOKEN_RE, limiter, limited, readLimit, R, pageHeaders, photoUrl, parseRoute, thin, pawCounts, demoOnBoards, walkFor, walkPhotos, walkPhotoUrl, SLUG_RE, sniff }
+  // First, so every other module can call kit.notify.
+  registerNotifications(kit)
+  registerUsage(kit)
   registerCompete(kit)
   registerDocs(kit)
   registerHealth(kit)
