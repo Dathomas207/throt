@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { RouteThumb } from './Map.jsx'
+import { RouteThumb } from './RouteThumb.jsx'
 import { ROUTES, DOG as BISCUIT, PEOPLE, dayLabel, fmtTime, activityType } from './data.js'
 import { loadPhoto, peekPhoto } from './api.js'
 import { Portrait, hasPortrait, DemoPhoto, hasDemoPhoto } from './portraits.jsx'

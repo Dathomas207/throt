@@ -441,11 +441,11 @@ export async function fetchPlaces(bbox, opts = {}) {
     let places = null
     const direct = () => raceOverpass(opts.endpoints || OVERPASS_ENDPOINTS, buildQuery(b, group), fetchImpl, opts.signal, parseOverpass, group === 'parks' && !opts.slow ? FAST_TIMEOUT_MS : TIMEOUT_MS, opts.hedgeMs)
     if (opts.server !== false && group !== 'all' && geoServer !== false) {
-      // The server cache and Overpass itself run side by side: the cache gets a short head start, and whichever
+      // The server cache and Overpass itself run side by side from the start, and whichever
       // answers first is used, so a cold or failing cache never holds the list up.
       const viaCache = viaServer(group, b, fetchImpl, opts.signal).then((r) => parseOverpass({ elements: r.elements }))
       let timer = null
-      const late = new Promise((resolve, reject) => { timer = setTimeout(() => direct().then(resolve, reject), opts.headStartMs == null ? 1200 : opts.headStartMs) })
+      const late = new Promise((resolve, reject) => { timer = setTimeout(() => direct().then(resolve, reject), opts.headStartMs == null ? 0 : opts.headStartMs) })
       viaCache.catch(() => {}); late.catch(() => {})
       try { places = await Promise.any([viaCache, late]) } catch (e) { if (opts.signal && opts.signal.aborted) throw e; throw (e && e.errors && e.errors[1]) || e } finally { clearTimeout(timer) }
     }

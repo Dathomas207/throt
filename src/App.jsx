@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Ic, Paw, Av, DogAv, RangeOff, toAct } from './ui.jsx'
 import { PEOPLE, SEED, CONNECTIONS, ACTIVITY_TYPES, DEMO_DOGS, demoDogByName } from './data.js'
 import DemoDogSheet from './screens/DemoDogSheet.jsx'
@@ -6,14 +6,23 @@ import { api, probe, hasToken, setAuthLost, signOut, takeInviteFromUrl, pendingI
 import { fitJpeg, OUTING_PHOTO_MAX } from './photo.js'
 import FriendsScreen, { FriendConfirm, realFriendsModel, demoFriendsModel } from './screens/Friends.jsx'
 import Home from './screens/Home.jsx'
-import Explore from './screens/Explore.jsx'
-import Record from './screens/Record.jsx'
+// The map screens and the sheets load on demand, so the Today screen appears without the map library.
+function onDemand(load, fallback) { const C = lazy(load); return function OnDemand(props) { return <Suspense fallback={fallback}><C {...props} /></Suspense> } }
+// Fetched shortly after the first screen is up, so the first tap on a tab does not wait.
+const warmScreens = () => { for (const f of [loadExplore, loadRecord, loadDetail, loadCompete, loadSettings]) f().catch(() => {}) }
+const loadExplore = () => import('./screens/Explore.jsx')
+const loadRecord = () => import('./screens/Record.jsx')
+const loadDetail = () => import('./screens/Detail.jsx')
+const loadSettings = () => import('./screens/Settings.jsx')
+const loadCompete = () => import('./screens/Compete.jsx')
+const Explore = onDemand(loadExplore, <div className="scroll"><div className="card empty" role="status"><p>Loading</p></div></div>)
+const Record = onDemand(loadRecord, <div className="scroll"><div className="card empty" role="status"><p>Loading</p></div></div>)
 import People from './screens/People.jsx'
 import DogTab from './screens/DogTab.jsx'
-import Detail from './screens/Detail.jsx'
+const Detail = onDemand(loadDetail, null)
 import Welcome, { acceptPendingInvite } from './screens/Welcome.jsx'
-import Settings from './screens/Settings.jsx'
-import Compete from './screens/Compete.jsx'
+const Settings = onDemand(loadSettings, null)
+const Compete = onDemand(loadCompete, null)
 
 const PLAN = 'trot-plan'
 
@@ -29,6 +38,7 @@ const WALK_TYPES = ACTIVITY_TYPES.map((t) => t.id)
 //   welcome first load with an API: try the demo or create a dog's page.
 //   real    signed in, every screen driven by the API.
 export default function App() {
+  useEffect(() => { const t = setTimeout(warmScreens, 1200); return () => clearTimeout(t) }, [])
   const [phase, setPhase] = useState('boot')
   const [hasApi, setHasApi] = useState(false)
   const [me, setMe] = useState(null)
