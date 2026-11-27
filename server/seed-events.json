@@ -15,6 +15,19 @@
    "description": "Two AKC Bulldog specialty shows on one day, about 75 miles west of Charlotte."
   },
   {
+   "name": "World Cynosport Rally trial at Tova Training",
+   "kind": "rally",
+   "starts_on": "2026-11-28",
+   "ends_on": null,
+   "venue": "Tova Training",
+   "city": "Raymond",
+   "region": "NH",
+   "lat": 43.036,
+   "lng": -71.183,
+   "url": "https://rallydogs.com/events.cfm",
+   "description": "Rally titling trial listed on the World Cynosport Rally calendar."
+  },
+  {
    "name": "Worcester County Kennel Club all-breed show",
    "kind": "conformation",
    "starts_on": "2026-11-29",
@@ -145,6 +158,32 @@
    "description": "Dog themed holiday market at the Cisco Brewers Fenway beer garden."
   },
   {
+   "name": "Bumpy's Santa Paws Pup Photos",
+   "kind": "other",
+   "starts_on": "2026-12-05",
+   "ends_on": null,
+   "venue": "Westport Dog",
+   "city": "Westport",
+   "region": "MA",
+   "lat": 41.64,
+   "lng": -71.05,
+   "url": "https://www.eventbrite.com/e/bumpys-santa-paws-pup-photos-tickets-2004382006538",
+   "description": "Santa photos for dogs at a dog business on the South Coast, about 50 miles from Boston."
+  },
+  {
+   "name": "Holiday Reindog Parade",
+   "kind": "meetup",
+   "starts_on": "2026-12-05",
+   "ends_on": null,
+   "venue": "Main Street Mini Park",
+   "city": "Woonsocket",
+   "region": "RI",
+   "lat": 42.003,
+   "lng": -71.515,
+   "url": "https://www.eventbrite.com/e/holiday-reindog-parade-tickets-2005512523946",
+   "description": "Holiday costume parade for dogs in downtown Woonsocket."
+  },
+  {
    "name": "Holiday Paws Downtown Block Pawty",
    "kind": "meetup",
    "starts_on": "2026-12-06",
@@ -246,7 +285,124 @@
    "lat": 42.861,
    "lng": -71.626,
    "url": "https://my.pawprinttrials.com/pdf/2026-12-12_AK9C_premium.pdf?ver=2",
-   "description": "AKC agility trial indoors in southern New Hampshire, about 41 miles from Boston."
+   "description": "AKC agility trial indoors in southern New Hampshire, about 45 miles from Boston."
+  },
+  {
+   "name": "Canine New England UKI agility trial",
+   "kind": "agility",
+   "starts_on": "2026-12-12",
+   "ends_on": "2026-12-13",
+   "venue": "Canine New England",
+   "city": "Walpole",
+   "region": "MA",
+   "lat": 42.142,
+   "lng": -71.25,
+   "url": "https://mydogentry.com/content/2026/pdf/2026-12-12_CNEP_UKI_premium.pdf?ver=2",
+   "description": "Two day UKI agility trial at an indoor training facility."
+  },
+  {
+   "name": "Riverside K9 CPE agility trial",
+   "kind": "agility",
+   "starts_on": "2026-12-12",
+   "ends_on": "2026-12-13",
+   "venue": "Riverside K9",
+   "city": "Nashua",
+   "region": "NH",
+   "lat": 42.765,
+   "lng": -71.468,
+   "url": "https://mydogentry.com/content/2026/pdf/2026-12-12_RK9_CPE_premium.pdf?ver=1",
+   "description": "Two day CPE agility trial in southern New Hampshire."
+  },
+  {
+   "name": "TDAA agility trial in Hooksett",
+   "kind": "agility",
+   "starts_on": "2026-12-13",
+   "ends_on": null,
+   "venue": null,
+   "city": "Hooksett",
+   "region": "NH",
+   "lat": 43.097,
+   "lng": -71.465,
+   "url": "https://mydogentry.com/content/2026/pdf/2026-12-13_DAC_TA_premium.pdf?ver=1",
+   "description": "One day Teacup Dogs Agility Association trial for small dogs."
+  },
+  {
+   "name": "Canine New England AKC ACT agility test",
+   "kind": "agility",
+   "starts_on": "2026-12-19",
+   "ends_on": null,
+   "venue": "Canine New England",
+   "city": "Walpole",
+   "region": "MA",
+   "lat": 42.142,
+   "lng": -71.25,
+   "url": "https://mydogentry.com/content/2026/pdf/2026-12-19_CNEP_ACT_premium.pdf?ver=1",
+   "description": "AKC Agility Course Test, the entry level agility event for beginner dogs."
+  },
+  {
+   "name": "American K9 Country UKI Christmas Extravaganza",
+   "kind": "agility",
+   "starts_on": "2026-12-19",
+   "ends_on": "2026-12-20",
+   "venue": "American K9 Country",
+   "city": "Amherst",
+   "region": "NH",
+   "lat": 42.861,
+   "lng": -71.626,
+   "url": "https://mydogentry.com/content/2026/pdf/2026-12-19_AK9C_UKI_premium.pdf?ver=1",
+   "description": "Two day holiday themed UKI agility trial."
+  },
+  {
+   "name": "Canine New England AKC Fetch test",
+   "kind": "other",
+   "starts_on": "2026-12-20",
+   "ends_on": null,
+   "venue": "Canine New England",
+   "city": "Walpole",
+   "region": "MA",
+   "lat": 42.142,
+   "lng": -71.25,
+   "url": "https://mydogentry.com/content/2026/pdf/2026-12-20_CNEP_Fetch_premium.pdf?ver=1",
+   "description": "AKC Fetch title test, a retrieving event open to all breeds."
+  },
+  {
+   "name": "World Cynosport Rally trial at Waggin' Tails",
+   "kind": "rally",
+   "starts_on": "2026-12-20",
+   "ends_on": null,
+   "venue": "Waggin' Tails Dog Training Center",
+   "city": "Westford",
+   "region": "MA",
+   "lat": 42.579,
+   "lng": -71.438,
+   "url": "https://rallydogs.com/events.cfm",
+   "description": "Rally titling trial listed on the World Cynosport Rally calendar."
+  },
+  {
+   "name": "All Dogs Gym CPE agility trial",
+   "kind": "agility",
+   "starts_on": "2026-12-26",
+   "ends_on": "2026-12-27",
+   "venue": "All Dogs Gym",
+   "city": "Manchester",
+   "region": "NH",
+   "lat": 42.995,
+   "lng": -71.455,
+   "url": "https://mydogentry.com/content/2026/pdf/2026-12-26_ADA_CPE_premium.pdf?ver=1",
+   "description": "Two day CPE agility trial indoors."
+  },
+  {
+   "name": "World Cynosport Rally trial at Tova Training",
+   "kind": "rally",
+   "starts_on": "2026-12-26",
+   "ends_on": null,
+   "venue": "Tova Training",
+   "city": "Raymond",
+   "region": "NH",
+   "lat": 43.036,
+   "lng": -71.183,
+   "url": "https://rallydogs.com/events.cfm",
+   "description": "Rally titling trial listed on the World Cynosport Rally calendar."
   },
   {
    "name": "Park-9 New Year's Early Eve Bash",
@@ -285,7 +441,7 @@
    "lat": 42.861,
    "lng": -71.626,
    "url": "https://my.pawprinttrials.com/pdf/2027-01-09_AK9C_premium.pdf?ver=2",
-   "description": "AKC agility trial indoors in southern New Hampshire, about 41 miles from Boston."
+   "description": "AKC agility trial indoors in southern New Hampshire, about 45 miles from Boston."
   },
   {
    "name": "Souhegan Kennel Club agility trial",
@@ -298,7 +454,20 @@
    "lat": 42.861,
    "lng": -71.626,
    "url": "https://my.pawprinttrials.com/pdf/2027-01-15_AK9C_premium.pdf?ver=3",
-   "description": "Three day AKC agility trial indoors in southern New Hampshire, about 41 miles from Boston."
+   "description": "Three day AKC agility trial indoors in southern New Hampshire, about 45 miles from Boston."
+  },
+  {
+   "name": "All Dogs Gym CPE agility trial",
+   "kind": "agility",
+   "starts_on": "2027-01-16",
+   "ends_on": "2027-01-17",
+   "venue": "All Dogs Gym",
+   "city": "Manchester",
+   "region": "NH",
+   "lat": 42.995,
+   "lng": -71.455,
+   "url": "https://mydogentry.com/content/2027/pdf/2027-01-16_ADA_CPE_premium.pdf?ver=1",
+   "description": "Two day CPE agility trial indoors."
   },
   {
    "name": "Park-9 Puppy Yoga with Great Dog Rescue New England",
@@ -314,6 +483,19 @@
    "description": "Morning yoga class with adoptable puppies from Great Dog Rescue New England at the dog bar."
   },
   {
+   "name": "American K9 Country UKI agility trial",
+   "kind": "agility",
+   "starts_on": "2027-01-22",
+   "ends_on": null,
+   "venue": "American K9 Country",
+   "city": "Amherst",
+   "region": "NH",
+   "lat": 42.861,
+   "lng": -71.626,
+   "url": "https://mydogentry.com/content/2027/pdf/2027-01-22_AK9C_UKI_premium.pdf?ver=1",
+   "description": "One day UKI agility trial."
+  },
+  {
    "name": "Doggy Open Play at Fenway Bark Dog Resort",
    "kind": "meetup",
    "starts_on": "2027-01-23",
@@ -327,6 +509,19 @@
    "description": "Open play session for dogs at a boarding and daycare resort, about 32 miles west of Boston. Registration is required."
   },
   {
+   "name": "PAWS USDAA agility trial",
+   "kind": "agility",
+   "starts_on": "2027-01-23",
+   "ends_on": "2027-01-24",
+   "venue": "American K9 Country",
+   "city": "Amherst",
+   "region": "NH",
+   "lat": 42.861,
+   "lng": -71.626,
+   "url": "https://mydogentry.com/content/2027/pdf/2027-01-23_PAWS_USDAA_premium.pdf?ver=1",
+   "description": "Two day USDAA agility trial hosted by Playing Agility With Style."
+  },
+  {
    "name": "Westminster Kennel Club Dog Show",
    "kind": "conformation",
    "starts_on": "2027-01-30",
@@ -338,6 +533,19 @@
    "lng": -74.002,
    "url": "https://www.westminsterkennelclub.org/",
    "description": "The 151st show. Daytime breed judging and Masters Agility at the Javits Center, group judging and Best in Show at Madison Square Garden."
+  },
+  {
+   "name": "Riverside K9 CPE agility trial",
+   "kind": "agility",
+   "starts_on": "2027-01-30",
+   "ends_on": "2027-01-31",
+   "venue": "Riverside K9",
+   "city": "Nashua",
+   "region": "NH",
+   "lat": 42.765,
+   "lng": -71.468,
+   "url": "https://mydogentry.com/content/2027/pdf/2027-01-30_RK9_CPE_premium.pdf?ver=1",
+   "description": "Two day CPE agility trial in southern New Hampshire."
   },
   {
    "name": "Great Barrington Kennel Club show",
@@ -379,6 +587,19 @@
    "description": "AKC obedience trials on both days at the club's building south of Charlotte."
   },
   {
+   "name": "American K9 Country UKI agility trial",
+   "kind": "agility",
+   "starts_on": "2027-02-12",
+   "ends_on": null,
+   "venue": "American K9 Country",
+   "city": "Amherst",
+   "region": "NH",
+   "lat": 42.861,
+   "lng": -71.626,
+   "url": "https://mydogentry.com/content/2027/pdf/2027-02-12_AK9C_UKI_premium.pdf?ver=1",
+   "description": "UKI agility trial starting on this date; check the premium list for the full schedule."
+  },
+  {
    "name": "Labrador Retriever Club of the Piedmont specialty shows",
    "kind": "conformation",
    "starts_on": "2027-02-13",
@@ -390,6 +611,45 @@
    "lng": -81.03,
    "url": "https://showdogcentral.com/events/2027292005-labrador-retriever-club-of-the-piedmont",
    "description": "AKC Labrador Retriever specialty with obedience, rally, sweepstakes, junior showmanship and beginner puppy on both days."
+  },
+  {
+   "name": "PAWS USDAA agility trial",
+   "kind": "agility",
+   "starts_on": "2027-02-13",
+   "ends_on": "2027-02-14",
+   "venue": "American K9 Country",
+   "city": "Amherst",
+   "region": "NH",
+   "lat": 42.861,
+   "lng": -71.626,
+   "url": "https://mydogentry.com/content/2027/pdf/2027-02-13_PAWS_USDAA_premium.pdf?ver=1",
+   "description": "Two day USDAA agility trial hosted by Playing Agility With Style."
+  },
+  {
+   "name": "All Dogs Gym CPE agility trial",
+   "kind": "agility",
+   "starts_on": "2027-02-13",
+   "ends_on": "2027-02-14",
+   "venue": "All Dogs Gym",
+   "city": "Manchester",
+   "region": "NH",
+   "lat": 42.995,
+   "lng": -71.455,
+   "url": "https://mydogentry.com/content/2027/pdf/2027-02-13_ADA_CPE_premium.pdf?ver=1",
+   "description": "Two day CPE agility trial indoors."
+  },
+  {
+   "name": "Riverside K9 CPE agility trial",
+   "kind": "agility",
+   "starts_on": "2027-02-27",
+   "ends_on": "2027-02-28",
+   "venue": "Riverside K9",
+   "city": "Nashua",
+   "region": "NH",
+   "lat": 42.765,
+   "lng": -71.468,
+   "url": "https://mydogentry.com/content/2027/pdf/2027-02-27_RK9_CPE_premium.pdf?ver=1",
+   "description": "Two day CPE agility trial in southern New Hampshire."
   },
   {
    "name": "Forsyth Kennel Club shows",
@@ -431,6 +691,32 @@
    "description": "Five days of all-breed shows hosted in turn by the Cary, Alamance, Durham, Raleigh and Fayetteville kennel clubs."
   },
   {
+   "name": "American K9 Country UKI agility trial",
+   "kind": "agility",
+   "starts_on": "2027-03-19",
+   "ends_on": null,
+   "venue": "American K9 Country",
+   "city": "Amherst",
+   "region": "NH",
+   "lat": 42.861,
+   "lng": -71.626,
+   "url": "https://mydogentry.com/content/2027/pdf/2027-03-19_AK9C_UKI_premium.pdf?ver=1",
+   "description": "One day UKI agility trial."
+  },
+  {
+   "name": "All Dogs Gym CPE agility trial",
+   "kind": "agility",
+   "starts_on": "2027-04-10",
+   "ends_on": "2027-04-11",
+   "venue": "All Dogs Gym",
+   "city": "Manchester",
+   "region": "NH",
+   "lat": 42.995,
+   "lng": -71.455,
+   "url": "https://mydogentry.com/public/trials",
+   "description": "Two day CPE agility trial indoors. The premium list was not yet posted when this was compiled."
+  },
+  {
    "name": "Springfield and South Windsor Kennel Club shows",
    "kind": "conformation",
    "starts_on": "2027-04-24",
@@ -470,6 +756,19 @@
    "description": "Rally on Saturday and obedience on Sunday."
   },
   {
+   "name": "All Dogs Gym CPE agility trial",
+   "kind": "agility",
+   "starts_on": "2027-05-22",
+   "ends_on": "2027-05-23",
+   "venue": "All Dogs Gym",
+   "city": "Manchester",
+   "region": "NH",
+   "lat": 42.995,
+   "lng": -71.455,
+   "url": "https://mydogentry.com/public/trials",
+   "description": "Two day CPE agility trial indoors. The premium list was not yet posted when this was compiled."
+  },
+  {
    "name": "New England Sporting Group Association and New England Terrier Club shows",
    "kind": "conformation",
    "starts_on": "2027-06-04",
@@ -481,6 +780,19 @@
    "lng": -71.328,
    "url": "https://infodog.com/show/state_show_details.htm?state=ma",
    "description": "Group shows with junior showmanship and beginner puppy."
+  },
+  {
+   "name": "Ladies' Dog Club shows",
+   "kind": "conformation",
+   "starts_on": "2027-06-05",
+   "ends_on": "2027-06-06",
+   "venue": "Crackerbarrel Fairgrounds, 54 Emerald Street",
+   "city": "Wrentham",
+   "region": "MA",
+   "lat": 42.067,
+   "lng": -71.328,
+   "url": "https://showdogcentral.com/events/2027161801-ladies-dog-club-inc",
+   "description": "Outdoor AKC show weekend with beginner puppy and junior showmanship events listed for both days. It follows the sporting and terrier specialty shows at the same grounds."
   },
   {
    "name": "Columbia Kennel Club shows",
@@ -546,6 +858,19 @@
    "lng": -71.683,
    "url": "https://www.eventbrite.com/e/doggy-open-play-howl-o-ween-party-registration-2003580343743",
    "description": "Open play session and Halloween party for dogs at the resort. Registration is required."
+  },
+  {
+   "name": "Doggy Open Play and Ugly Christmas Sweater Party",
+   "kind": "meetup",
+   "starts_on": "2027-12-11",
+   "ends_on": null,
+   "venue": "Fenway Bark Dog Resort",
+   "city": "Clinton",
+   "region": "MA",
+   "lat": 42.417,
+   "lng": -71.683,
+   "url": "https://www.eventbrite.com/e/doggy-open-play-ugly-christmas-sweater-party-registration-2003583700784",
+   "description": "Open play session and holiday sweater party for dogs at the resort. Registration is required."
   }
  ]
 }

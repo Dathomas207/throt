@@ -2178,6 +2178,328 @@
    "address": "35 Stanhope Street, Boston, MA",
    "note": "Brunch restaurant listed as welcoming dogs at its outdoor seating.",
    "source_url": "https://bostonmagazine.com/?p=2304838"
+  },
+  {
+   "name": "Angell Animal Medical Center",
+   "category": "vet",
+   "address": "350 South Huntington Avenue, Boston, MA 02130",
+   "note": "MSPCA-Angell hospital in Jamaica Plain with a 24/7 emergency service, specialty and primary care, plus boarding and grooming on site.",
+   "source_url": "https://www.mspca.org/veterinarycare/"
+  },
+  {
+   "name": "MSPCA-Angell West",
+   "category": "vet",
+   "address": "293 Second Avenue, Waltham, MA 02451",
+   "note": "MSPCA-Angell hospital in Waltham with a 24/7 emergency service, urgent care, surgery and primary care.",
+   "source_url": "https://www.mspca.org/veterinarycare/"
+  },
+  {
+   "name": "BluePearl Pet Hospital Charlestown",
+   "category": "vet",
+   "address": "56 Roland Street, Boston, MA 02129",
+   "note": "Emergency and specialty hospital listing 24/7 emergency care, with specialty visits by appointment.",
+   "source_url": "https://bluepearlvet.com/hospital/charlestown-ma/specialties-services/emergency-medicine/"
+  },
+  {
+   "name": "BluePearl Pet Hospital Waltham",
+   "category": "vet",
+   "address": "180 Bear Hill Road, Waltham, MA 02451",
+   "note": "Emergency and specialty hospital listed by the City of Cambridge among 24 hour emergency options.",
+   "source_url": "https://www.cambridgema.gov/departments/animalcommission/veterinarycarepetresources"
+  },
+  {
+   "name": "Veterinary Emergency Group Boston",
+   "category": "vet",
+   "address": "316 Stuart Street, Boston, MA 02116",
+   "note": "Emergency-only vet in Back Bay, listed as open 24/7.",
+   "source_url": "https://www.veg.com/locations/massachusetts"
+  },
+  {
+   "name": "Veterinary Emergency Group Cambridge",
+   "category": "vet",
+   "address": "357 Fresh Pond Parkway, Cambridge, MA 02138",
+   "note": "Emergency-only vet near Fresh Pond, listed as open 24/7.",
+   "source_url": "https://www.veg.com/locations/massachusetts"
+  },
+  {
+   "name": "Veterinary Emergency Group Newton",
+   "category": "vet",
+   "address": "165 Needham Street, Newton, MA 02464",
+   "note": "Emergency-only vet in Newton Highlands, listed as open 24/7.",
+   "source_url": "https://www.veg.com/locations/massachusetts"
+  },
+  {
+   "name": "Veterinary Emergency Group Peabody",
+   "category": "vet",
+   "address": "1 Sylvan Street, Peabody, MA 01960",
+   "note": "Emergency-only vet on the North Shore, listed as open 24/7.",
+   "source_url": "https://www.veg.com/locations/massachusetts"
+  },
+  {
+   "name": "Massachusetts Veterinary Referral Hospital",
+   "category": "vet",
+   "address": "20 Cabot Road, Woburn, MA 01801",
+   "note": "Emergency and specialty referral hospital north of Boston. Call ahead to confirm it is accepting patients.",
+   "source_url": "https://www.ethosvet.com/?p=17178"
+  },
+  {
+   "name": "Tufts Veterinary Emergency Treatment and Specialties",
+   "category": "vet",
+   "address": "525 South Street, Walpole, MA 02081",
+   "note": "Emergency and specialty hospital south of Boston run with Tufts. Call ahead to confirm it is accepting patients.",
+   "source_url": "https://www.ethosvet.com/?p=17178"
+  },
+  {
+   "name": "Tufts Foster Hospital for Small Animals",
+   "category": "vet",
+   "address": "55 Willard Street, North Grafton, MA 01536",
+   "note": "Emergency and specialty teaching hospital at the Tufts veterinary school in Grafton.",
+   "source_url": "https://www.ethosvet.com/?p=17178"
+  },
+  {
+   "name": "Veterinary Urgent Care by Ethos Station Landing",
+   "category": "vet",
+   "address": "25 Revere Beach Parkway, Medford, MA 02155",
+   "note": "Urgent care clinic for problems that cannot wait for a regular vet but are not full emergencies.",
+   "source_url": "https://www.ethosvet.com/?p=17178"
+  },
+  {
+   "name": "PetMedic Urgent Care Vet Clinic",
+   "category": "vet",
+   "address": "347 Main Street, Watertown, MA 02472",
+   "note": "Urgent care vet clinic for same-day problems that are not full emergencies.",
+   "source_url": "https://www.ethosvet.com/?p=17178"
+  },
+  {
+   "name": "Merwin Memorial Free Clinic for Animals",
+   "category": "vet",
+   "address": "542 Cambridge Street, Boston, MA 02134",
+   "note": "Long-running low-cost clinic in Allston, listed by the City of Cambridge as a low-cost care option.",
+   "source_url": "https://www.cambridgema.gov/departments/animalcommission/veterinarycarepetresources"
+  },
+  {
+   "name": "Animal Rescue League of Boston Dedham campus",
+   "category": "other",
+   "address": "10 Anna's Place, Dedham, MA",
+   "note": "Animal Rescue League of Boston campus off Pine Street, used for adoption and community events.",
+   "source_url": "https://www.arlboston.org/events/category/dog-friendly/"
+  },
+  {
+   "name": "The Fish & Bone",
+   "category": "shop",
+   "address": "217 Newbury Street, Boston, MA 02116",
+   "note": "Back Bay pet shop with natural food, treats, toys, leashes and collars for dogs and cats.",
+   "source_url": "https://welovedoodles.com/pet-stores-in-boston/"
+  },
+  {
+   "name": "Pawsh Dog Boutique",
+   "category": "shop",
+   "address": "31 Gloucester Street, Boston, MA 02115",
+   "note": "Back Bay dog boutique and grooming salon selling natural food, treats, toys and apparel.",
+   "source_url": "https://welovedoodles.com/pet-stores-in-boston/"
+  },
+  {
+   "name": "Polkadog Bakery South End",
+   "category": "shop",
+   "address": "256 Shawmut Avenue, Boston, MA 02118",
+   "note": "Dog bakery known for handmade treats, with toys and accessories.",
+   "source_url": "https://vetster.com/en-us/city/boston/top-locally-owned-pet-shops-in-boston"
+  },
+  {
+   "name": "Polkadog Bakery Seaport",
+   "category": "shop",
+   "address": "119 Seaport Boulevard, Boston, MA 02210",
+   "note": "Seaport branch of the local dog bakery, with natural treats, toys and grooming accessories.",
+   "source_url": "https://welovedoodles.com/pet-stores-in-boston/"
+  },
+  {
+   "name": "Hungry Tails",
+   "category": "shop",
+   "address": "147 Maverick Street, Boston, MA 02128",
+   "note": "East Boston pet shop with healthy food, natural treats and toys from small suppliers.",
+   "source_url": "https://welovedoodles.com/pet-stores-in-boston/"
+  },
+  {
+   "name": "The Pooped Pooch Pet Supply",
+   "category": "shop",
+   "address": "2284 Dorchester Avenue, Boston, MA 02124",
+   "note": "Locally owned Dorchester shop with natural pet supplies; the business also offers dog walking and daycare.",
+   "source_url": "https://welovedoodles.com/pet-stores-in-boston/"
+  },
+  {
+   "name": "Paws on Charles",
+   "category": "shop",
+   "address": "123 Charles Street, Boston, MA 02114",
+   "note": "Beacon Hill pet shop with leashes, collars, toys, food and treats, plus training classes.",
+   "source_url": "https://welovedoodles.com/pet-stores-in-boston/"
+  },
+  {
+   "name": "D'Tails Pet Boutique",
+   "category": "shop",
+   "address": "73 Berkeley Street, Boston, MA 02116",
+   "note": "South End pet boutique selling food, toys and treats, with dog walking, grooming and playgroups.",
+   "source_url": "https://vetster.com/en-us/city/boston/top-locally-owned-pet-shops-in-boston"
+  },
+  {
+   "name": "Tails",
+   "category": "care",
+   "address": "385 Centre Street, Boston, MA 02130",
+   "note": "Family-owned dog daycare in Jamaica Plain with indoor and outdoor play areas.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-boston/"
+  },
+  {
+   "name": "RiverDog Daycare Somerville",
+   "category": "care",
+   "address": "321 Somerville Avenue, Somerville, MA 02143",
+   "note": "Dog daycare that also offers boarding and grooming.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-boston/"
+  },
+  {
+   "name": "RiverDog Daycare Melrose",
+   "category": "care",
+   "address": "20 Tremont Street, Melrose, MA 02176",
+   "note": "Dog daycare that also offers boarding and grooming.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-boston/"
+  },
+  {
+   "name": "RiverDog Daycare Malden",
+   "category": "care",
+   "address": "297 Highland Avenue, Malden, MA 02148",
+   "note": "Dog daycare that also offers boarding and grooming.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-boston/"
+  },
+  {
+   "name": "The Pooped Pooch daycare",
+   "category": "care",
+   "address": "33 Norwood Street, Boston, MA 02122",
+   "note": "Dorchester dog daycare with supervised play, walks and half-day sessions.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-boston/"
+  },
+  {
+   "name": "Pet Pals",
+   "category": "care",
+   "address": "278 Salem Street, Woburn, MA 01801",
+   "note": "Dog daycare with a large private outdoor dog park, indoor areas and turf playgroups.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-boston/"
+  },
+  {
+   "name": "The Modern Dog Boston",
+   "category": "care",
+   "address": "550 Victory Road, Quincy, MA 02171",
+   "note": "Small-capacity dog daycare at Marina Bay with monitored play and leashed walks.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-boston/"
+  },
+  {
+   "name": "GoodFellas Doggy Daycare",
+   "category": "care",
+   "address": "20 Thresher Street, Saugus, MA 01906",
+   "note": "Family-owned dog daycare with structured activities, obedience training and a swimming pool.",
+   "source_url": "https://welovedoodles.com/dog-daycares-in-boston/"
+  },
+  {
+   "name": "Seaside K9s",
+   "category": "care",
+   "address": "405 Sea Street, Quincy, MA",
+   "note": "Dog daycare and overnight boarding with grooming for dogs and cats.",
+   "source_url": "https://lantern.llc/boston-area/pet-services/pet-boarding"
+  },
+  {
+   "name": "Red Dog Pet Resort & Spa at North Station",
+   "category": "care",
+   "address": "109 Canal Street, Boston, MA",
+   "note": "Dog boarding, daycare, grooming and spa near North Station.",
+   "source_url": "https://lantern.llc/boston-area/pet-services/pet-boarding"
+  },
+  {
+   "name": "Best Friends Pet Hotel Sudbury",
+   "category": "care",
+   "address": "150 Boston Post Road, Sudbury, MA",
+   "note": "Boarding and daycare for dogs and other pets, with puppy play groups and grooming.",
+   "source_url": "https://lantern.llc/boston-area/pet-services/pet-boarding"
+  },
+  {
+   "name": "Arnold Arboretum",
+   "category": "park",
+   "address": "125 Arborway, Boston, MA 02130",
+   "note": "Harvard tree collection in Jamaica Plain with a long paved loop and a hilltop view. Dogs must be on leash.",
+   "source_url": "https://www.cbsnews.com/boston/news/best-dog-friendly-hiking-trails-near-boston"
+  },
+  {
+   "name": "Blue Hills Reservation",
+   "category": "park",
+   "address": "695 Hillside Street, Milton, MA 02186",
+   "note": "Large DCR reservation with many miles of trails up to Great Blue Hill. Dogs are listed as leashed at all times and not allowed on the pond beaches.",
+   "source_url": "https://www.cbsnews.com/boston/news/best-dog-friendly-hiking-trails-near-boston"
+  },
+  {
+   "name": "Hammond Pond Reservation",
+   "category": "park",
+   "address": "Hammond Pond Parkway, Newton, MA 02467",
+   "note": "Wooded DCR trails in Chestnut Hill with boulders and a path to Lost Pond.",
+   "source_url": "https://www.cbsnews.com/boston/news/best-dog-friendly-hiking-trails-near-boston"
+  },
+  {
+   "name": "Squantum Point Park",
+   "category": "park",
+   "address": "1 Victory Road, Quincy, MA 02171",
+   "note": "Waterfront DCR park at the start of the Quincy RiverWalk, popular with dog walkers. One guide says dogs should be leashed here even though many people let them swim.",
+   "source_url": "https://www.cbsnews.com/boston/news/best-dog-friendly-hiking-trails-near-boston"
+  },
+  {
+   "name": "Stony Brook Reservation",
+   "category": "park",
+   "address": "Turtle Pond Parkway, Boston, MA 02136",
+   "note": "DCR woodland in Hyde Park and West Roxbury with about 12 miles of trails around Turtle Pond. Leashes are required.",
+   "source_url": "https://www.cbsnews.com/boston/news/boston-areas-best-dog-walking-trails"
+  },
+  {
+   "name": "Neponset River Reservation",
+   "category": "park",
+   "address": "Truman Parkway, Milton, MA 02186",
+   "note": "DCR river reservation with the paved Neponset River Greenway on a former railway. Dogs must be leashed.",
+   "source_url": "https://www.cbsnews.com/boston/news/boston-areas-best-dog-walking-trails"
+  },
+  {
+   "name": "Beaver Brook Reservation",
+   "category": "park",
+   "address": "66 Mill Street, Belmont, MA 02478",
+   "note": "DCR reservation with ponds and paths where pets are allowed on leash.",
+   "source_url": "https://www.cbsnews.com/boston/news/boston-areas-best-dog-walking-trails"
+  },
+  {
+   "name": "Middlesex Fells Reservation",
+   "category": "park",
+   "address": "4 Woodland Road, Stoneham, MA 02180",
+   "note": "DCR reservation with trailheads along Woodland Road and South Border Road. Dogs must be leashed everywhere except the Sheepfold off-leash meadow.",
+   "source_url": "https://www.mass.gov/locations/middlesex-fells-reservation"
+  },
+  {
+   "name": "Charles River Esplanade",
+   "category": "park",
+   "address": "Storrow Drive, Boston, MA 02116",
+   "note": "Three mile riverside park along the Charles in Back Bay. Dogs must be on leash.",
+   "source_url": "https://www.rover.com/blog/top-10-boston-dog-parks"
+  },
+  {
+   "name": "Back Bay Fens",
+   "category": "park",
+   "address": "Park Drive, Boston, MA 02215",
+   "note": "Emerald Necklace park near Fenway where leashed dogs are allowed year round. There is no off-leash area.",
+   "source_url": "https://www.rover.com/blog/top-10-boston-dog-parks"
+  },
+  {
+   "name": "A Street Park dog park",
+   "category": "park",
+   "address": "135 A Street, Boston, MA",
+   "note": "Small dog park in South Boston listed by Meet Boston among the city dog parks.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "Night Shift Brewing Lovejoy Wharf",
+   "category": "bar",
+   "address": "1 Lovejoy Wharf, Boston, MA 02114",
+   "note": "Brewery taproom near North Station described in a 2025 guide as a place where dogs can sit and relax. The brewery site does not state a dog policy for this location, so ask first.",
+   "source_url": "https://www.thefarmersdog.com/digest/?p=43228"
   }
  ]
 }
