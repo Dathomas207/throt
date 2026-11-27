@@ -17,6 +17,7 @@ import { registerNotifications } from './routesNotifications.js'
 import { registerWeather } from './routesWeather.js'
 import { registerSavedRoutes } from './routesSavedRoutes.js'
 import { registerTraining } from './routesTraining.js'
+import { registerLive } from './routesLive.js'
 
 import { geoRouter } from './geo.js'
 
@@ -199,7 +200,7 @@ function limiter({ windowMs, max }) {
   }
 }
 
-export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = {}, demoOnBoards = process.env.DEMO_ON_LEADERBOARDS !== '0', adminEmails = process.env.ADMIN_EMAILS } = {}) {
+export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = {}, demoOnBoards = process.env.DEMO_ON_LEADERBOARDS !== '0', adminEmails = process.env.ADMIN_EMAILS, liveNow } = {}) {
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', trustProxy)
@@ -660,6 +661,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
       [id, dog.id, req.user.id, type, title, note, place, round(miles, 100), round(minutes, 100), b.sniffs == null ? 0 : sniffs, iso(started), pts ? JSON.stringify(pts) : null, iso(now), avgSpeed == null ? null : round(avgSpeed, 10), maxSpeed == null ? null : round(maxSpeed, 10), sprints, movingMinutes == null ? null : round(movingMinutes, 100), runMinutes == null ? null : round(runMinutes, 100)])
     // Started from one of this person's saved routes: the outing is linked to it and the route counts one more walk.
     if (b.routeId) await kit.linkWalkToRoute({ walkId: id, routeId: b.routeId, userId: req.user.id, startedAt: iso(started) })
+    // A saved outing ends live sharing for the person who saved it (routesLive.js).
+    await kit.liveStop(req.user.id)
     const { rows } = await db.query(`SELECT ${WALK_COLS} FROM walks w JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id WHERE w.id = $1`, [id])
     // The owner and family hear about it when a walker or daycare logs an outing.
     if (role === 'walker' || role === 'daycare') await kit.notifyDogPeople(dog.id, { kind: 'care_walk_logged', actorId: req.user.id, title: `${role === 'daycare' ? req.user.name : firstName(req.user.name)} logged ${type === 'Walk' ? 'a walk' : type === 'Daycare' ? 'a daycare day' : `an outing (${type})`} for ${dog.name}`, body: `${title} · ${Math.round(minutes)} min${miles > 0 ? ` · ${round(miles, 10)} mi` : ''}`, link: { to: 'outing', id, dog: dog.slug } })
@@ -835,6 +838,9 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   registerWeather(kit)
   registerSavedRoutes(kit)
   registerTraining(kit)
+  // Live walks for mutual friends. `liveNow` lets the tests move the clock.
+  kit.WALK_TYPES = WALK_TYPES
+  registerLive(kit, liveNow ? { now: liveNow } : {})
   // Read-only lookups, no sign-in. They sit on the API router, so only the per-address read limit applies.
   api.use('/geo', geoRouter(db))
 

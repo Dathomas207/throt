@@ -4,11 +4,13 @@ import { Ic, Av } from '../ui.jsx'
 import { ROUTES, haversine } from '../data.js'
 import { api, hasToken } from '../api.js'
 import { fetchPlaces, readPlaceCache, fetchTrails, samplePlaces, bboxAround, bboxKey, snapBbox, areaSummary, mergePlaces, normalizeCommunity, communityLine, validateNewPlace, perfMark, CATEGORIES, COMMUNITY_KIND, DOG_POLICY, AMENITY, REPORT_REASONS, CLAIM_ROLE, claimRolesFor, maintainedLine, verifiedTag, checkedLine, googleMapsUrl } from '../osm.js'
-import { routeLoop, locate, setHandoff, fmtDist, walkMinutes, peekDemoRoute, resolveDemoRoute, useHereLoop, locationHelp } from '../routing.js'
+import { routeLoop, routeAB, locateNow, locate, setHandoff, fmtDist, walkMinutes, peekDemoRoute, resolveDemoRoute, useHereLoop, locationHelp } from '../routing.js'
 import { useRoutes, routeActions, setBuilderIntent } from '../routeStore.js'
 import { searchPlaces, searchMode, MIN_QUERY } from '../search.js'
 import '../maps.css'
 import { track } from '../usage.js'
+import { useLiveFriends, takeLiveIntent, LiveList, LiveSheet } from '../liveHooks.jsx'
+import { POLL_MS, isStale } from '../live.js'
 
 // Water and Other have no chip of their own. They show under All.
 const CHIPS = CATEGORIES.filter((c) => c.id !== 'water' && c.id !== 'other')
@@ -22,8 +24,8 @@ const LOCATE_MOVE_MS = 2000 // a location that arrives later than this only adds
 const MOVED_FRACTION = 0.3 // how far the view has to move, as a share of the screen, before "Search this area" is offered
 const HOME = [35.186, -80.812] // Eastover, Charlotte: the launch area, where the listed places are
 const VIEW_KEY = 'trot-view-v2', LAYERS_KEY = 'trot-layers-v2'
-const LAYER_DEFAULTS = { places: true, trails: false, heat: false, community: true, saved: false }
-const LAYER_LABELS = [['places', 'Places'], ['trails', 'Trails'], ['heat', 'Heatmap'], ['community', 'Community places'], ['saved', 'Saved routes']]
+const LAYER_DEFAULTS = { places: true, trails: false, heat: false, community: true, saved: false, friends: true }
+const LAYER_LABELS = [['places', 'Places'], ['trails', 'Trails'], ['heat', 'Heatmap'], ['community', 'Community places'], ['saved', 'Saved routes'], ['friends', 'Friends out now']]
 const SNAPS = ['peek', 'half', 'full']
 const NO_GROUP = { status: 'idle', places: [], updating: false }
 const samePt = (a, b) => a && b && a[0] === b[0] && a[1] === b[1]
@@ -117,6 +119,12 @@ export default function Explore({ setTab, setToast, dogName, dogKey, account, fo
   const [detail, setDetail] = useState(null) // { type: 'place' | 'trail' | 'saved' | 'here', id }
   const [loop, setLoop] = useState(null) // loop from the open place
   const here = useHereLoop() // loop from the user's own location
+  // Friends out on a shared walk. Signed in this asks the server every 20 seconds, and only while this screen is
+  // mounted and the document is visible. In the demo it is two sample friends and no request is made.
+  const liveList = useLiveFriends({ on: !!layers.friends, demo: !account, dogName: dn, everyMs: POLL_MS })
+  const [walkTo, setWalkTo] = useState(null) // "Walk to them": { slug, status, route, help }
+  const liveWant = useRef(null), walkReq = useRef(0)
+  if (liveWant.current === null) liveWant.current = takeLiveIntent()
   const [add, setAdd] = useState(null) // add a community place: { at, name, category, note, busy, error, tried }
   // Saved routes: the account's when signed in, this device's in the demo. The builder is its own screen.
   const saved = useRoutes(!!account).routes
@@ -243,8 +251,41 @@ export default function Explore({ setTab, setToast, dogName, dogKey, account, fo
   const trail = detail && detail.type === 'trail' ? trailList.find((x) => x.id === detail.id) || null : null
   const savedOne = detail && detail.type === 'saved' ? saved.find((x) => x.id === detail.id) || null : null
   const hereOn = !!(detail && detail.type === 'here')
+  const friend = detail && detail.type === 'friend' && layers.friends ? liveList.find((x) => x.slug === detail.id) || null : null
+  const friendPins = useMemo(() => liveList.filter((f) => f.position).map((f) => ({ id: f.slug, at: [f.position.lat, f.position.lng], name: f.name, photo: f.photo, stale: isStale(f) })), [liveList])
+  const friendWalk = friend && walkTo && walkTo.slug === friend.slug ? walkTo : null
 
-  const closeDetail = () => { clearLoop(); here.clear(); setDetail(null); setDel(null); setAct(null) }
+  const closeDetail = () => { clearLoop(); here.clear(); setDetail(null); setDel(null); setAct(null); walkReq.current++; setWalkTo(null) }
+  // ---- friends out now ----
+  const openFriend = (slug) => { clearLoop(); here.clear(); setAct(null); setHi(null); walkReq.current++; setWalkTo(null); setDetail({ type: 'friend', id: slug }); if (snap === 'peek') setSnap('half'); track('live_friend_opened') }
+  const pickFriend = (f) => { if (f.position) goTo([f.position.lat, f.position.lng], Math.max(15, (bounds.current && bounds.current.zoom) || 15)); openFriend(f.slug) }
+  // Arriving from the Today line: the layer comes on and the map goes to the first friend who has a position.
+  useEffect(() => {
+    if (!liveWant.current) return
+    if (!layers.friends) { setLayer('friends', true); return }
+    const f = liveList.find((x) => x.position)
+    if (!f && !liveList.length) return
+    liveWant.current = false
+    touched.current = true
+    if (f) pickFriend(f); else if (snap === 'peek') setSnap('half')
+  }, [liveList, layers.friends])
+  // A walking route from where you are to where the friend was when you asked. It is not followed as they move.
+  const walkToFriend = async (f) => {
+    if (!f || !f.position) return
+    const id = ++walkReq.current, to = [f.position.lat, f.position.lng]
+    let from = user
+    if (!from) {
+      setWalkTo({ slug: f.slug, status: 'locating' })
+      const r = await locateNow()
+      if (!alive.current || id !== walkReq.current) return
+      if (r.error) { setWalkTo({ slug: f.slug, status: 'nofix', help: locationHelp(r.error) }); return }
+      from = r.at; setUser(r.at)
+    }
+    setWalkTo({ slug: f.slug, status: 'routing' })
+    const route = await routeAB(from, to)
+    if (!alive.current || id !== walkReq.current) return
+    setWalkTo({ slug: f.slug, status: 'ready', route })
+  }
   const openPlace = (id) => { clearLoop(); setAct(null); setHi(id); setDetail({ type: 'place', id }); if (snap === 'peek') setSnap('half'); const x = all.find((y) => y.id === id); if (x) track('place_opened', { category: x.category || 'other', curated: !!x.curated }) }
   // A notification about a listing (a claim that was decided) arrives with that place's id. It opens once the list has it.
   const focused = useRef(0)
@@ -397,14 +438,14 @@ export default function Explore({ setTab, setToast, dogName, dogKey, account, fo
   const ready = loop && loop.status === 'ready'
   const pa = act && p && act.id === p.id ? act : null // the form that belongs to the open place
   // What the sheet shows in place of the list. A detail whose subject has gone (a new area, a deleted route) falls back to the list.
-  const dk = add ? null : p ? 'place' : trail ? 'trail' : savedOne ? 'saved' : hereOn && here.loop ? 'here' : null
+  const dk = add ? null : friend ? 'friend' : p ? 'place' : trail ? 'trail' : savedOne ? 'saved' : hereOn && here.loop ? 'here' : null
   const cat = filter === 'all' || filter === 'trails' ? null : CAT[filter]
   const grp = filter === 'park' ? parks : more // the request a category chip depends on
   const needsDogTag = filter === 'bar' || filter === 'cafe'
   const firstLoad = parks.status !== 'done'
   const updating = parks.updating || more.updating || parks.status === 'loading' || more.status === 'loading'
   const summary = parks.sample ? '' : areaSummary(all, areaLabel, !!user && haversine(user, origin) < 3)
-  const mapRoute = trail ? trail.pts : savedOne ? savedOne.pts : hereOn && hl && hl.route ? hl.route.pts : ready ? loop.route.pts : undefined
+  const mapRoute = friendWalk && friendWalk.status === 'ready' ? friendWalk.route.pts : trail ? trail.pts : savedOne ? savedOne.pts : hereOn && hl && hl.route ? hl.route.pts : ready ? loop.route.pts : undefined
   const lines = useMemo(() => (add ? [] : [
     ...(layers.trails ? trailList.filter((x) => !trail || x.id !== trail.id).map((x) => ({ id: 'trail:' + x.id, pts: x.pts, kind: 'trail' })) : []),
     ...(layers.saved ? saved.filter((x) => !savedOne || x.id !== savedOne.id).map((x) => ({ id: 'saved:' + x.id, pts: x.pts, kind: 'saved' })) : []),
@@ -419,7 +460,7 @@ export default function Explore({ setTab, setToast, dogName, dogKey, account, fo
 
   return (
     <div className="fill" ref={rootRef}>
-      <TrotMap wheel="always" heat={layers.heat && !add} pins={pins} selected={p ? p.id : hi} focus={focus} onPin={pinTap} onTap={add ? (at) => setAdd((a) => a && ({ ...a, at })) : undefined} drop={add ? add.at : undefined} lines={lines} onLine={openLine} route={mapRoute} me={user} view={view} top={topH + 16} bottom={sheetH} onMove={onMove} onUserMove={() => { touched.current = true }} className="abs" />
+      <TrotMap wheel="always" heat={layers.heat && !add} pins={pins} selected={p ? p.id : hi} focus={focus} onPin={pinTap} onTap={add ? (at) => setAdd((a) => a && ({ ...a, at })) : undefined} drop={add ? add.at : undefined} lines={lines} onLine={openLine} route={mapRoute} me={user} view={view} top={topH + 16} bottom={sheetH} onMove={onMove} onUserMove={() => { touched.current = true }} friends={add ? undefined : friendPins} onFriend={openFriend} selectedFriend={friend ? friend.slug : null} className="abs" />
       <div className="over topbar" ref={topRef}>
         {add ? <div className="mbar"><div className="pill bhint">Tap the map to drop the pin</div></div> : (<>
           <PlaceSearch near={() => (bounds.current && bounds.current.center) || origin} onChoose={(r) => choose(r.at, r.name)} />
@@ -446,6 +487,7 @@ export default function Explore({ setTab, setToast, dogName, dogKey, account, fo
                 <div className="lg"><span className="swatch trail" />Trail from OpenStreetMap</div>
                 <div className="lg"><span className="swatch saved" />Your saved route</div>
                 <div className="lg"><span className="swatch heat" />Heatmap: where dogs have walked</div>
+                <div className="lg"><span className="swatch lv-sw" />{account ? 'Round photo pin: a friend out on a shared walk' : 'Round photo pin: a sample friend out on a walk'}</div>
               </div>
             </div>
           )}
@@ -466,6 +508,7 @@ export default function Explore({ setTab, setToast, dogName, dogKey, account, fo
             </>)}
           </form>
         )}
+        {dk === 'friend' && <LiveSheet f={friend} close={closeDetail} walk={friendWalk} onWalk={() => walkToFriend(friend)} onClearWalk={() => { walkReq.current++; setWalkTo(null) }} />}
         {dk === 'here' && (<>
           <div className="row between top g10">
             <div className="grow"><h2>Loop from here</h2><div className="meta" role="status">{hl.status === 'locating' ? 'Finding you' : hl.status === 'routing' ? 'Building the loop on mapped paths' : hl.status === 'nofix' ? 'No location' : `${hl.route.approximate ? 'Approximate' : 'Routed on mapped paths'} · ${hereNote(hl)}`}</div></div>
@@ -587,6 +630,7 @@ export default function Explore({ setTab, setToast, dogName, dogKey, account, fo
           {(parks.refreshFailed || more.refreshFailed) && <div className="mnote info"><span className="grow">Showing places saved from an earlier visit. They could not be refreshed just now.</span><button onClick={retry}>Retry</button></div>}
           {more.failed && !parks.failed && !parks.sample && <div className="mnote info"><span className="grow">Bars, cafes, shops and vets could not be loaded just now. Parks are shown.</span><button onClick={() => { moreFor.current = 0; loadMore(req.current) }}>Retry</button></div>}
           {parks.clamped && <div className="mnote info"><span className="grow">That is a big area. Showing places near the middle of the map. Zoom in to search more closely.</span></div>}
+          {layers.friends && <LiveList list={liveList} demo={!account} onPick={pickFriend} />}
           <div className="row between top"><div><h2>{listHead}</h2>{listMeta && <div className="meta">{listMeta}</div>}</div></div>
           {places.slice(0, MAX_PINS).map((x) => (
             <div key={x.id} className={`prow ${hi === x.id ? 'hi' : ''}`} ref={(n) => { if (n) rows.current.set(x.id, n); else rows.current.delete(x.id) }}>

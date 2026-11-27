@@ -55,6 +55,8 @@ export const USAGE_EVENTS = {
   location_permission: { state: tok },
   // Training: fixed words only (a track id, home/yard/out, a level number, a badge tier). Never a note or a skill a person typed.
   training_opened: {}, training_session_logged: { track: tok, place: tok }, training_level_confirmed: { level: count }, training_badge_earned: { tier: tok },
+  // Live walk sharing: names only. No property is kept, so no position or place can ride along.
+  live_share_started: {}, live_share_stopped: {}, live_friend_opened: {},
   client_error: { message: (v) => (typeof v === 'string' ? maskText(v) : undefined), kind: tok, screen: tok, method: (v) => (typeof v === 'string' && /^(GET|POST|PUT|PATCH|DELETE)$/.test(v) ? v : undefined), path: (v) => (typeof v === 'string' ? pathPattern(v) : undefined), status: count, code: count, n: count },
 }
 export function cleanProps(name, raw) {

@@ -69,7 +69,8 @@ function DogLink({ m, d, className, children, label }) {
 }
 
 // ---- Today: a row of friends, or a few suggestions when there are none yet ---------------
-export function FriendsRow({ m }) {
+// `live` is an optional line about friends who are out right now (src/liveHooks.jsx). It renders nothing when nobody is.
+export function FriendsRow({ m, live }) {
   const [busy, setBusy] = useState('')
   if (m.loading) return null
   const add = async (d) => { if (busy) return; setBusy(d.slug); await m.add(d); setBusy('') }
@@ -79,6 +80,7 @@ export function FriendsRow({ m }) {
   return (
     <section className="tsec" aria-label={`${m.dogName}'s friends`}>
       <div className="row between thead"><h2>{m.dogName}'s friends</h2><button className="tlink" onClick={m.open}>{some ? 'All friends' : 'Find friends'}</button></div>
+      {live}
       {some
         ? <div className="tscroll frow">{m.friends.map((f) => (
           <DogLink key={f.slug} m={m} d={f} className="tfriend" label={`${f.name}. ${friendLine(f.lastOuting)}. Opens ${f.name}'s ${m.demo ? 'profile' : 'public page'}`}>

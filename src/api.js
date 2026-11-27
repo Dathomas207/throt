@@ -333,3 +333,14 @@ api.training = {
   setLevel: (slug, skillId, level, checks) => request('POST', `/dogs/${slug}/training/skills/${skillId}/level${qs({ tz: tz() })}`, { level, checks }),
   removeSession: (id) => request('DELETE', `/training/sessions/${id}`),
 }
+// Live walks shared with mutual friends. Positions go in request bodies only, never in an address.
+api.live = {
+  start: (input) => request('POST', '/live/start', { ...input, source: 'gps' }),
+  ping: (at) => request('POST', '/live/ping', { lat: at[0], lng: at[1] }),
+  stop: () => request('POST', '/live/stop', {}),
+  // For the moment the screen goes away: the request is allowed to outlive the page, and its answer is not waited for.
+  stopNow: () => { if (!token) return; try { fetch(BASE + '/api/live/stop', { method: 'POST', keepalive: true, headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: '{}' }).catch(() => {}) } catch (e) {} },
+  friends: () => request('GET', '/live/friends'),
+  settings: () => request('GET', '/live/settings'),
+  setDefault: (on) => request('PUT', '/live/settings', { shareByDefault: !!on }),
+}

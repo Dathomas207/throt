@@ -10,12 +10,15 @@ import '../maps.css'
 import { RouteThumb } from '../RouteThumb.jsx'
 import { useRoutes, routeActions } from '../routeStore.js'
 import { track, locationPermission, geoError } from '../usage.js'
+import { useShareChoice, useLiveShare, ShareToggle, SharingPill } from '../liveHooks.jsx'
+import { canShareLive, metresToLine, noGpsText, OFF_ROUTE_M } from '../live.js'
 
 const SPEED = 40
 const LOOPS = [1, 2, 3]
 const MIN_STEP_M = 4 // ignore movement smaller than this to cut jitter
 const METERS_PER_MILE = 1609.344
 const STALE_FIX_MS = 6000 // no fix for this long reads as standing still
+const NO_FIX_SEC = 20 // this long into a walk with no fix at all, recording without GPS is offered
 // Daycare is logged by the daycare, not recorded by the person holding the phone.
 const TYPES = ACTIVITY_TYPES.filter((t) => t.id !== 'Daycare')
 // One small line icon per activity type, drawn for Trot.
@@ -35,12 +38,14 @@ const lastViewCenter = () => { try { const v = JSON.parse(localStorage.getItem('
 const mph = (v) => (Number(v) || 0).toFixed(1) + ' mph'
 
 // account is true on a signed-in person's own screen: saved routes then come from the account, not this device.
-export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMin, setToast, meName, dogName, publicDog, account }) {
+// Signed in, every walk on the map is a real Live GPS walk. A planned or saved route is drawn as a guide and the
+// track that is saved is the one that was walked. Playback of a route at 40x is for the no-account demo only.
+export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMin, setToast, meName, dogName, dogSlug, publicDog, account }) {
   const [hand] = useState(() => { const h = takeHandoff(); return h && h.kind === 'demo' && !ROUTES[h.key] ? null : h })
   const [mode, setMode] = useState('setup')
   const [type, setType] = useState('Walk')
   // rk is 'handoff' (route from Explore), 'loop' (loop from here), 'gps', 'saved:<id>' (a saved route), or a demo key from ROUTES.
-  const [rk, setRk] = useState(() => (!hand ? 'pond' : hand.kind === 'demo' ? hand.key : 'handoff'))
+  const [rk, setRk] = useState(() => (!hand ? (account ? 'gps' : 'pond') : hand.kind === 'demo' ? hand.key : 'handoff'))
   const here = useHereLoop(), loop = here.loop
   const store = useRoutes(!!account)
   // Favorites first, the usual walk at the top. The full list is in the route builder.
@@ -56,6 +61,9 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
   const [follow, setFollow] = useState(true)
   const [taps, setTaps] = useState(0) // sprints counted by hand in a timed session
   const [placeName, setPlaceName] = useState('')
+  // No GPS: `noGps` is why (shown with what to do), `manual` is a walk recorded by time alone after the person chose that.
+  const [noGps, setNoGps] = useState(''), [manual, setManual] = useState(false)
+  const [share, setShare] = useShareChoice(account)
   const [title, setTitle] = useState('')
   const [note, setNote] = useState('')
   // Photos picked on the finish step. They are sent after the outing is saved, so a slow or failed photo never holds up the save.
@@ -66,7 +74,7 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
   const unpick = (key) => setPicks((ps) => { const p = ps.find((x) => x.key === key); if (p) { try { URL.revokeObjectURL(p.url) } catch (e) {} } return ps.filter((x) => x.key !== key) })
   const [panelRef, panelH] = useHeight()
   const T = activityType(type), timed = !T.gps
-  const live = !timed && rk === 'gps'
+  const live = !timed && (rk === 'gps' || !!account)
   const watch = useRef(null), last = useRef(null), count = useRef(0), pausedRef = useRef(false), gapNext = useRef(false), alive = useRef(true), lock = useRef(null)
   pausedRef.current = paused
   useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
@@ -82,11 +90,14 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
   // The saved route this outing follows, if any. Saving the outing links the two and counts the walk.
   const routeId = rk === 'handoff' ? (hand && hand.routeId) || null : savedSel ? savedSel.id : null
   const routeName = rk === 'handoff' ? (hand && hand.routeName) || '' : savedSel ? savedSel.name : ''
-  const demoKey = !timed && !live && rk !== 'handoff' && rk !== 'loop' && !rk.startsWith('saved:') && ROUTES[rk] ? rk : null
+  const demoKey = !timed && rk !== 'gps' && rk !== 'handoff' && rk !== 'loop' && !rk.startsWith('saved:') && ROUTES[rk] ? rk : null
   const demoRoute = useMemo(() => (demoKey ? { ...ROUTES[demoKey], ...(demoR[demoKey] || {}) } : null), [demoKey, demoR])
-  const r = timed || live ? null : rk === 'handoff' ? hand : rk === 'loop' ? loopRoute : rk.startsWith('saved:') ? savedRoute : demoRoute
+  // The chosen route. In the demo it is played back. Signed in it is only a guide line under the real track.
+  const plan = timed || rk === 'gps' ? null : rk === 'handoff' ? hand : rk === 'loop' ? loopRoute : rk.startsWith('saved:') ? savedRoute : demoRoute
+  const r = live ? null : plan
+  const guide = live && plan && plan.pts && plan.pts.length > 1 ? plan : null
   // Distance comes from the line that is drawn, nothing else. Playback timing is made from that length.
-  const lineMi = useMemo(() => (r ? pathMiles(r.pts) : 0), [r && r.pts])
+  const lineMi = useMemo(() => (plan && plan.pts ? pathMiles(plan.pts) : 0), [plan && plan.pts])
   const sim = useMemo(() => (r ? demoSamples(lineMi) : null), [r && r.pts])
   const simTotal = sim ? sim[sim.length - 1].t : 0
   const gps = useMemo(() => fixes.map((f) => f.at), [fixes])
@@ -97,8 +108,9 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
     return () => clearInterval(t)
   }, [running, live, timed])
   useEffect(() => {
-    if (mode !== 'run' || !live) return
-    const bail = () => { setToast('Location is unavailable here. Use a demo route.'); setMode('setup'); setRk('pond') }
+    if (mode !== 'run' || !live || manual || noGps) return
+    // The demo falls back to a sample route. Signed in, nothing is played back: the reason is shown with a way on.
+    const bail = (why) => { if (account) { setPaused(true); setNoGps(why || 'unavailable'); return } setToast('Location is unavailable here. Use a demo route.'); setMode('setup'); setRk('pond') }
     const onFix = (p) => {
       if (pausedRef.current) { gapNext.current = true; return }
       if (!(p.coords.accuracy <= MAX_ACCURACY_M)) { setWeak(true); return }
@@ -115,10 +127,10 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
       setWeak(false); setFixes((g) => [...g, f])
     }
     // A lost signal in the middle of a walk should not throw the recording away.
-    const onErr = (e) => { geoError(e, 'record'); if (count.current === 0 || (e && e.code === 1)) bail(); else setWeak(true) }
-    try { watch.current = navigator.geolocation.watchPosition(onFix, onErr, { enableHighAccuracy: true, maximumAge: 2000 }) } catch (e) { bail() }
+    const onErr = (e) => { geoError(e, 'record'); if (count.current === 0 || (e && e.code === 1)) bail(e && e.code === 1 ? 'denied' : e && e.code === 3 ? 'timeout' : 'unavailable'); else setWeak(true) }
+    try { watch.current = navigator.geolocation.watchPosition(onFix, onErr, { enableHighAccuracy: true, maximumAge: 2000 }) } catch (e) { bail('unsupported') }
     return () => { try { navigator.geolocation.clearWatch(watch.current) } catch (e) {} }
-  }, [mode, live])
+  }, [mode, live, manual, noGps])
   useEffect(() => {
     // Keep the screen awake while recording, where the browser supports it.
     if (mode !== 'run') return
@@ -139,28 +151,36 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
 
   // The running distance is the length of the part of the line drawn so far.
   const walked = useMemo(() => (!live && r && mode !== 'setup' ? lineUpTo(r.pts, distAt(sim, sec)) : null), [r && r.pts, sec, mode, live])
-  const miles = timed ? 0 : live ? pathMiles(gps) : walked ? pathMiles(walked) : 0
-  const st = useMemo(() => (timed ? null : live ? trackStats(fixes) : sim ? speedStats(samplesUpTo(sim, sec)) : null), [timed, live, fixes, sim, sec])
+  const miles = timed ? 0 : manual ? (guide ? lineMi : 0) : live ? pathMiles(gps) : walked ? pathMiles(walked) : 0
+  const st = useMemo(() => (timed || manual ? null : live ? trackStats(fixes) : sim ? speedStats(samplesUpTo(sim, sec)) : null), [timed, live, fixes, sim, sec])
   const lastFix = fixes[fixes.length - 1]
   const current = !st || paused ? 0 : live ? (lastFix && Date.now() - lastFix.t < STALE_FIX_MS ? st.current : 0) : st.current
   const sprints = timed ? taps : st ? st.sprints : 0
   useEffect(() => { if (!live && !timed && mode === 'run' && sim && sec >= simTotal) finish() }, [sec])
   const pace = miles > 0.05 ? fmtTime(sec / 60 / miles) + ' /mi' : '--'
-  const titlePlace = timed ? placeName.trim() : live || rk === 'loop' ? '' : demoKey ? r.name.split(' ')[0] + ' ' + (r.name.split(' ')[1] || '') : (r && r.place) || ''
+  const titlePlace = timed ? placeName.trim() : rk === 'gps' || rk === 'loop' || !plan ? '' : demoKey ? plan.name.split(' ')[0] + ' ' + (plan.name.split(' ')[1] || '') : plan.place || ''
+  const guideLines = useMemo(() => (guide ? [{ id: 'guide', pts: guide.pts, kind: 'guide' }] : undefined), [guide && guide.pts])
+  // How far the newest fix is from the planned line. Only a quiet line on screen, never a prompt.
+  const offRoute = useMemo(() => !!(guide && lastFix && metresToLine(lastFix.at, guide.pts) > OFF_ROUTE_M), [guide, lastFix])
+  // Sharing with friends: real Live GPS on an account only. Playback, timed sessions and a walk without GPS never share.
+  const shareOk = canShareLive({ account, live, timed }) && !manual
+  const sharing = useLiveShare({ active: shareOk && share && mode === 'run' && !noGps, dogSlug, activity: type, fixes, sec })
   const finish = () => { setPaused(true); setTitle(defaultTitle(T.label, titlePlace)); setMode('done') }
   const save = async () => {
     if (busySave) return
     const base = { id: 'm' + Date.now(), dog: dogName || 'Biscuit', by: me, type, title: title || T.label, daysAgo: 0, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), paws: 0, comments: 0, note, sniffs: 0, minutes: sec / 60 }
     const files = picks.map((p) => p.file)
     if (timed) { saveWalk({ ...base, place: placeName.trim(), route: null, pts: null, miles: 0, avgSpeed: 0, maxSpeed: 0, sprints: taps, movingMinutes: sec / 60, runMinutes: 0 }, files); return }
+    // Recorded without GPS: the time that ran and, when a route was planned, its length. No line is saved.
+    if (manual) { saveWalk({ ...base, place: guide ? guide.place || guide.name || '' : '', route: null, pts: null, miles: guide ? Math.round(lineMi * 100) / 100 : 0, avgSpeed: 0, maxSpeed: 0, sprints: 0, movingMinutes: 0, runMinutes: 0, ...(routeId && guide ? { routeId } : {}) }, files); return }
     // The outing is saved first. If it has a line, this screen stays to offer keeping the route.
     setBusySave(true)
-    const act = await saveWalk({ ...base, place: live ? 'Live GPS' : r.place || r.name, route: demoKey, pts: live ? (gps.length > 1 ? gps : null) : walked, miles: Math.round(miles * 100) / 100, ...activityStats(st, sec / 60), ...(routeId && !live ? { routeId } : {}) }, files, { stay: true })
+    const act = await saveWalk({ ...base, place: live ? (guide ? guide.place || guide.name || 'Live GPS' : 'Live GPS') : r.place || r.name, route: live ? null : demoKey, pts: live ? (gps.length > 1 ? gps : null) : walked, miles: Math.round(miles * 100) / 100, ...activityStats(st, sec / 60), ...(routeId && (guide || !live) ? { routeId } : {}) }, files, { stay: true })
     if (!alive.current) return
     setBusySave(false)
     if (!act) return
     if (!act.pts || act.pts.length < 2 || !openOuting) { if (openOuting) openOuting(act); else setTab('home'); return }
-    setDoneAct({ ...act, followed: routeId && !live ? routeName : '' }); setMode('saved')
+    setDoneAct({ ...act, followed: routeId && (guide || !live) ? routeName : '' }); setMode('saved')
   }
   const keep = async (favorite) => {
     if (busySave) return
@@ -176,8 +196,11 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
     if (rk === 'saved:' + x.id) setRk('pond')
     routeActions.remove(x.id).then((out) => setToast(out.error || `Deleted ${x.name}`))
   }
-  const start = () => { setSec(0); last.current = null; count.current = 0; gapNext.current = false; setFixes([]); setWeak(false); setPaused(false); setFollow(true); setTaps(0); setMode('run'); track('walk_started', { type, gps: live }) }
-  const canStart = timed || live || !!r
+  const start = () => { setNoGps(''); setManual(false); setSec(0); last.current = null; count.current = 0; gapNext.current = false; setFixes([]); setWeak(false); setPaused(false); setFollow(true); setTaps(0); setMode('run'); track('walk_started', { type, gps: live }) }
+  const canStart = timed || rk === 'gps' || !!plan
+  // The person chose to go on without GPS: the timer keeps what it has and nothing is tracked or shared.
+  const goManual = () => { setNoGps(''); setManual(true); setPaused(false) }
+  const retryGps = () => { last.current = null; count.current = 0; gapNext.current = false; setWeak(false); setNoGps(''); setPaused(false) }
   // The usual walk on Today starts in one tap: the route arrives with autoStart and the walk begins at once.
   useEffect(() => { if (hand && hand.autoStart && hand.kind === 'routed') start() }, [])
   const meP = { ...(PEOPLE[me] || PEOPLE.dale), ...(meName ? { name: meName } : {}) }
@@ -199,6 +222,7 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
       </>)}
       {!timed && (<>
         <div className="eyebrow dark">ROUTE</div>
+        {account && <p className="meta">Every walk here records your real GPS track. Pick a route and it is drawn on the map as a guide line.</p>}
         {hand && hand.kind === 'routed' && <button className={`rrow box ${rk === 'handoff' ? 'on' : ''}`} aria-pressed={rk === 'handoff'} onClick={() => setRk('handoff')}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{hand.name}</b><small>{hand.routeId ? 'Saved route' : 'Planned route'} · {hand.trail ? 'trail from OpenStreetMap' : hand.approximate ? 'approximate, not a mapped path' : 'routed on mapped paths'} · about {hand.minutes} min</small></span><span className="num">{hand.miles.toFixed(1)} mi</span></button>}
         <div className={`rrow box lbox ${rk === 'loop' ? 'on' : ''}`}>
           <button className="cta" disabled={loopBusy} onClick={() => { setRk('loop'); here.fromHere(selMiles) }}>{loop && loop.status === 'locating' ? <><span className="spin" aria-hidden="true" />Finding you</> : loop && loop.status === 'routing' ? <><span className="spin" aria-hidden="true" />Building the loop</> : 'Loop from here'}</button>
@@ -209,12 +233,12 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
           {loop && loop.status === 'ready' && (<>
             <TrotMap route={loop.route.pts} me={loop.from === 'you' ? loop.at : undefined} className="lmap" />
             <div className="rsum"><b>{loop.route.miles.toFixed(2)} mi</b><span>about {loop.route.minutes} min · {loop.route.approximate ? 'approximate' : 'routed on mapped paths'} · {loop.from === 'you' ? 'starts where you are' : 'starts at the map area, not your location'}</span></div>
-            {loop.from !== 'you' && <div className="mnote info"><span className="grow">This loop does not start from your location. It starts from {lastViewCenter() ? 'the last area you looked at on the map' : 'the default spot in Cambridge, MA'}.</span></div>}
+            {loop.from !== 'you' && <div className="mnote info"><span className="grow">This loop does not start from your location. It starts from {lastViewCenter() ? 'the last area you looked at on the map' : 'the default spot in Eastover, Charlotte'}.</span></div>}
             {loop.route.approximate && <div className="mnote"><span className="grow"><b>Approximate loop.</b> The routing service did not answer, so this is a simple circle, not a walkable path.</span><button onClick={() => here.setMiles(loop.miles)}>Retry</button></div>}
             <button className="cta white bordered small" onClick={here.another}>Try another loop</button>
           </>)}
         </div>
-        <button className={`rrow box ${live ? 'on' : ''}`} aria-pressed={live} onClick={() => setRk('gps')}><span className="ricon"><Ic n="play" s={18} c="#1F5AE8" /></span><span className="grow"><b>Live GPS</b><small>Records your real location and keeps the screen awake. Works in the deployed app.</small></span></button>
+        <button className={`rrow box ${live ? 'on' : ''}`} aria-pressed={live} onClick={() => setRk('gps')}><span className="ricon"><Ic n="play" s={18} c="#1F5AE8" /></span><span className="grow"><b>{account ? 'Just walk' : 'Live GPS'}</b><small>{account ? 'No planned route. Records where you go and keeps the screen awake.' : 'Records your real location and keeps the screen awake. Works in the deployed app.'}</small></span></button>
         {saved.length > 0 && <div className="eyebrow dark">SAVED ROUTES</div>}
         {saved.map((x) => (
           <div key={x.id} className={`rrow box srow ${rk === 'saved:' + x.id ? 'on' : ''}`}>
@@ -222,8 +246,9 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
             <button className={`sdel ${del === x.id ? 'sure' : ''}`} aria-label={`${del === x.id ? 'Confirm delete' : 'Delete'} ${x.name}`} onClick={() => removeSaved(x)}>{del === x.id ? 'Delete?' : <Ic n="x" s={16} />}</button>
           </div>
         ))}
-        <div className="eyebrow dark">DEMO PLAYBACK (SAMPLE ROUTES)</div>
-        {Object.entries(ROUTES).map(([k, x]) => { const v = demoR[k] || x; return <button key={k} className={`rrow box ${rk === k ? 'on' : ''}`} aria-pressed={rk === k} onClick={() => setRk(k)}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{x.name}</b><small>{v.approximate ? 'Approximate line, not a mapped path' : 'Demo route on mapped paths'} · {x.note}</small></span><span className="num">{v.miles.toFixed(1)} mi</span></button> })}
+        {!account && <div className="eyebrow dark">DEMO PLAYBACK (SAMPLE ROUTES)</div>}
+        {!account && Object.entries(ROUTES).map(([k, x]) => { const v = demoR[k] || x; return <button key={k} className={`rrow box ${rk === k ? 'on' : ''}`} aria-pressed={rk === k} onClick={() => setRk(k)}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{x.name}</b><small>{v.approximate ? 'Approximate line, not a mapped path' : 'Demo route on mapped paths'} · {x.note}</small></span><span className="num">{v.miles.toFixed(1)} mi</span></button> })}
+        {live && <ShareToggle dog={dn} account={account} on={share} onChange={setShare} />}
       </>)}
       <Range min={todayMin} />
       <button className="cta sticky" disabled={!canStart} onClick={start}>{canStart ? (timed ? 'Start timer' : 'Start') : rk === 'loop' && loopBusy ? 'Building route' : 'Start'}</button>
@@ -231,7 +256,7 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
   )
   const doneForm = (<>
     <label className="field"><span>Title</span><input value={title} onChange={(e) => setTitle(e.target.value)} /></label>
-    {timed && <label className="field"><span>Where (optional)</span><input value={placeName} maxLength={60} onChange={(e) => setPlaceName(e.target.value)} /></label>}
+    {timed && !manual && <label className="field"><span>Where (optional)</span><input value={placeName} maxLength={60} onChange={(e) => setPlaceName(e.target.value)} /></label>}
     <label className="field"><span>How did {dn} do?</span><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Found a stick, met a friend…" /></label>
     <div className="photorow">
       <div className="row g8"><PhotoPicker light onPick={(files) => setPicks((ps) => [...ps, ...makePicks(files)].slice(0, OUTING_PHOTO_MAX))} room={OUTING_PHOTO_MAX - picks.length} setToast={setToast} /><span className="meta lightm">{picks.length ? `${picks.length} of ${OUTING_PHOTO_MAX} chosen` : `Optional, up to ${OUTING_PHOTO_MAX}`}</span></div>
@@ -257,13 +282,28 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
       </div>
     </div>
   )
-  if (timed) return (
+  // Signed in and no location: say why, and offer the two ways on. Nothing is played back.
+  if (noGps && mode === 'run') return (
     <div className="fill navy tsession">
-      <div className="over topbar row g8"><div className="pill"><Av t={dn[0]} s={30} />{dn}</div><div className="pill">with {meP.name}</div><div className="pill dark"><TypeIc id={type} s={16} c="#C8F031" />{T.label}</div></div>
+      <div className="tbody"><div className="center"><div className="sl lightl">NO GPS</div><div className="clock" role="timer">{fmtTime(sec / 60)}</div></div></div>
+      <div className="panel">
+        <h2 className="white">This walk cannot be tracked yet</h2>
+        <p className="speednote" role="alert">{noGpsText(noGps)}</p>
+        <button className="cta" onClick={retryGps}>Try again</button>
+        <button className="cta white" onClick={goManual}>Record without GPS</button>
+        <p className="speednote">Without GPS, Trot keeps the time{guide ? ` and the planned distance of ${lineMi.toFixed(2)} mi` : ''}. No map line is saved and the walk is not shared with friends.</p>
+        <button className="cta white" onClick={() => { track('walk_discarded'); setTab('home') }}>Cancel this walk</button>
+      </div>
+    </div>
+  )
+  if (timed || manual) return (
+    <div className="fill navy tsession">
+      <div className="over topbar row g8"><div className="pill"><Av t={dn[0]} s={30} />{dn}</div><div className="pill">with {meP.name}</div><div className="pill dark"><TypeIc id={type} s={16} c="#C8F031" />{T.label}</div>{manual && <div className="pill gpswait">No GPS</div>}</div>
       <div className="tbody">
         <div className="center"><div className="sl lightl">{mode === 'run' ? (paused ? 'PAUSED' : 'TIME') : 'TOTAL TIME'}</div><div className="clock huge" role="timer">{fmtTime(sec / 60)}</div></div>
-        {counts && mode === 'run' && <button className="sprintbtn" onClick={() => setTaps((n) => n + 1)} aria-label={`Count a sprint. ${taps} so far`}><b>{taps}</b><span>{taps === 1 ? 'sprint' : 'sprints'} · tap to add one</span></button>}
-        {counts && mode === 'done' && <div className="grid3"><Stat light l="SPRINTS" v={taps} big={24} /></div>}
+        {manual && <p className="speednote center">{guide ? `Timed without GPS. Planned distance: ${lineMi.toFixed(2)} mi.` : 'Timed without GPS. No distance is recorded.'}</p>}
+        {counts && !manual && mode === 'run' && <button className="sprintbtn" onClick={() => setTaps((n) => n + 1)} aria-label={`Count a sprint. ${taps} so far`}><b>{taps}</b><span>{taps === 1 ? 'sprint' : 'sprints'} · tap to add one</span></button>}
+        {counts && !manual && mode === 'done' && <div className="grid3"><Stat light l="SPRINTS" v={taps} big={24} /></div>}
       </div>
       <div className="panel">
         {mode === 'run' ? (<>
@@ -276,27 +316,31 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
       </div>
     </div>
   )
-  const TILE = { distance: ['DISTANCE', miles.toFixed(2) + ' mi'], pace: ['PACE', pace], speed: ['SPEED', mph(current)], maxSpeed: ['TOP SPEED', mph(st ? st.maxSpeed : 0)] }
+  const TILE = { distance: [guide ? 'WALKED' : 'DISTANCE', miles.toFixed(2) + ' mi'], planned: ['PLANNED', lineMi.toFixed(2) + ' mi'], pace: ['PACE', pace], speed: ['SPEED', mph(current)], maxSpeed: ['TOP SPEED', mph(st ? st.maxSpeed : 0)] }
   // The type decides which tiles lead. Sprints join once there is one.
-  const tiles = [...new Set([...T.stats.filter((k) => TILE[k]), 'distance', 'speed', 'maxSpeed'])]
+  const tiles = guide ? ['distance', 'planned', ...new Set([...T.stats.filter((k) => TILE[k] && k !== 'distance'), 'speed'])].slice(0, 3) : [...new Set([...T.stats.filter((k) => TILE[k]), 'distance', 'speed', 'maxSpeed'])]
   return (
     <div className="fill navy">
-      <TrotMap route={live ? gps : r.pts} walked={live ? undefined : walked} live follow={follow} onUserMove={() => setFollow(false)} wheel="always" bottom={panelH} top={70} className="abs" />
-      <div className="over topbar row g8">
+      <TrotMap route={live ? gps : r.pts} walked={live ? undefined : walked} lines={guideLines} view={guide ? { at: guide.pts[0], zoom: 16, n: 1 } : undefined} live follow={follow} onUserMove={() => setFollow(false)} wheel="always" bottom={panelH} top={70} className="abs" />
+      <div className="over topbar row g8 lv-bar">
         <div className="pill"><Av t={dn[0]} s={30} />{dn}{conn.tag && <Ic n="tag" s={16} c="#1F5AE8" />}</div>
         <div className="pill">with {meP.name}</div>
         {!live && <div className="pill dark">Demo ×{SPEED}</div>}
         {live && mode === 'run' && (weak || gps.length === 0) && <div className="pill gpswait" role="status">Waiting for a good GPS fix</div>}
+        {mode === 'run' && sharing.status !== 'off' && sharing.status !== 'refused' && <SharingPill status={sharing} onStop={() => setShare(false)} />}
         {!follow && <button className="mbtn" onClick={() => setFollow(true)}>Recenter</button>}
       </div>
       <div className="panel" ref={panelRef}>
         {mode === 'run' ? (<>
           <div className="center"><div className="sl lightl">TIME</div><div className="clock" role="timer">{fmtTime(sec / 60)}</div></div>
           <div className="grid3">{tiles.map((k) => <Stat key={k} light l={TILE[k][0]} v={TILE[k][1]} big={22} />)}{sprints > 0 && <Stat light l="SPRINTS" v={sprints} big={22} />}</div>
+          {guide && <p className="speednote lv-guide" role="status">{offRoute ? 'Off the planned route' : `Following ${guide.name || 'the planned route'}. The dashed line is the plan.`}</p>}
+          {live && account && gps.length === 0 && sec >= NO_FIX_SEC && <div className="mnote" role="status"><span className="grow">No GPS fix yet. Keep going and it will pick up, or record this walk by time alone.</span><button onClick={goManual}>Record without GPS</button></div>}
+          {shareOk && <ShareToggle dark dog={dn} account={account} on={share} onChange={setShare} status={sharing} />}
           <Range min={todayMin + sec / 60} light />
           <div className="row g12"><button className="cta grow" onClick={() => setPaused(!paused)}><Ic n={paused ? 'play' : 'pause'} c="#0F1B2D" />{paused ? 'Resume' : 'Pause'}</button><button className="cta white grow" onClick={finish}>Finish</button></div>
         </>) : (<>
-          <div className="row between"><h2 className="white">Nice one, {dn}</h2><div className="num white">{miles.toFixed(2)} mi · {fmtTime(sec / 60)}</div></div>
+          <div className="row between"><h2 className="white">Nice one, {dn}</h2><div className="num white">{miles.toFixed(2)} mi{guide ? ` of ${lineMi.toFixed(2)} planned` : ''} · {fmtTime(sec / 60)}</div></div>
           <div className="grid3"><Stat light l="AVG SPEED" v={mph(st ? st.avgSpeed : 0)} big={20} /><Stat light l="TOP SPEED" v={mph(st ? st.maxSpeed : 0)} big={20} /><Stat light l="SPRINTS" v={sprints} big={20} /><Stat light l="MOVING TIME" v={fmtTime((st ? Math.min(sec, st.movingSec) : 0) / 60)} big={20} /><Stat light l="RUN TIME" v={fmtTime((st ? st.runSec : 0) / 60)} big={20} /></div>
           <p className="speednote">Speeds are measured from the phone carried on the walk, so they are your speed together, not {dn}'s own. A connected collar is needed for that.{!live ? ' This was demo playback, so the timing is simulated.' : ''}</p>
           {doneForm}

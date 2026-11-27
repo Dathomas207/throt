@@ -227,3 +227,18 @@ const demoShot = (id, file, w, h, pos) => ({ id, url: ((import.meta.env && impor
 SEED.find((a) => a.id === 's1').photos = [demoShot('s1-a', 'biscuit-wide.jpg', 1024, 1024, '50% 35%')]
 PACK.find((a) => a.id === 'p0').photos = [demoShot('p0-a', 'millie.jpg', 512, 512, '50% 30%')]
 MILLIE_SEED[0].photos = PACK.find((a) => a.id === 'p0').photos
+
+// ---- friends out now, in the demo (appended) ------------------------------------
+// Sample data, fixed in this file and labelled as samples on screen. Nothing is fetched and nobody's real
+// position is shown. Same shape as GET /api/live/friends. The spots are public parks in Charlotte.
+const demoPic = (file) => ((import.meta.env && import.meta.env.BASE_URL) || '/') + file
+export const DEMO_LIVE = {
+  biscuit: [
+    { slug: 'Moose', name: 'Moose', with: 'Priya', activity: 'Walk', minutesOut: 24, lastSeenSeconds: 12, position: { lat: 35.1958, lng: -80.8402 }, place: 'Freedom Park' },
+    { slug: 'Millie', name: 'Millie', with: 'Sue', activity: 'Walk', minutesOut: 9, lastSeenSeconds: 20, position: { lat: 35.1986, lng: -80.8141 }, place: 'Eastover Park', photo: demoPic('millie.jpg') },
+  ],
+  millie: [
+    { slug: 'Biscuit', name: 'Biscuit', with: 'Pat', activity: 'Walk', minutesOut: 18, lastSeenSeconds: 15, position: { lat: 35.1958, lng: -80.8402 }, place: 'Freedom Park', photo: demoPic('biscuit.jpg') },
+    { slug: 'Pickle', name: 'Pickle', with: 'Marco', activity: 'Walk', minutesOut: 31, lastSeenSeconds: 240, position: { lat: 35.1986, lng: -80.8141 }, place: 'Eastover Park' },
+  ],
+}

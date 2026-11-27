@@ -30,6 +30,11 @@ export function mileMarkers(pts, max = MAX_MILE_MARKS) {
 }
 const PIN_GLYPH = { park: 'P', bar: 'B', cafe: 'C', shop: 'S', vet: 'V', care: 'D', water: 'W', other: '+' }
 const pinIcon = (p, on) => { const glyph = PIN_GLYPH[p.category]; return L.divIcon({ className: '', iconSize: [36, 36], iconAnchor: [18, 18], html: `<div class="pin ${glyph ? 'cat c-' + p.category : ''} ${p.community ? 'comm' : ''} ${on ? 'on' : ''}"><span>${glyph || ''}</span></div>` }) }
+// A friend who is out on a shared walk: a round pin with the dog's photo, or its initial. Names are escaped
+// because they are typed by people. `stale` greys the pin when the friend has not been heard from for a while.
+const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+const friendIcon = (f, on) => L.divIcon({ className: 'lv-pinwrap', iconSize: [48, 48], iconAnchor: [24, 24], html: `<div class="lv-pin${f.stale ? ' lv-stale' : ''}${on ? ' lv-on' : ''}">${f.photo && /^(blob:|data:image\/|\/|https?:)/.test(f.photo) ? `<img src="${esc(f.photo)}" alt="">` : `<span>${esc((String(f.name || '').trim()[0] || 'D').toUpperCase())}</span>`}</div>` })
+const friendKey = (f, on) => `${f.photo || ''}|${f.stale ? 1 : 0}|${on ? 1 : 0}|${f.name || ''}`
 const pinKey = (p, on) => `${p.category || ''}|${p.community ? 1 : 0}|${on ? 1 : 0}|${p.name || ''}`
 // All props but route are optional, so <TrotMap route={pts} className="dmap" /> still works.
 //   onMove(bounds, byUser)  bounds is { s, w, n, e, center, zoom }; byUser is false for moves the map made itself
@@ -43,7 +48,10 @@ const pinKey = (p, on) => `${p.category || ''}|${p.community ? 1 : 0}|${on ? 1 :
 //   pins[]                  { id, at, name, category, community }. Markers are updated by id, not rebuilt
 //   selected                id of the highlighted pin; focus { id, n } centers that pin in the clear part of the map when n changes
 //   drop [lat, lng]         a single "+" marker, used while placing a new community place
-//   lines [{ id, pts, kind }]  extra tappable lines (kind 'trail' or 'saved'); onLine(id) is called for a tap on one
+//   friends[]              { id, at, name, photo, stale }: friends out on a shared walk. onFriend(id) is called for a tap
+//                          or Enter on one; selectedFriend is the id of the one whose sheet is open
+//   lines [{ id, pts, kind }]  extra tappable lines (kind 'trail' or 'saved'); onLine(id) is called for a tap on one.
+//                           kind 'guide' is the planned route under a live recording: lighter, dashed and not tappable
 //   walked [[lat,lng]]      the part of the route covered so far, drawn solid over the dashed full route
 //   follow                  with live, false stops the map recentering on the newest point
 //   onUserMove()            called when the person drags, pinches, wheels, uses the keyboard or presses a zoom button
@@ -58,11 +66,13 @@ const pinKey = (p, on) => `${p.category || ''}|${p.community ? 1 : 0}|${on ? 1 :
 //   wheel                   'always' zooms on the wheel straight away (full-screen maps). The default 'focus' waits
 //                           for a tap or click on the map, so a map inside a scrolling page never steals the scroll.
 //                           On touch screens one-finger panning waits for that tap too. Zoom buttons always work.
-export default function TrotMap({ route, upto, pins, onPin, selected, focus, live, className = '', interactive = true, onMove, view, me, bottom = 0, top = 120, heat = false, onTap, waypoints, fit = true, drop, lines, onLine, walked, follow = true, onUserMove, wheel = 'focus', mileMarks = true, build, mileLine, mileMin = MILE_MARK_MIN }) {
+export default function TrotMap({ route, upto, pins, onPin, selected, focus, live, className = '', interactive = true, onMove, view, me, bottom = 0, top = 120, heat = false, onTap, waypoints, fit = true, drop, lines, onLine, walked, follow = true, onUserMove, wheel = 'focus', mileMarks = true, build, mileLine, mileMin = MILE_MARK_MIN, friends, onFriend, selectedFriend }) {
   const el = useRef(null), map = useRef(null), G = useRef(null), prog = useRef(0), fitKey = useRef(null), cb = useRef({}), userZoom = useRef(false)
-  const pinMap = useRef(new Map()), rt = useRef(null), heatLayer = useRef(null)
-  cb.current = { onMove, onPin, onTap, onLine, onUserMove, build }
+  const pinMap = useRef(new Map()), rt = useRef(null), heatLayer = useRef(null), friendMap = useRef(new Map())
+  cb.current = { onMove, onPin, onTap, onLine, onUserMove, build, onFriend }
   const auto = () => { prog.current = Date.now() }
+  // While recording, the newest point is kept in the middle of the part of the map that the top pills and the bottom panel leave clear.
+  const followTo = (m, at) => { const z = userZoom.current ? m.getZoom() : Math.max(m.getZoom(), 16); auto(); m.setView(m.unproject(m.project(L.latLng(at), z).add([0, (bottom - top) / 2]), z), z, { animate: true }) }
   useEffect(() => {
     const node = el.current, t0 = performance.now()
     const gate = interactive && wheel !== 'always'
@@ -127,7 +137,7 @@ export default function TrotMap({ route, upto, pins, onPin, selected, focus, liv
       if (c && c.mapboxToken) { if (base) m.removeLayer(base); mapbox(c) } else if (!base) base = carto()
     })
     const grp = () => L.layerGroup().addTo(m)
-    G.current = { lines: grp(), route: grp(), build: grp(), miles: grp(), marks: grp(), me: grp(), pins: grp() }
+    G.current = { lines: grp(), route: grp(), build: grp(), miles: grp(), marks: grp(), me: grp(), pins: grp(), friends: grp() }
     m.setView((view && view.at) || DEFAULT_VIEW, (view && view.zoom) || 14)
     m.on('moveend', () => {
       const f = cb.current.onMove; if (!f) return
@@ -138,7 +148,7 @@ export default function TrotMap({ route, upto, pins, onPin, selected, focus, liv
     map.current = m
     perfMark('map-ready', t0)
     const ro = new ResizeObserver(() => { auto(); m.invalidateSize() }); ro.observe(node)
-    return () => { dead = true; clearTimeout(wait); cleanup.forEach((f) => f()); ro.disconnect(); pinMap.current.clear(); rt.current = null; heatLayer.current = null; /* a zoom animation still running would call into the removed map a moment later */ m._animatingZoom = false; m.remove() }
+    return () => { dead = true; clearTimeout(wait); cleanup.forEach((f) => f()); ro.disconnect(); pinMap.current.clear(); friendMap.current.clear(); rt.current = null; heatLayer.current = null; /* a zoom animation still running would call into the removed map a moment later */ m._animatingZoom = false; m.remove() }
   }, [])
   useEffect(() => {
     const m = map.current; if (!m || !heat) return
@@ -169,7 +179,7 @@ export default function TrotMap({ route, upto, pins, onPin, selected, focus, liv
     const hasRoute = route && route.length > 1
     if (!hasRoute) {
       if (rt.current) { g.clearLayers(); rt.current = null }
-      if (live && follow && route && route.length === 1) { auto(); m.setView(route[0], userZoom.current ? m.getZoom() : Math.max(m.getZoom(), 16), { animate: true }) }
+      if (live && follow && route && route.length === 1) followTo(m, route[0])
       fitKey.current = null
       return
     }
@@ -193,7 +203,7 @@ export default function TrotMap({ route, upto, pins, onPin, selected, focus, liv
       R.end.setLatLng(end)
     }
     R.route = route
-    if (live) { if (follow) { auto(); m.setView(end, userZoom.current ? m.getZoom() : Math.max(m.getZoom(), 16), { animate: true }) } }
+    if (live) { if (follow) followTo(m, end) }
     else if (!pins) { if (fitKey.current !== route) { auto(); m.fitBounds(L.latLngBounds(route), { padding: [28, 28], animate: false }) } }
     else if (fit && fitKey.current !== route) { auto(); m.fitBounds(L.latLngBounds(route), { paddingTopLeft: [28, top], paddingBottomRight: [28, bottom + 28], animate: false }) }
     fitKey.current = route
@@ -262,6 +272,8 @@ export default function TrotMap({ route, upto, pins, onPin, selected, focus, liv
     ;(lines || []).forEach((l) => {
       if (!l.pts || l.pts.length < 2) return
       const saved = l.kind === 'saved'
+      // The planned route on a real walk: a light dashed guide under the recorded track. It is not tappable.
+      if (l.kind === 'guide') { L.polyline(l.pts, { color: '#FFFFFF', weight: 8, opacity: 0.85, interactive: false }).addTo(g); const dash = L.polyline(l.pts, { color: '#5B6472', weight: 4, opacity: 0.8, dashArray: '3 9', interactive: false }).addTo(g), halo = g.getLayers()[g.getLayers().length - 2]; dash.bringToBack(); if (halo && halo.bringToBack) halo.bringToBack(); return }
       L.polyline(l.pts, { color: '#FFFFFF', weight: 7, opacity: 0.9, interactive: false }).addTo(g)
       L.polyline(l.pts, { color: saved ? '#0F1B2D' : '#1F5AE8', weight: 4, opacity: saved ? 0.85 : 0.75, dashArray: saved ? '8 7' : null, interactive: false }).addTo(g)
       // A wide invisible line on top makes a thin line easy to tap.
@@ -299,6 +311,28 @@ export default function TrotMap({ route, upto, pins, onPin, selected, focus, liv
     })
     have.forEach((e, id) => { if (!seen.has(id)) { g.removeLayer(e.marker); have.delete(id) } })
   }, [pins, selected])
+  // Friends out now, diffed by id like the place pins, so a pin that only moved keeps its keyboard focus.
+  useEffect(() => {
+    const g = G.current && G.current.friends, have = friendMap.current; if (!g) return
+    const seen = new Set()
+    ;(friends || []).forEach((f) => {
+      const on = selectedFriend === f.id, key = friendKey(f, on), label = `${f.name} is out on a walk`
+      let e = have.get(f.id)
+      if (!e) {
+        e = { key }
+        e.marker = L.marker(f.at, { icon: friendIcon(f, on), title: label, alt: label, keyboard: true, bubblingMouseEvents: false, zIndexOffset: 700 }).addTo(g).on('click', () => cb.current.onFriend && cb.current.onFriend(f.id))
+        // Leaflet makes a marker focusable but does not turn Enter into a click, so that is done here.
+        e.marker.on('keypress', (ev) => { const k = ev.originalEvent; if (k && (k.key === 'Enter' || k.key === ' ')) { k.preventDefault(); if (cb.current.onFriend) cb.current.onFriend(f.id) } })
+        have.set(f.id, e)
+      } else {
+        if (e.key !== key) { e.marker.setIcon(friendIcon(f, on)); e.key = key }
+        const ll = e.marker.getLatLng()
+        if (ll.lat !== f.at[0] || ll.lng !== f.at[1]) e.marker.setLatLng(f.at)
+      }
+      seen.add(f.id)
+    })
+    have.forEach((e, id) => { if (!seen.has(id)) { g.removeLayer(e.marker); have.delete(id) } })
+  }, [friends, selectedFriend])
   const clearCenter = (m, at, always) => {
     const size = m.getSize(), pt = m.latLngToContainerPoint(at), clear = Math.max(top + 40, size.y - bottom)
     if (!always && pt.x > 30 && pt.x < size.x - 30 && pt.y > top - 10 && pt.y < clear - 30) return

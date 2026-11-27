@@ -111,6 +111,11 @@ All JSON. Send the session token as `Authorization: Bearer <token>`.
 | `GET /api/dogs/:slug/friends/feed` | team | The 30 most recent outings of the public dogs this dog follows, in the same shape as `/api/pack` |
 | `GET /api/dogs/:slug/friends/suggestions` | team | Up to 12 public dogs not followed yet: same city first, then most recently active. Never your own dogs. Each also carries `sameCity` and `followsYou` |
 | `GET /api/dogs/search?q=&dog=` | signed in | Public dogs whose name starts with `q`. At least 2 characters, at most 10 answers, 30 searches a minute per person. With `dog=<slug>` (a dog you are on the team of) that dog is left out and each answer carries `following` |
+| `GET /api/live/friends` | signed in | Live walks of your mutual friends, see "Friends out now" below. Each is `{ slug, name, photoUrl, with, activity, minutesOut, lastSeenSeconds, position, place }`. `position` is `{ lat, lng }` rounded to 4 decimals, or `null` while the walker is near where they started or near their usual start. `place` is the name of a listed place within 75 m, or `null` |
+| `POST /api/live/start` | team | `{ dog, activity, lat, lng, source: 'gps', elapsedSeconds }` starts or replaces your one live walk. `lat` and `lng` are where the walk began. The dog has to be public. Anything without `source: 'gps'` is refused |
+| `POST /api/live/ping` | you | `{ lat, lng }` replaces your position. A ping less than 5 seconds after the last one is ignored. 404 when you are not sharing or the walk has expired |
+| `POST /api/live/stop` | you | Deletes your live walk. Idempotent. Saving an outing does the same |
+| `GET` and `PUT /api/live/settings` | you | `{ shareByDefault }`, the "Share my walks with friends by default" setting. Off until you turn it on |
 | `POST /api/walks/:id/photos` | team | `{ photo }`, a JPEG data URL. At most 700 KB decoded, real JPEG bytes, at most 4096 px on a side, 6 per outing. Answers `{ photo: { id, url, w, h, mine }, count, max }` |
 | `GET /api/walks/:id/photos/:photoId` | team | The photo as image bytes. Private, cached for 5 minutes, ETag is the content hash |
 | `DELETE /api/walks/:id/photos/:photoId` | whoever added it, owner, family | Delete one photo |
@@ -172,7 +177,40 @@ Every walk in every feed carries `photos: [{ id, url, w, h }]`: the first three 
 - A walk started from a saved route sends that route's id with the outing. The server links the two, adds one to the route's count and moves its last-walked date. A route id that is not yours is ignored and the outing is saved without a link.
 - A route kept from a walk has no control points. Edit picks up to 12 along its line by Douglas-Peucker simplification, and each leg keeps the recorded line until it is moved.
 
-What is not built yet: sharing a saved route with the care team, a keyboard way to move a point, and turn guidance during a walk. Starting a walk from a planned or saved route plays it back along the line, as planned routes from Explore always have. Only Live GPS records where you actually went.
+What is not built yet: sharing a saved route with the care team, a keyboard way to move a point, and turn guidance during a walk.
+
+**Walking a planned route.** Signed in, a walk started from a planned or saved route (the builder's Start, a favorite, the usual walk on Today, a route planned in Explore, Loop from here) is a real Live GPS walk. The planned route is drawn as a light dashed guide line, the line that is saved is the one the phone recorded, and the outing stays linked to the saved route so its count goes up. The walk screen shows distance walked beside the planned distance, and a quiet "Off the planned route" line when the newest fix is more than 60 m from the plan. There is no turn-by-turn guidance. "Just walk" is the default on the walk screen and records with no plan.
+
+- If location is denied or unavailable, the walk screen says why and offers Try again and Record without GPS. A walk recorded without GPS keeps the time and, when a route was planned, the planned distance. It saves no line and is never shared with friends. The same choice is offered 20 seconds into a walk that has had no GPS fix at all.
+- Playback of a route at 40x speed exists only in the no-account demo, where it is labelled "Demo x40" and listed under "Demo playback (sample routes)". Signed in, nothing is ever played back.
+
+## Friends out now (live walks)
+
+A person can share a Live GPS walk with friends while it is happening. Friends see a round pin with the dog's photo on the Explore map, and a line on Today such as "Moose is at Freedom Park now". Code: `server/routesLive.js`, `src/live.js` (shared words and rules, no network), `src/liveHooks.jsx` (hooks and screen pieces), `src/live.css`. Tests: `server/live.test.js`.
+
+**Who counts as a mutual friend.** Follows are dog to dog and need no approval, so one follow alone shows nothing. A viewer sees a live walk of dog D only when one of the dogs the viewer is **owner or family** of follows D, and D follows that same dog back. Both rows in `dog_follows` have to exist for the same pair of dogs. D also has to be public, like everything else friends can see. Walkers and daycare on a friend dog's team do not see it. The walker can be anyone on D's care team who chose to share. One-way followers in either direction, signed-out visitors and the public page `/d/:slug` get nothing.
+
+Privacy rules. All of them are enforced on the server and each has a test:
+
+- **Off by default.** Sharing is a switch on the walk screen, before and during a walk. "Share my walks with friends by default" in Settings is off until the person turns it on, and is stored on the account (`users.share_walks_default`).
+- **Mutual friends only.** See above. Unfollowing on either side, or making the dog private, hides the walk on the next read.
+- **Only during a walk.** Sharing starts with the first good GPS fix of a walk that has sharing on. It ends when the walk is finished, discarded or saved, or when the switch is turned off. A live walk with no update for 10 minutes has ended: it is never returned and the row is deleted the next time the live endpoints are used. A live walk also ends 12 hours after it started.
+- **Home hidden.** A position within 150 metres of where the walk started, or within 150 metres of the walker's usual start, is never stored and never returned. Friends see "Out on a walk" with no position and no place name. The usual start is the middle of the largest group of start points among the walker's last 200 saved walks that have a line (starts within 150 m of each other form a group, and a tie goes to the most recent). With no saved walks, only the current start is hidden. The check runs when a position arrives and again when it is read, on both the stored value and the rounded one.
+- **No history.** One row per walker in `live_walks`, overwritten by each update and deleted at the end. There is no trail.
+- **Never public.** Live positions are not in the heatmap, the public dog pages, the pack, usage events, notifications or logs. Positions travel in request bodies, never in an address, so they are not in access logs either. Nobody is notified when a walk is shared.
+- **Rounded.** Stored to 5 decimals, returned to friends at 4 (about 11 m).
+- **Real GPS only.** The app offers sharing only for a Live GPS walk on an account (`canShareLive` in `src/live.js`). Demo playback, timed sessions and walks recorded without GPS never share. The server refuses a start that does not say `source: 'gps'`. The server cannot prove where a position came from, so that part is a contract with the app, not a lock.
+
+How it behaves:
+
+- The walk screen sends the newest position about every 15 seconds. Explore asks who is out every 20 seconds, only while Explore is showing and the page is visible. Today asks once a minute.
+- A pin turns grey and the sheet says "Last seen 3 min ago" once a friend has not been heard from for more than 90 seconds.
+- **A web app only sends location while it is open on screen.** When the walker locks the phone or switches apps, updates stop. The pin stays where it was, turns grey, and the walk drops off after 10 minutes. If the walker comes back to the app later in the same walk, sharing starts again by itself.
+- "Walk to them" draws a walking route from your location to where the friend was when you tapped. It does not follow them as they move. The request goes to the same routing service as every other route, with the two points and no names.
+- "Friends out now" is a map layer in Explore, on by default. Turning it off stops the requests.
+- In the no-sign-in demo, Explore and Today show two sample friends from `DEMO_LIVE` in `src/data.js`, labelled as samples. No request is made, and the switch on the walk screen says sharing needs an account.
+
+Limits to know about: the trial sign-in has no password (see below), so anyone who can sign in as a mutual friend sees what that friend would. The usual start is one place, so a second regular start (a partner's home, an office) is only hidden when the walk starts there. The 5 second ping limit and the expiry are per row in the database, and the general rate limits are still in memory.
 
 ## Trial limitations
 
@@ -218,6 +256,7 @@ In Xcode: select your team under Signing & Capabilities (a free Apple ID works f
 
 - Real, signed in: accounts (trial sign-in), dogs with an editable profile and photo, care teams and invites, saved walks with performance statistics, paws, per-person totals, the public dog page, health records and the vet link, documents, awards and earned badges, events, leaderboards, challenges, community places.
 - Made up but stored on the server: the demo dogs and their people (see Trial limitations).
+- Real, signed in: sharing a Live GPS walk with mutual friends, and walking a planned route with real GPS. In the demo, friends out now are samples.
 - Real in both modes: recording with Live GPS, story card image, maps (OpenStreetMap data via CARTO tiles).
 - Demo only: the dog pictures, which are original illustrations drawn in code (`src/portraits.jsx`), not photographs. Biscuit's and Millie's history, people, the pack, park stats, health data, documents, awards, sample boards and challenges, Level 3 tracker cards, route playback at 40x speed, and every connection (Trot Tag, AirTag, Instagram, Strava, Garmin, Apple Health, collars, AllTrails, vet records). Demo walks are kept in the browser.
 - Place coordinates and sample routes are approximate samples around Cambridge, MA.
@@ -307,6 +346,7 @@ The events, and the props each one keeps:
 | `plan_viewed` | none |
 | `notification_opened` | `kind` |
 | `location_permission` | `state` (`granted` or `denied`) |
+| `live_share_started`, `live_share_stopped`, `live_friend_opened` | none. No position, place or dog name |
 | `client_error` | `message`, `kind`, `screen`, `method`, `path`, `status`, `code`, `n` |
 
 `POST /api/usage` takes `{ v, anon | auth, events: [{ name, props, dog, ago }] }`: at most 20 events and 4 KB, signed in or out, rate limited per address (60 a minute). It always answers 204 and stores nothing it does not recognise. `navigator.sendBeacon` cannot set headers, so the batch goes as `text/plain` and a signed-in batch carries the session token in `auth`; the token is used to find the user and is never stored.

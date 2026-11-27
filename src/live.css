@@ -1,0 +1,36 @@
+/* Live walks: friends who are out now. Every class here starts with lv- so nothing clashes. */
+.lv-pinwrap{background:none;border:0}
+.lv-pin{width:48px;height:48px;border-radius:50%;background:var(--ink);border:3px solid #fff;box-shadow:0 0 0 3px rgba(31,90,232,.55),0 2px 8px rgba(15,27,45,.35);display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box}
+.lv-pin img{width:100%;height:100%;object-fit:cover;display:block}
+.lv-pin span{color:var(--volt);font:italic 800 20px Archivo,Arial,sans-serif;line-height:1}
+.lv-pin.lv-on{box-shadow:0 0 0 4px var(--volt),0 2px 8px rgba(15,27,45,.35)}
+.lv-pin.lv-stale{filter:grayscale(1);opacity:.7;box-shadow:0 0 0 3px rgba(91,100,114,.55),0 2px 8px rgba(15,27,45,.25)}
+.leaflet-marker-icon.lv-pinwrap:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:50%}
+.lv-dot{width:10px;height:10px;border-radius:50%;background:#1E9E57;flex-shrink:0;box-shadow:0 0 0 4px rgba(30,158,87,.2)}
+.lv-share{background:#fff;border-radius:14px;border-top:0;padding:8px 14px;min-height:56px;align-items:center}
+.lv-share small{white-space:normal}
+.lv-share input{width:26px;height:26px;margin:9px 4px 9px 0}
+.lv-share.lv-dark{background:#18294A;color:#fff}
+.lv-share.lv-dark b{color:#fff}
+.lv-share.lv-dark small{color:#D5DBE4}
+.lv-share.lv-dark input{accent-color:var(--volt)}
+.lv-share:focus-within{outline:3px solid var(--blue);outline-offset:2px}
+.lv-share.lv-dark:focus-within{outline-color:var(--volt)}
+.lv-share input:focus-visible{outline:none}
+.lv-bar{flex-wrap:wrap}.lv-bar .pill{white-space:nowrap}
+.lv-live{min-height:44px;padding:0 6px 0 14px;border-radius:22px;background:#fff;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--ink);box-shadow:0 2px 8px rgba(15,27,45,.15);white-space:nowrap}
+.lv-live b{min-height:32px;padding:0 12px;border-radius:16px;background:var(--ink);color:#fff;display:flex;align-items:center;font-size:12px}
+.lv-live.lv-wait .lv-dot{background:#C77700;box-shadow:0 0 0 4px rgba(199,119,0,.2)}
+.lv-live:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.lv-now{display:flex;align-items:center;gap:12px;width:auto;min-height:56px;margin:0 12px 8px;padding:8px 14px;border-radius:14px;background:#fff;text-align:left}
+.lv-now b{display:block;font-size:14px;font-weight:700;color:var(--ink);overflow-wrap:anywhere}
+.lv-now small{display:block;font-size:12px;color:var(--grey);margin-top:1px}
+.lv-now:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.lv-list{display:flex;flex-direction:column;gap:4px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.lv-list h2{font-size:16px}
+.lv-row{min-height:56px;text-align:left}
+button.lv-row:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:12px}
+.lv-seen{color:#8A5200;font-weight:600}
+.lv-guide{margin:0}
+.lv-rules{margin:0;padding:0 0 0 18px;display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:1.4;color:var(--grey)}
+.swatch.lv-sw{width:18px;height:18px;border:0;border-radius:50%;background:var(--ink);box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(31,90,232,.55);margin:0 4px}

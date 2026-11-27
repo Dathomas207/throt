@@ -8,6 +8,7 @@ import '../maps.css'
 import ErrorBoundary from '../ErrorBoundary.jsx'
 import { track } from '../usage.js'
 import { NotificationPrefs, MetricsSection, MeasuresNote, Diagnostics } from './SettingsMore.jsx'
+import { LiveShareSetting } from '../liveHooks.jsx'
 
 export const PLANS = [
   { id: 'free', name: 'Free', price: '$0', items: ['One dog', 'Phone tracking', 'Feed and paws', 'Care team of up to three', 'Public dog page', 'Story cards', 'Places map'] },
@@ -145,6 +146,7 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
         {real && real.user.isAdmin && <MetricsSection />}
 
         <NotificationPrefs real={real} setToast={setToast} />
+        <LiveShareSetting real={real} setToast={setToast} />
 
         {real && <Section title={`${name.toUpperCase()}'S PUBLIC PAGE`} id="set-page">
           {dog.public && <a className="rrow" href={path} target="_blank" rel="noopener"><span className="ricon"><Ic n="link" s={20} c="#1F5AE8" /></span><span className="grow"><b>Open {name}'s public page</b><small>{url.replace(/^https?:\/\//, '')}</small></span></a>}

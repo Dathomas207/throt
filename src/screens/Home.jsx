@@ -6,6 +6,7 @@ import { TodayHero, TodayTiles, TodayIdeas, TodayRoutes, useTodayRoutes } from '
 import WalkTimes from './WalkTimes.jsx'
 import { TrainingRow } from '../training/Row.jsx'
 import { FriendsRow, FriendToggle, realFriendsModel, demoFriendsModel, demoFriendActs } from './Friends.jsx'
+import { LiveNow, openLiveOnExplore } from '../liveHooks.jsx'
 import { CardPhotos } from './Photos.jsx'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine, DEMO_DOGS, demoDogByName } from '../data.js'
 
@@ -57,7 +58,7 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSetti
       <TodayRoutes t={tr} />
       <TodayTiles name={dog.name} setTab={setTab} openCompete={openCompete} plan={tr.build} />
       <TrainingRow real={real} />
-      <FriendsRow m={fm} />
+      <FriendsRow m={fm} live={<LiveNow onOpen={() => { openLiveOnExplore(); setTab('explore') }} />} />
       <TodayIdeas name={dog.name} setTab={setTab} openCompete={openCompete} />
       <div className="tjournal"><h2>{dog.name}'s days</h2></div>
       <div className={`seg ${many ? 'four' : ''}`} role="tablist"><button role="tab" aria-selected={scope === 'dog'} className={scope === 'dog' ? 'on' : ''} onClick={() => real.setScope('dog')}>{dog.name}</button>{many && <button role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'on' : ''} onClick={() => real.setScope('all')}>{'All my dogs'}</button>}<button role="tab" aria-selected={scope === 'friends'} className={scope === 'friends' ? 'on' : ''} onClick={() => real.setScope('friends')}>Friends</button><button role="tab" aria-selected={scope === 'pack'} className={scope === 'pack' ? 'on' : ''} onClick={() => real.setScope('pack')}>The pack</button></div>
@@ -100,7 +101,7 @@ function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, setToast,
       <TodayRoutes t={tr} />
       <TodayTiles name={D.name} setTab={setTab} openCompete={openCompete} plan={tr.build} />
       <TrainingRow dd={dd} />
-      <FriendsRow m={fm} />
+      <FriendsRow m={fm} live={<LiveNow demo dogName={D.name} onOpen={() => { openLiveOnExplore(); setTab('explore') }} />} />
       <TodayIdeas name={D.name} setTab={setTab} openCompete={openCompete} hasApi={hasApi} />
       <div className="tjournal"><h2>{D.name}'s days</h2></div>
       <div className="seg" role="tablist"><button role="tab" aria-selected={feed === 'biscuit'} className={feed === 'biscuit' ? 'on' : ''} onClick={() => setFeed('biscuit')}>{D.name}</button><button role="tab" aria-selected={feed === 'friends'} className={feed === 'friends' ? 'on' : ''} onClick={() => setFeed('friends')}>Friends</button><button role="tab" aria-selected={feed === 'pack'} className={feed === 'pack' ? 'on' : ''} onClick={() => setFeed('pack')}>The pack</button></div>

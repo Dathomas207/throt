@@ -364,6 +364,24 @@ const SCHEMA = [
     PRIMARY KEY (dog_id, skill_id)
   )`,
   `CREATE INDEX IF NOT EXISTS training_sessions_dog ON training_sessions (dog_id, at)`,
+  // Live walks shared with mutual friends (server/routesLive.js). One row per walker, overwritten by each
+  // update and deleted when the walk ends, so there is never a trail. lat and lng are empty while the walker
+  // is within 150 m of the start or of their usual start (home_lat, home_lng). place is a listed place's name.
+  `CREATE TABLE IF NOT EXISTS live_walks (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    dog_id TEXT NOT NULL REFERENCES dogs(id) ON DELETE CASCADE,
+    activity TEXT NOT NULL,
+    started_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    pinged_at TIMESTAMPTZ,
+    lat DOUBLE PRECISION,
+    lng DOUBLE PRECISION,
+    start_lat DOUBLE PRECISION NOT NULL,
+    start_lng DOUBLE PRECISION NOT NULL,
+    home_lat DOUBLE PRECISION,
+    home_lng DOUBLE PRECISION,
+    place TEXT
+  )`,
 ]
 
 // Columns added after the first release. CREATE TABLE IF NOT EXISTS leaves an
@@ -410,6 +428,8 @@ const COLUMNS = [
   ['dogs', 'lost_note', "TEXT NOT NULL DEFAULT ''"],
   // The saved route an outing was started from, when there was one. Only the person who walked it sees this.
   ['walks', 'route_id', 'TEXT'],
+  // "Share my walks with friends by default". Off until the person turns it on.
+  ['users', 'share_walks_default', 'BOOLEAN NOT NULL DEFAULT FALSE'],
 ]
 const isDuplicateColumn = (e) => e && (e.code === '42701' || /already exists|duplicate column/i.test(e.message || ''))
 // Leaderboards and the pack feed read walks by time across all dogs. pg-mem cannot

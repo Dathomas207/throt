@@ -460,7 +460,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
           {tab === 'home' && <Home {...ctx} />}
           {tab === 'explore' && <Explore setTab={setTab} setToast={setToast} dogName={dog.name} dogKey={dog.slug} account focusPlace={placeFocus} />}
           {/* Record looks `me` up in the demo PEOPLE table, so it stays a valid demo id. meName and dogName carry the real names. */}
-          {tab === 'record' && <Record me="dale" conn={{}} setTab={setTab} saveWalk={saveWalk} openOuting={(a) => { setTab('home'); setOpen(a) }} todayMin={todayMin} setToast={setToast} meName={me.user.name} dogName={dog.name} publicDog={!!dog.public} account />}
+          {tab === 'record' && <Record me="dale" conn={{}} setTab={setTab} saveWalk={saveWalk} openOuting={(a) => { setTab('home'); setOpen(a) }} todayMin={todayMin} setToast={setToast} meName={me.user.name} dogName={dog.name} dogSlug={dog.slug} publicDog={!!dog.public} account />}
           {tab === 'build' && <RouteBuilder setTab={setTab} setToast={setToast} dogName={dog.name} dogKey={dog.slug} account />}
           {tab === 'people' && <People {...ctx} />}
           {tab === 'dog' && <DogTab {...ctx} />}
