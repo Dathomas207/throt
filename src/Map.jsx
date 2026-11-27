@@ -138,7 +138,7 @@ export default function TrotMap({ route, upto, pins, onPin, selected, focus, liv
     map.current = m
     perfMark('map-ready', t0)
     const ro = new ResizeObserver(() => { auto(); m.invalidateSize() }); ro.observe(node)
-    return () => { dead = true; clearTimeout(wait); cleanup.forEach((f) => f()); ro.disconnect(); pinMap.current.clear(); rt.current = null; heatLayer.current = null; m.remove() }
+    return () => { dead = true; clearTimeout(wait); cleanup.forEach((f) => f()); ro.disconnect(); pinMap.current.clear(); rt.current = null; heatLayer.current = null; /* a zoom animation still running would call into the removed map a moment later */ m._animatingZoom = false; m.remove() }
   }, [])
   useEffect(() => {
     const m = map.current; if (!m || !heat) return

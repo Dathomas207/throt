@@ -352,12 +352,12 @@ export default function RouteBuilder({ setTab, setToast, dogName, dogKey, accoun
             </div>
             {working && <div className="mload quiet" role="status"><span className="spin sm" aria-hidden="true" />{status}</div>}
             {!working && sug.approximate && !shown.edited && <div className="mnote"><span className="grow"><b>Approximate sketch.</b> The routing service did not answer, so this is straight lines between points, not a walkable path.</span><button onClick={() => suggest({ retry: true })}>Retry</button></div>}
-            {sug.from === 'map' && !working && <div className="row g10 nowrap"><button className="cta white bordered small grow" disabled={locating} onClick={useMine}>{locating ? 'Finding you' : 'Use my location'}</button><button className="cta white bordered small grow" onClick={fromMap}>Start from map center</button></div>}
             <div className="row g10 nowrap rgo">
               <button className="cta white bordered small" disabled={!has} onClick={() => beginEdit(m, null)}>Edit</button>
               <button className="cta white bordered small" disabled={!has || saving} onClick={() => save(false)}>Save</button>
               <button className="cta grow" disabled={!has} onClick={start}>Start walk</button>
             </div>
+            {sug.from === 'map' && !working && <div className="row g10 nowrap"><button className="cta white bordered small grow" disabled={locating} onClick={useMine}>{locating ? 'Finding you' : 'Use my location'}</button><button className="cta white bordered small grow" onClick={fromMap}>Start from map center</button></div>}
             <div className="meta">{account ? 'Saved routes stay with your account.' : 'In the demo, saved routes stay on this device only.'} Edit shapes the route road by road.</div>
             {trails && trails.status === 'loading' && <div className="mload quiet" role="status"><span className="spin sm" aria-hidden="true" />Looking for named trails nearby</div>}
             {trailList.length > 0 && <div className="eyebrow dark">NAMED TRAILS NEARBY</div>}

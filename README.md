@@ -73,6 +73,12 @@ All JSON. Send the session token as `Authorization: Bearer <token>`.
 | `POST /api/invites/:token/accept` | signed in | Join the team |
 | `POST /api/dogs/:slug/walks` | team | Save a walk. `type` is one of the ids in `ACTIVITY_TYPES` (`src/data.js`); timed sessions have `miles` 0 and no route. Optional `avgSpeed`, `maxSpeed` (mph, 0 to 40), `sprints` (0 to 500), `movingMinutes`, `runMinutes` (not above `minutes`) |
 | `GET /api/walks/:id` | team | One walk with its full route |
+| `GET /api/routes` | you | Your saved routes, newest change first. `filter=favorites` narrows to starred ones. `filter=recent` instead returns up to 10 distinct routes worked out from your own recorded outings (not saved rows). `near=lat,lng` adds each route's distance and sorts nearest first. Lists carry a line thinned to 160 points |
+| `GET /api/routes/:id` | you | One saved route with its whole line and, for a built route, its control points |
+| `POST /api/routes` | you | `{ name, points, control, favorite, dog, kind, clientId }`. `points` is 2 to 2000 `[lat, lng]` pairs; length and time are worked out by the server. `control` is `{ points, modes }` so the route can be edited again. 200 routes per person. The same `clientId` again answers with the route already there |
+| `PATCH /api/routes/:id` | you | `name`, `favorite`, `points` with `control` when the route was edited again, and `usual` with `dog` to make it that dog's usual walk (one favorite per dog) |
+| `DELETE /api/routes/:id` | you | Deletes the saved route. Outings that followed it are kept |
+| `POST /api/walks/:id/route` | team | Keeps the line of an outing as a `walked` route of your own, optionally `{ favorite: true }`. Asking twice answers with the same route |
 | `DELETE /api/walks/:id` | the walker, or the owner | Delete a walk and its paws |
 | `POST` and `DELETE /api/walks/:id/paw` | team | Give or take back a paw |
 | `GET /api/feed` | signed in | Walks for all your dogs, newest first. `limit`, `cursor`, optional `dog` |
@@ -146,6 +152,27 @@ Every walk in every feed carries `photos: [{ id, url, w, h }]`: the first three 
 - The Today screen uses the dog's newest outing photo as a dimmed banner behind the greeting, and falls back to the plain card when there is none.
 - In the no-sign-in demo, Biscuit and Millie have a few sample friends and two sample outing photos (`public/biscuit-wide.jpg`, `public/millie.jpg`). Adding a friend there only says it needs an account, and "Add from Photos" previews the picked picture from the device without uploading it.
 - The seeded demo dogs follow each other within their city (`DEMO_FOLLOWS` in `server/seedDemo.js`). They have no outing photos.
+
+## Route builder, favorites and recent routes
+
+**Build a route** (Explore, and the Plan a route tile on Today) opens with a route already on the map: a 2 mile loop from where you are when the browser has already been allowed to share the location, or from the middle of the map with a Use my location button when it has not. Opening the screen never asks for the location. Distance chips (1, 2, 3, 5 mi), Loop or Out and back, and Shuffle change the suggestion. If the routing service does not answer, the screen shows straight lines marked approximate with a Retry.
+
+**Edit** shapes the route road by road (`src/routeEdit.js`, which has no network code: the router is passed in, and `server/routes.test.js` tests it with a fake one).
+
+- A route is control points with one leg between each pair. Dragging a point asks the router for the two legs beside it and nothing else. Tapping the line cuts that leg in two at the tap without asking for anything, and the new point can then be dragged onto another road. Tapping the map away from the line adds a point at the end, or before the return leg of a loop. With a point selected, a tap on the map only clears the selection.
+- A selected point offers Remove, Make start and, on the last point, Close the loop back to start. Each leg can be set to Follow paths or Straight line. A straight leg is dashed and counts in the distance. Undo and Redo keep 40 steps. Reverse direction, Clear and Done finish the set.
+- The leg list names each leg by the road or path it mostly follows, from the router's step names (Mapbox when `MAPBOX_TOKEN` is set, the public OSRM foot server otherwise). A leg with no name reads Path, or Unnamed road when Mapbox says it is a street. OSRM does not say which, so its unnamed legs all read Path.
+- Legs are remembered in memory by their endpoints rounded to five decimals. A newer edit cancels the request before it. A route has at most 25 points.
+
+**Saved routes** are private to the person who saved them. Nobody else on a dog's care team can list, open or change them. Signed in they are kept on the account (table `routes`, 200 per person). In the demo they are kept in this browser only (`localStorage`, newest 20 plus every favorite), and the app says so. Routes saved on a device before signing in are copied to the account once per person; the server matches them by the id they had on the device, so a repeat makes no second copy.
+
+- **Favorites** are starred routes. One favorite per dog can be the **usual walk**, which Today offers first with a Start button.
+- **Recent** is the last 10 distinct routes from your own recorded outings that have a line. Two walks count as the same route when they start within 150 m of each other, their lengths are within 12 percent and at least 80 percent of each line, sampled at 24 points, lies within 60 m of the other (`similarRoutes` in `server/routesSavedRoutes.js`). A recent route is not a saved row until you save or star it.
+- After an outing with a line is saved, the finish screen offers Save this route and Add to favorites. The outing's own page has the same two buttons.
+- A walk started from a saved route sends that route's id with the outing. The server links the two, adds one to the route's count and moves its last-walked date. A route id that is not yours is ignored and the outing is saved without a link.
+- A route kept from a walk has no control points. Edit picks up to 12 along its line by Douglas-Peucker simplification, and each leg keeps the recorded line until it is moved.
+
+What is not built yet: sharing a saved route with the care team, a keyboard way to move a point, and turn guidance during a walk. Starting a walk from a planned or saved route plays it back along the line, as planned routes from Explore always have. Only Live GPS records where you actually went.
 
 ## Trial limitations
 
@@ -252,7 +279,7 @@ Privacy rules, enforced on the server and tested in `server/metrics-notification
 - **Numbers are buckets.** Minutes: `under_10`, `10_30`, `30_60`, `over_60`. Miles: `none`, `under_1`, `1_3`, `3_5`, `over_5`.
 - **Opt out with the browser.** When the browser sends Do Not Track or Global Privacy Control, `track()` sends nothing and no browser id is created.
 - **No API, no counting.** On static hosting `track()` is a no-op.
-- **The demo only counts looking around** (`app_open`, `tab_view`, `walk_started`, `walk_discarded`, `place_opened`, `route_built`, `loop_from_here`, `plan_viewed`, `notification_opened`, `location_permission`, `client_error`). Sign-ups, saved walks, friends and the rest come from real accounts only.
+- **The demo only counts looking around** (`app_open`, `tab_view`, `walk_started`, `walk_discarded`, `place_opened`, `route_built`, `route_edited`, `route_started`, `loop_from_here`, `plan_viewed`, `notification_opened`, `location_permission`, `client_error`). Sign-ups, saved walks, friends and the rest come from real accounts only.
 - Rows older than 180 days are deleted.
 
 The events, and the props each one keeps:
@@ -271,6 +298,10 @@ The events, and the props each one keeps:
 | `place_opened` | `category`, `curated` |
 | `place_confirmed`, `place_claim_sent`, `place_reported` | none |
 | `route_built` | none |
+| `route_edited` | `legs` (`1_2`, `3_5`, `6_10`, `over_10`) |
+| `route_saved` | `kind` (`built`, `walked`) |
+| `route_favorited` | none |
+| `route_started` | `source` (`suggested`, `favorite`, `recent`, `built`) |
 | `loop_from_here` | `result` (`ok`, `denied`, `timeout`, `unavailable`, `unsupported`) |
 | `event_marked`, `tag_created`, `lost_mode_on`, `lost_mode_off`, `registration_saved` | none |
 | `plan_viewed` | none |
