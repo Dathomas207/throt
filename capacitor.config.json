@@ -1,1 +1,28 @@
-{"appId":"app.trot.demo","appName":"Trot","webDir":"dist","ios":{"contentInset":"never","backgroundColor":"#0F1B2D"}}
+{
+  "appId": "com.trotdogs.app",
+  "appName": "Trot",
+  "webDir": "dist",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0F1B2D",
+    "appendUserAgent": "TrotApp"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 400,
+      "backgroundColor": "#0F1B2D",
+      "showSpinner": false
+    },
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    },
+    "SystemBars": {
+      "style": "DARK"
+    }
+  }
+}

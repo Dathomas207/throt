@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useId, useState } from 'react'
 import { Ic, Confirm, copyText, TypeIc, SPEED_NOTE } from '../ui.jsx'
 import { api } from '../api.js'
+import { SITE_ORIGIN } from '../native/platform.js'
 import { Range } from '../ui.jsx'
 
 const today = (off = 0) => { const d = new Date(Date.now() + off * 864e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
@@ -153,7 +154,7 @@ export function RealHealth({ real, setToast }) {
   const [ask, setAsk] = useState(null)
   const loadShares = useCallback(async () => { if (!owner) return; try { setShares((await api.health.shares(dog.slug)).shares) } catch (e) {} }, [dog.slug, owner])
   useEffect(() => { setLink(''); loadShares() }, [loadShares])
-  const share = async () => { if (sbusy) return; setSbusy(true); try { const r = await api.health.share(dog.slug); setLink(location.origin + r.path); await loadShares() } catch (e) { setToast(e.message) } setSbusy(false) }
+  const share = async () => { if (sbusy) return; setSbusy(true); try { const r = await api.health.share(dog.slug); setLink(SITE_ORIGIN + r.path); await loadShares() } catch (e) { setToast(e.message) } setSbusy(false) }
   const revoke = async (id) => { setAsk({ id, busy: true }); try { await api.health.revoke(dog.slug, id); setAsk(null); setLink(''); await loadShares(); setToast('Vet link turned off. It no longer opens.') } catch (e) { setAsk({ id, busy: false, error: e.message }) } }
 
   if (!data) return <div className="list"><div className="card empty" role="status">{err ? <><p className="formerr" role="alert">{err}</p><button className="cta small" onClick={load}>Try again</button></> : <p>Fetching {dog.name}'s health records</p>}</div></div>

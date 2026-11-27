@@ -244,13 +244,7 @@ Read these before inviting anyone.
 
 ## Native iPhone build (needs a Mac with Xcode)
 
-    npm install @capacitor/core @capacitor/cli @capacitor/ios
-    npm run build
-    npx cap add ios
-    npx cap sync ios
-    npx cap open ios
-
-In Xcode: select your team under Signing & Capabilities (a free Apple ID works for your own phone, builds expire after 7 days), plug in the iPhone, enable Developer Mode on the phone under Settings > Privacy & Security, and press Run. Add `NSLocationWhenInUseUsageDescription` to Info.plist for Live GPS. The paid Apple Developer Program ($99 per year) adds TestFlight.
+The Xcode project is in `ios/` (Capacitor 8, Swift Package Manager). Follow `docs/ios-build.md` step by step. Short version: `npm install`, then `npm run ios:build`, pick your Team under Signing & Capabilities, and press Run. The native app calls the API at https://trot-app.onrender.com; the one place that decides this is `src/native/platform.js`. `docs/app-store-privacy.md` lists what the app collects for Apple's privacy questions.
 
 ## What is real and what is demo
 

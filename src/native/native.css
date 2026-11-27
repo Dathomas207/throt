@@ -1,0 +1,26 @@
+/* Only loaded inside the iPhone app (see shell.js). Every rule is scoped to html.native,
+   so nothing here can change the website.
+
+   The screens already pad themselves with env(safe-area-inset-top) and
+   env(safe-area-inset-bottom) because Trot was built as a full-screen home-screen app.
+   The web view is told not to add insets of its own (ios.contentInset "never" in
+   capacitor.config.json), so those paddings line up with the notch and home indicator. */
+
+/* The page itself never scrolls or bounces: only the .scroll areas inside it do. */
+html.native,
+html.native body { height: 100%; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100% }
+html.native body { background: #0F1B2D; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none }
+
+/* An app does not let you select its buttons and tab bar as text. Fields and copyable text stay selectable. */
+html.native button,
+html.native .tabs,
+html.native nav { -webkit-user-select: none; user-select: none }
+
+/* iOS zooms the page when a field with text smaller than 16px gets focus. */
+html.native input:not([type=checkbox]):not([type=radio]):not([type=range]),
+html.native textarea,
+html.native select { font-size: 16px !important }
+
+/* Full-screen scroll areas with no tab bar under them (a sheet, the walk screen) end above the home indicator. */
+html.native .detail .scroll,
+html.native .shell:not(:has(.tabs)) .scroll { padding-bottom: calc(16px + env(safe-area-inset-bottom)) }

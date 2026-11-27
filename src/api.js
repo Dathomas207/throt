@@ -2,7 +2,8 @@
 // On static hosting there is no API: probe() answers false and the app stays in
 // demo-only mode without showing anything about it.
 import { configureUsage, captureError, track } from './usage.js'
-const BASE = ((import.meta.env && import.meta.env.VITE_API_BASE) || '').replace(/\/+$/, '')
+// Empty on the website, the production address inside the iPhone app. See src/native/platform.js.
+import { API_BASE as BASE } from './native/platform.js'
 const TOKEN = 'trot-token'
 let token = null
 try { token = localStorage.getItem(TOKEN) || null } catch (e) {}

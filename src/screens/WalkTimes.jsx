@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { walkWindows, headline, hourLabel, rangeLabel, dayWord, grade } from '../walkWindows.js'
 import './walktimes.css'
+import { API_BASE } from '../native/platform.js'
 
 // "Best time to walk" on the Today screen: an hourly forecast scored for a dog walk.
 // The position is the last map position or Eastover, the same one the places row uses,
@@ -21,7 +22,7 @@ export function useForecast(hasApi = true) {
     if (fc && Date.now() - Date.parse(fc.updatedAt) < 20 * 60e3 && !fc.stale) return
     let on = true
     const c = lastCenter()
-    fetch(`/api/weather?lat=${c[0].toFixed(2)}&lng=${c[1].toFixed(2)}`).then((r) => (r.ok ? r.json() : null)).then((j) => {
+    fetch(`${API_BASE}/api/weather?lat=${c[0].toFixed(2)}&lng=${c[1].toFixed(2)}`).then((r) => (r.ok ? r.json() : null)).then((j) => {
       if (!on || !j || !Array.isArray(j.hours)) return
       setFc(j)
       try { localStorage.setItem(KEY, JSON.stringify(j)) } catch (e) { /* storage full or off */ }

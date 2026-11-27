@@ -9,6 +9,7 @@ import ErrorBoundary from '../ErrorBoundary.jsx'
 import { track } from '../usage.js'
 import { NotificationPrefs, MetricsSection, MeasuresNote, Diagnostics } from './SettingsMore.jsx'
 import { LiveShareSetting } from '../liveHooks.jsx'
+import { SITE_ORIGIN, isNative } from '../native/platform.js'
 
 export const PLANS = [
   { id: 'free', name: 'Free', price: '$0', items: ['One dog', 'Phone tracking', 'Feed and paws', 'Care team of up to three', 'Public dog page', 'Story cards', 'Places map'] },
@@ -117,7 +118,7 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
     setNaming(null); setToast(`You now show as ${firstName(r.user.name)}`)
   }
   const groups = [...new Set(CONNECTIONS.map((c) => c.group))]
-  const path = dog ? `/d/${dog.slug}` : '', url = dog ? location.origin + path : ''
+  const path = dog ? `/d/${dog.slug}` : '', url = dog ? SITE_ORIGIN + path : ''
   return (
     <div className="detail" role="dialog" aria-modal="true" aria-label="Settings">
       <header className="dhead"><button ref={back} className="round flat" aria-label="Back" onClick={close}><Ic n="back" /></button><b>Settings</b><span className="round flat" aria-hidden="true" /></header>
@@ -182,14 +183,14 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
           </div>)}
         </Section>
 
-        <Section title="PLANS" id="set-plans">
+        {!isNative && <Section title="PLANS" id="set-plans">
           <div className="row between g8" ref={plansRef}><p className="meta grow">A preview of the plans. Billing is not live, nothing is charged, and no feature is locked.</p><span className="badge on">Current: {planName(plan)}</span></div>
           {PLANS.map((p) => <div key={p.id} className={`plan ${plan === p.id ? 'on' : ''}`}>
             <div className="row between g8"><b>{p.name}</b><span className="num">{p.price}</span></div>
             <ul>{p.items.map((i) => <li key={i}>{i}</li>)}</ul>
             {plan === p.id ? <span className="badge on self"><Ic n="check" s={14} />Your plan on this device</span> : <button className="cta small white bordered" aria-label={`Choose plan: ${p.name}`} onClick={() => choose(p)}>Choose plan</button>}
           </div>)}
-        </Section>
+        </Section>}
 
         <MeasuresNote />
         <Section title="HELP AND DIAGNOSTICS" id="set-help">

@@ -4,6 +4,7 @@ import { Ic, Confirm, copyText } from '../ui.jsx'
 import { api } from '../api.js'
 import { qrMatrix, qrPath } from '../qr.js'
 import { DEMO_ID } from '../data.js'
+import { SITE_ORIGIN } from '../native/platform.js'
 import { DEMO_NOTE, FoundReports, LostNotice, LostToggle, TagActivity, useTagState } from './LostDog.jsx'
 
 // Registration and ID for one dog: the microchip, licence and rabies checklist, the form behind it,
@@ -40,7 +41,7 @@ function demoReg(key) {
   }
 }
 const demoState = (key) => ({ scans: DEMO_ID[key].scans.map((s) => ({ ...s, at: new Date(Date.now() - s.daysAgo * 864e5).toISOString() })), unread: 0, lost: { on: false, since: null, note: '' }, canEdit: true })
-const demoTags = (key) => DEMO_ID[key].tags.map((t) => ({ ...t, kind: 'tag', active: true, url: `${location.origin}/t/${t.code}`, createdAt: new Date(Date.now() - t.daysAgo * 864e5).toISOString() }))
+const demoTags = (key) => DEMO_ID[key].tags.map((t) => ({ ...t, kind: 'tag', active: true, url: `${SITE_ORIGIN}/t/${t.code}`, createdAt: new Date(Date.now() - t.daysAgo * 864e5).toISOString() }))
 
 function DueBanner({ name, due, onOpen }) {
   if (!due.length) return null

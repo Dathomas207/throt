@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { watchPosition, clearWatch } from '../native/location.js'
 import TrotMap, { useHeight } from '../Map.jsx'
 import { Ic, Av, Stat, Range } from '../ui.jsx'
 import { ROUTES, PEOPLE, ACTIVITY_TYPES, activityType, fmtTime, haversine } from '../data.js'
@@ -128,8 +129,8 @@ export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMi
     }
     // A lost signal in the middle of a walk should not throw the recording away.
     const onErr = (e) => { geoError(e, 'record'); if (count.current === 0 || (e && e.code === 1)) bail(e && e.code === 1 ? 'denied' : e && e.code === 3 ? 'timeout' : 'unavailable'); else setWeak(true) }
-    try { watch.current = navigator.geolocation.watchPosition(onFix, onErr, { enableHighAccuracy: true, maximumAge: 2000 }) } catch (e) { bail('unsupported') }
-    return () => { try { navigator.geolocation.clearWatch(watch.current) } catch (e) {} }
+    try { watch.current = watchPosition(onFix, onErr, { enableHighAccuracy: true, maximumAge: 2000 }) } catch (e) { bail('unsupported') }
+    return () => { try { clearWatch(watch.current) } catch (e) {} }
   }, [mode, live, manual, noGps])
   useEffect(() => {
     // Keep the screen awake while recording, where the browser supports it.

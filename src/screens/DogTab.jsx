@@ -7,6 +7,7 @@ import { RealAwards, DemoAwards } from './Awards.jsx'
 import { DogId, DemoDogId } from './Registration.jsx'
 import { TrainingCard } from '../training/Row.jsx'
 import { DEMO_DOGS } from '../data.js'
+import { SITE_ORIGIN } from '../native/platform.js'
 
 export default function DogTab(props) { return props.real ? <RealDogTab {...props} /> : <DemoDogTab {...props} /> }
 
@@ -33,7 +34,7 @@ function RealDogTab({ real, pawed, paw, setOpen, setToast, openSettings, regNonc
   const owner = dog.role === 'owner'
   const days = [...Array(7)].map((_, i) => { const d = 6 - i; return { d, ...dayOf(d), min: weekWalks.filter((w) => daysAgoOf(w.startedAt) === d && w.type !== 'Daycare').reduce((s, w) => s + w.minutes, 0) } })
   const path = `/d/${dog.slug}`
-  const url = location.origin + path
+  const url = SITE_ORIGIN + path
   const facts = [dog.breed, dog.age, dog.weight ? `${dog.weight} lb` : '', dog.city].filter(Boolean).join(' · ')
   const shown = type && dogActs.some((a) => a.type === type) ? dogActs.filter((a) => a.type === type) : dogActs
   return (

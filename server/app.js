@@ -20,6 +20,7 @@ import { registerTraining } from './routesTraining.js'
 import { registerLive } from './routesLive.js'
 
 import { geoRouter } from './geo.js'
+import { nativeCors } from './cors.js'
 
 export const LIMITS = {
   body: '400kb',
@@ -216,6 +217,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     res.set('Referrer-Policy', 'strict-origin-when-cross-origin')
     next()
   })
+  app.use(nativeCors())
 
   app.get('/healthz', async (req, res) => {
     try { await db.query('SELECT 1'); res.json({ ok: true, db: db.kind }) } catch (e) { res.status(503).json({ ok: false }) }

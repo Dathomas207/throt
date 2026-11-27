@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Ic, Paw, Av, Stat, Range, Card, whoName, ptsOf, DogSwitch, personColor, firstName, ROLE_LABEL, copyText, Confirm, Gear } from '../ui.jsx'
 import Person from './Person.jsx'
+import { SITE_ORIGIN } from '../native/platform.js'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine } from '../data.js'
 
 export default function People(props) { return props.real ? <RealPeople {...props} /> : <DemoPeople {...props} /> }
@@ -30,7 +31,7 @@ function RealPeople({ real, setToast, openSettings, openCompete, pawed, paw, set
   const create = async () => {
     if (busy) return
     setBusy(true); setErr('')
-    try { const r = await real.createInvite(role); setLink(location.origin + r.path); loadInvites() } catch (e) { setErr(e.message) }
+    try { const r = await real.createInvite(role); setLink(SITE_ORIGIN + r.path); loadInvites() } catch (e) { setErr(e.message) }
     setBusy(false)
   }
   const confirmAsk = async () => {
