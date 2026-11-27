@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Ic, Paw, Av, DogAv, Stat, Range, Card, whoName, ptsOf, DogSwitch, Gear, Bell, TypeIc, usePhoto } from '../ui.jsx'
 import { api } from '../api.js'
 import { HomeAlerts } from './LostDog.jsx'
-import { TodayHero, TodayTiles, TodayIdeas } from './Today.jsx'
+import { TodayHero, TodayTiles, TodayIdeas, TodayRoutes, useTodayRoutes } from './Today.jsx'
 import WalkTimes from './WalkTimes.jsx'
+import { TrainingRow } from '../training/Row.jsx'
 import { FriendsRow, FriendToggle, realFriendsModel, demoFriendsModel, demoFriendActs } from './Friends.jsx'
 import { CardPhotos } from './Photos.jsx'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine, DEMO_DOGS, demoDogByName } from '../data.js'
@@ -42,6 +43,8 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSetti
     api.friends.feed(dog.slug).then((r) => on && setFf(r.walks), () => on && setFf([]))
     return () => { on = false }
   }, [scope, dog.slug, real.friends.rev])
+  const tr = useTodayRoutes({ account: true, dogKey: dog.slug, name: dog.name, setTab, setToast })
+  const usual = tr.usual && { name: tr.usual.name, miles: tr.usual.miles, onStart: () => tr.startRoute(tr.usual) }
   // The newest outing photo of this dog, for the banner behind the greeting.
   const banner = (real.dogActs.find((a) => a.photos && a.photos.length) || { photos: [] }).photos[0]
   return (
@@ -49,9 +52,11 @@ function RealHome({ real, acts, pawed, paw, setOpen, setTab, setToast, openSetti
       <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Signed in as {user.name}</div><Bell n={unread} onClick={openNotifications} /><Gear onClick={openSettings} /></div></header>
       <DogSwitch dogs={dogs} active={dog.slug} onPick={real.switchDog} />
       <HomeAlerts real={real} setToast={setToast} />
-      <TodayHero name={dog.name} photoUrl={dog.photoUrl} banner={banner} onWalk={() => setTab('record')} onDog={() => setTab('dog')} status={totals.week.outings > 0 ? `${totals.week.outings} ${totals.week.outings === 1 ? 'outing' : 'outings'} and ${totals.week.miles.toFixed(1)} miles in the last 7 days` : 'No outings in the last 7 days yet'} />
+      <TodayHero name={dog.name} photoUrl={dog.photoUrl} banner={banner} usual={usual} onWalk={() => setTab('record')} onDog={() => setTab('dog')} status={totals.week.outings > 0 ? `${totals.week.outings} ${totals.week.outings === 1 ? 'outing' : 'outings'} and ${totals.week.miles.toFixed(1)} miles in the last 7 days` : 'No outings in the last 7 days yet'} />
       <WalkTimes name={dog.name} onWalk={() => setTab('record')} />
-      <TodayTiles name={dog.name} setTab={setTab} openCompete={openCompete} />
+      <TodayRoutes t={tr} />
+      <TodayTiles name={dog.name} setTab={setTab} openCompete={openCompete} plan={tr.build} />
+      <TrainingRow real={real} />
       <FriendsRow m={fm} />
       <TodayIdeas name={dog.name} setTab={setTab} openCompete={openCompete} />
       <div className="tjournal"><h2>{dog.name}'s days</h2></div>
@@ -82,15 +87,19 @@ function DemoHome({ acts, week, todayMin, pawed, paw, setOpen, setTab, setToast,
   const D = dd.dog
   const fm = demoFriendsModel(dd, { setToast, onDog, open: openFriends })
   const banner = (acts.find((a) => a.photos && a.photos.length) || { photos: [] }).photos[0]
+  const tr = useTodayRoutes({ account: false, dogKey: D.name, name: D.name, acts, setTab, setToast })
+  const usual = tr.usual && { name: tr.usual.name, miles: tr.usual.miles, onStart: () => tr.startRoute(tr.usual) }
   // Dale's own dogs are never in "the pack".
   const list = feed === 'biscuit' ? acts : feed === 'friends' ? demoFriendActs(dd) : [...PACK.filter((x) => !demoDogByName(x.dog)), ...acts].sort((a, b) => a.daysAgo - b.daysAgo)
   return (
     <div className="scroll">
       <header className="top"><div className="logo">TROT</div><div className="row g8"><div className="meta">Demo, viewing as {PEOPLE[me].name}</div><Bell n={unread} onClick={openNotifications} /><Gear onClick={openSettings} /></div></header>
       <DemoSwitch dd={dd} setDk={setDk} />
-      <TodayHero name={D.name} demo banner={banner} onWalk={() => setTab('record')} onDog={() => setTab('dog')} status={`${week.walks} outings and ${week.miles.toFixed(1)} miles this week · ${D.streak} day streak`}><Range min={todayMin} light dog={D} /></TodayHero>
+      <TodayHero name={D.name} demo banner={banner} usual={usual} onWalk={() => setTab('record')} onDog={() => setTab('dog')} status={`${week.walks} outings and ${week.miles.toFixed(1)} miles this week · ${D.streak} day streak`}><Range min={todayMin} light dog={D} /></TodayHero>
       <WalkTimes name={D.name} hasApi={hasApi} onWalk={() => setTab('record')} />
-      <TodayTiles name={D.name} setTab={setTab} openCompete={openCompete} />
+      <TodayRoutes t={tr} />
+      <TodayTiles name={D.name} setTab={setTab} openCompete={openCompete} plan={tr.build} />
+      <TrainingRow dd={dd} />
       <FriendsRow m={fm} />
       <TodayIdeas name={D.name} setTab={setTab} openCompete={openCompete} hasApi={hasApi} />
       <div className="tjournal"><h2>{D.name}'s days</h2></div>

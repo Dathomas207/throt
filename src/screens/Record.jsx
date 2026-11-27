@@ -2,11 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import TrotMap, { useHeight } from '../Map.jsx'
 import { Ic, Av, Stat, Range } from '../ui.jsx'
 import { ROUTES, PEOPLE, ACTIVITY_TYPES, activityType, fmtTime, haversine } from '../data.js'
-import { takeHandoff, loadSavedRoutes, deleteSavedRoute, pathMiles, lineUpTo, peekDemoRoute, resolveDemoRoute, useHereLoop, locationHelp, DEFAULT_CENTER } from '../routing.js'
+import { takeHandoff, pathMiles, lineUpTo, peekDemoRoute, resolveDemoRoute, useHereLoop, locationHelp, DEFAULT_CENTER } from '../routing.js'
 import { trackStats, speedStats, demoSamples, distAt, samplesUpTo, activityStats, defaultTitle, MAX_ACCURACY_M, SPIKE_MPH } from '../metrics.js'
 import { PhotoPicker, PickStrip, makePicks } from './Photos.jsx'
 import { OUTING_PHOTO_MAX } from '../photo.js'
 import '../maps.css'
+import { RouteThumb } from '../RouteThumb.jsx'
+import { useRoutes, routeActions } from '../routeStore.js'
 import { track, locationPermission, geoError } from '../usage.js'
 
 const SPEED = 40
@@ -32,14 +34,19 @@ const TypeIc = ({ id, s = 18, c = 'currentColor' }) => <svg aria-hidden="true" w
 const lastViewCenter = () => { try { const v = JSON.parse(localStorage.getItem('trot-view-v2')); if (v && Array.isArray(v.at) && Number.isFinite(v.at[0]) && Number.isFinite(v.at[1])) return v.at } catch (e) {} return null }
 const mph = (v) => (Number(v) || 0).toFixed(1) + ' mph'
 
-export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast, meName, dogName, publicDog }) {
+// account is true on a signed-in person's own screen: saved routes then come from the account, not this device.
+export default function Record({ me, conn, setTab, saveWalk, openOuting, todayMin, setToast, meName, dogName, publicDog, account }) {
   const [hand] = useState(() => { const h = takeHandoff(); return h && h.kind === 'demo' && !ROUTES[h.key] ? null : h })
   const [mode, setMode] = useState('setup')
   const [type, setType] = useState('Walk')
   // rk is 'handoff' (route from Explore), 'loop' (loop from here), 'gps', 'saved:<id>' (a saved route), or a demo key from ROUTES.
   const [rk, setRk] = useState(() => (!hand ? 'pond' : hand.kind === 'demo' ? hand.key : 'handoff'))
   const here = useHereLoop(), loop = here.loop
-  const [saved, setSaved] = useState(loadSavedRoutes)
+  const store = useRoutes(!!account)
+  // Favorites first, the usual walk at the top. The full list is in the route builder.
+  const saved = useMemo(() => store.routes.slice().sort((a, b) => !!b.usualFor - !!a.usualFor || b.favorite - a.favorite).slice(0, 8), [store.routes])
+  const [fullR, setFullR] = useState(null) // the whole line of the saved route that is selected
+  const [doneAct, setDoneAct] = useState(null), [kept, setKept] = useState(null), [busySave, setBusySave] = useState(false)
   const [del, setDel] = useState(null)
   const [demoR, setDemoR] = useState(() => Object.fromEntries(Object.keys(ROUTES).map((k) => [k, peekDemoRoute(k)])))
   const [paused, setPaused] = useState(false)
@@ -69,7 +76,12 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
   }, [])
   const loopRoute = useMemo(() => (loop && loop.status === 'ready' ? { ...loop.route, name: `${loop.route.miles.toFixed(1)} mi loop from ${loop.from === 'you' ? 'here' : 'the map area'}`, place: loop.from === 'you' ? 'Loop from here' : 'Loop from the map area' } : null), [loop && loop.route])
   const savedSel = rk.startsWith('saved:') ? saved.find((x) => 'saved:' + x.id === rk) || null : null
-  const savedRoute = useMemo(() => (savedSel ? { ...savedSel, place: savedSel.name } : null), [savedSel])
+  // A list from the account carries a thinned line. The whole one is fetched when the route is picked.
+  useEffect(() => { if (!savedSel) return; let on = true; routeActions.full(savedSel).then((x) => { if (on && x.route) setFullR(x.route) }); return () => { on = false } }, [savedSel && savedSel.id])
+  const savedRoute = useMemo(() => { const f = savedSel && (savedSel.full ? savedSel : fullR && fullR.id === savedSel.id ? fullR : null); return f ? { ...f, place: f.name } : null }, [savedSel, fullR])
+  // The saved route this outing follows, if any. Saving the outing links the two and counts the walk.
+  const routeId = rk === 'handoff' ? (hand && hand.routeId) || null : savedSel ? savedSel.id : null
+  const routeName = rk === 'handoff' ? (hand && hand.routeName) || '' : savedSel ? savedSel.name : ''
   const demoKey = !timed && !live && rk !== 'handoff' && rk !== 'loop' && !rk.startsWith('saved:') && ROUTES[rk] ? rk : null
   const demoRoute = useMemo(() => (demoKey ? { ...ROUTES[demoKey], ...(demoR[demoKey] || {}) } : null), [demoKey, demoR])
   const r = timed || live ? null : rk === 'handoff' ? hand : rk === 'loop' ? loopRoute : rk.startsWith('saved:') ? savedRoute : demoRoute
@@ -136,21 +148,38 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
   const pace = miles > 0.05 ? fmtTime(sec / 60 / miles) + ' /mi' : '--'
   const titlePlace = timed ? placeName.trim() : live || rk === 'loop' ? '' : demoKey ? r.name.split(' ')[0] + ' ' + (r.name.split(' ')[1] || '') : (r && r.place) || ''
   const finish = () => { setPaused(true); setTitle(defaultTitle(T.label, titlePlace)); setMode('done') }
-  const save = () => {
+  const save = async () => {
+    if (busySave) return
     const base = { id: 'm' + Date.now(), dog: dogName || 'Biscuit', by: me, type, title: title || T.label, daysAgo: 0, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), paws: 0, comments: 0, note, sniffs: 0, minutes: sec / 60 }
     const files = picks.map((p) => p.file)
     if (timed) { saveWalk({ ...base, place: placeName.trim(), route: null, pts: null, miles: 0, avgSpeed: 0, maxSpeed: 0, sprints: taps, movingMinutes: sec / 60, runMinutes: 0 }, files); return }
-    saveWalk({ ...base, place: live ? 'Live GPS' : r.place || r.name, route: demoKey, pts: live ? (gps.length > 1 ? gps : null) : walked, miles: Math.round(miles * 100) / 100, ...activityStats(st, sec / 60) }, files)
+    // The outing is saved first. If it has a line, this screen stays to offer keeping the route.
+    setBusySave(true)
+    const act = await saveWalk({ ...base, place: live ? 'Live GPS' : r.place || r.name, route: demoKey, pts: live ? (gps.length > 1 ? gps : null) : walked, miles: Math.round(miles * 100) / 100, ...activityStats(st, sec / 60), ...(routeId && !live ? { routeId } : {}) }, files, { stay: true })
+    if (!alive.current) return
+    setBusySave(false)
+    if (!act) return
+    if (!act.pts || act.pts.length < 2 || !openOuting) { if (openOuting) openOuting(act); else setTab('home'); return }
+    setDoneAct({ ...act, followed: routeId && !live ? routeName : '' }); setMode('saved')
+  }
+  const keep = async (favorite) => {
+    if (busySave) return
+    setBusySave(true)
+    const x = await routeActions.saveWalk({ id: doneAct.id, name: doneAct.title, pts: doneAct.pts, dog: dogName || 'Biscuit' }, { favorite })
+    if (!alive.current) return
+    setBusySave(false)
+    if (x.error) setToast(x.error); else setKept(x.route)
   }
   const removeSaved = (x) => {
     if (del !== x.id) { setDel(x.id); return }
-    const out = deleteSavedRoute(x.id)
-    setSaved(out.list); setDel(null)
+    setDel(null)
     if (rk === 'saved:' + x.id) setRk('pond')
-    setToast(out.ok ? `Deleted ${x.name}` : 'This browser would not update saved routes.')
+    routeActions.remove(x.id).then((out) => setToast(out.error || `Deleted ${x.name}`))
   }
   const start = () => { setSec(0); last.current = null; count.current = 0; gapNext.current = false; setFixes([]); setWeak(false); setPaused(false); setFollow(true); setTaps(0); setMode('run'); track('walk_started', { type, gps: live }) }
   const canStart = timed || live || !!r
+  // The usual walk on Today starts in one tap: the route arrives with autoStart and the walk begins at once.
+  useEffect(() => { if (hand && hand.autoStart && hand.kind === 'routed') start() }, [])
   const meP = { ...(PEOPLE[me] || PEOPLE.dale), ...(meName ? { name: meName } : {}) }
   const dn = dogName || 'Biscuit'
   const selMiles = loop ? loop.miles : 2
@@ -170,7 +199,7 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
       </>)}
       {!timed && (<>
         <div className="eyebrow dark">ROUTE</div>
-        {hand && hand.kind === 'routed' && <button className={`rrow box ${rk === 'handoff' ? 'on' : ''}`} aria-pressed={rk === 'handoff'} onClick={() => setRk('handoff')}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{hand.name}</b><small>From Explore · {hand.trail ? 'trail from OpenStreetMap' : hand.approximate ? 'approximate, not a mapped path' : 'routed on mapped paths'} · about {hand.minutes} min</small></span><span className="num">{hand.miles.toFixed(1)} mi</span></button>}
+        {hand && hand.kind === 'routed' && <button className={`rrow box ${rk === 'handoff' ? 'on' : ''}`} aria-pressed={rk === 'handoff'} onClick={() => setRk('handoff')}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{hand.name}</b><small>{hand.routeId ? 'Saved route' : 'Planned route'} · {hand.trail ? 'trail from OpenStreetMap' : hand.approximate ? 'approximate, not a mapped path' : 'routed on mapped paths'} · about {hand.minutes} min</small></span><span className="num">{hand.miles.toFixed(1)} mi</span></button>}
         <div className={`rrow box lbox ${rk === 'loop' ? 'on' : ''}`}>
           <button className="cta" disabled={loopBusy} onClick={() => { setRk('loop'); here.fromHere(selMiles) }}>{loop && loop.status === 'locating' ? <><span className="spin" aria-hidden="true" />Finding you</> : loop && loop.status === 'routing' ? <><span className="spin" aria-hidden="true" />Building the loop</> : 'Loop from here'}</button>
           <div className="loops" role="group" aria-label="Loop length">{LOOPS.map((m) => <button key={m} className={`chip flat ${selMiles === m ? 'on' : ''}`} aria-pressed={selMiles === m} disabled={loopBusy} onClick={() => { setRk('loop'); here.setMiles(m) }}><b>{m}</b> mi</button>)}</div>
@@ -189,7 +218,7 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
         {saved.length > 0 && <div className="eyebrow dark">SAVED ROUTES</div>}
         {saved.map((x) => (
           <div key={x.id} className={`rrow box srow ${rk === 'saved:' + x.id ? 'on' : ''}`}>
-            <button className="rrow" aria-pressed={rk === 'saved:' + x.id} onClick={() => setRk('saved:' + x.id)}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{x.name}</b><small>{x.trail ? 'Trail from OpenStreetMap' : 'Built in Explore · ' + (x.approximate ? 'approximate, not a mapped path' : 'routed on mapped paths')} · about {x.minutes} min</small></span><span className="num">{x.miles.toFixed(1)} mi</span></button>
+            <button className="rrow" aria-pressed={rk === 'saved:' + x.id} onClick={() => setRk('saved:' + x.id)}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{x.name}</b><small>{x.usualFor ? 'Usual walk · ' : x.favorite ? 'Favorite · ' : ''}{x.trail ? 'Trail from OpenStreetMap' : x.kind === 'walked' ? 'Saved from a walk' : 'Built route' + (x.approximate ? ', approximate' : '')} · about {x.minutes} min</small></span><span className="num">{x.miles.toFixed(1)} mi</span></button>
             <button className={`sdel ${del === x.id ? 'sure' : ''}`} aria-label={`${del === x.id ? 'Confirm delete' : 'Delete'} ${x.name}`} onClick={() => removeSaved(x)}>{del === x.id ? 'Delete?' : <Ic n="x" s={16} />}</button>
           </div>
         ))}
@@ -209,8 +238,25 @@ export default function Record({ me, conn, setTab, saveWalk, todayMin, setToast,
       <PickStrip picks={picks} onRemove={unpick} />
       <p className="meta lightm">Opens your photo library so you can choose. Photos are added after the outing is saved{publicDog ? `, and show on ${dn}'s public page` : ''}.</p>
     </div>
-    <div className="row g12"><button className="cta white grow" onClick={() => { track('walk_discarded'); setTab('home') }}>Discard</button><button className="cta grow" onClick={save}>Save to {dn}</button></div>
+    <div className="row g12"><button className="cta white grow" onClick={() => { track('walk_discarded'); setTab('home') }}>Discard</button><button className="cta grow" disabled={busySave} onClick={save}>{busySave ? 'Saving' : `Save to ${dn}`}</button></div>
   </>)
+  // The outing is saved. Its route can be kept and starred right here, before the outing opens.
+  if (mode === 'saved' && doneAct) return (
+    <div className="fill navy tsession">
+      <div className="tbody"><div className="center"><div className="sl lightl">SAVED TO {dn.toUpperCase()}</div><div className="clock" role="status">{(doneAct.miles || 0).toFixed(2)} mi</div><div className="sl lightl">{fmtTime(doneAct.minutes)}</div></div></div>
+      <div className="panel savedcard">
+        <RouteThumb pts={doneAct.pts} dark />
+        {doneAct.followed ? <p className="speednote">This walk followed {doneAct.followed}. It is counted on that saved route.</p> : (<>
+          <p className="speednote" role="status">{kept ? `Route saved ${account ? 'to your account' : 'on this device only'}${kept.favorite ? ', in your favorites' : ''}. It is under Favorites in Build a route.` : 'Keep this route to walk it again. Saved routes are private to you.'}</p>
+          <div className="keeprow">
+            <button className="cta white" disabled={busySave || !!kept} onClick={() => keep(false)}>{kept ? 'Route saved' : 'Save this route'}</button>
+            <button className="cta white" aria-pressed={!!(kept && kept.favorite)} disabled={busySave || !!(kept && kept.favorite)} onClick={() => keep(true)}>{kept && kept.favorite ? 'In your favorites' : 'Add to favorites'}</button>
+          </div>
+        </>)}
+        <button className="cta" onClick={() => openOuting(doneAct)}>Done</button>
+      </div>
+    </div>
+  )
   if (timed) return (
     <div className="fill navy tsession">
       <div className="over topbar row g8"><div className="pill"><Av t={dn[0]} s={30} />{dn}</div><div className="pill">with {meP.name}</div><div className="pill dark"><TypeIc id={type} s={16} c="#C8F031" />{T.label}</div></div>

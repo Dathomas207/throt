@@ -8,9 +8,9 @@
 // The last 20 errors are also kept on this device only, for the Help and diagnostics screen.
 
 // The full list. The server keeps the same one (USAGE_EVENTS in server/routesUsage.js) and drops anything else.
-export const EVENTS = ['app_open', 'sign_up', 'sign_in', 'dog_created', 'tab_view', 'walk_started', 'walk_saved', 'walk_discarded', 'photo_added', 'friend_added', 'friend_removed', 'invite_link_copied', 'care_invite_sent', 'care_invite_accepted', 'place_opened', 'place_confirmed', 'place_claim_sent', 'place_reported', 'route_built', 'loop_from_here', 'event_marked', 'tag_created', 'lost_mode_on', 'lost_mode_off', 'registration_saved', 'plan_viewed', 'notification_opened', 'location_permission', 'client_error']
+export const EVENTS = ['app_open', 'sign_up', 'sign_in', 'dog_created', 'tab_view', 'walk_started', 'walk_saved', 'walk_discarded', 'photo_added', 'friend_added', 'friend_removed', 'invite_link_copied', 'care_invite_sent', 'care_invite_accepted', 'place_opened', 'place_confirmed', 'place_claim_sent', 'place_reported', 'route_built', 'route_edited', 'route_saved', 'route_favorited', 'route_started', 'loop_from_here', 'event_marked', 'tag_created', 'lost_mode_on', 'lost_mode_off', 'registration_saved', 'plan_viewed', 'notification_opened', 'location_permission', 'training_opened', 'training_session_logged', 'training_level_confirmed', 'training_badge_earned', 'client_error']
 // The demo saves nothing, so it only counts looking around. Sign-ups, walks, friends and the rest are real accounts only.
-const DEMO_OK = new Set(['app_open', 'tab_view', 'walk_started', 'walk_discarded', 'place_opened', 'route_built', 'loop_from_here', 'plan_viewed', 'notification_opened', 'location_permission', 'client_error'])
+const DEMO_OK = new Set(['app_open', 'tab_view', 'training_opened', 'walk_started', 'walk_discarded', 'place_opened', 'route_built', 'route_edited', 'route_started', 'loop_from_here', 'plan_viewed', 'notification_opened', 'location_permission', 'client_error'])
 
 /* global __APP_VERSION__ */
 export const APP_VERSION = typeof __APP_VERSION__ === 'string' && __APP_VERSION__ ? __APP_VERSION__ : 'dev'
@@ -49,6 +49,8 @@ function anonId() {
   } catch (e) { return null }
 }
 export const minutesBucket = (m) => (!(m >= 0) ? 'unknown' : m < 10 ? 'under_10' : m < 30 ? '10_30' : m < 60 ? '30_60' : 'over_60')
+// How many legs a route had when its edit was finished.
+export const legsBucket = (n) => (!(n > 0) ? 'none' : n < 3 ? '1_2' : n < 6 ? '3_5' : n < 11 ? '6_10' : 'over_10')
 export const milesBucket = (m) => (!(m > 0) ? 'none' : m < 1 ? 'under_1' : m < 3 ? '1_3' : m < 5 ? '3_5' : 'over_5')
 
 // Queue one event. Safe to call anywhere: it never throws and never waits on the network.
@@ -99,7 +101,7 @@ export function maskText(v, max = 200) {
     .replace(/\s+/g, ' ').trim().slice(0, max)
 }
 // "/dogs/biscuit-2/walks?x=1" becomes "/dogs/:id/walks". Only these fixed words of the API's paths are kept.
-const FIXED = new Set(['api', 'dogs', 'walks', 'photos', 'photo', 'friends', 'feed', 'suggestions', 'search', 'me', 'session', 'places', 'confirm', 'claim', 'report', 'events', 'entries', 'awards', 'health', 'shares', 'documents', 'file', 'registration', 'tags', 'scans', 'read', 'lost', 'invites', 'accept', 'members', 'challenges', 'leaderboards', 'pack', 'notifications', 'prefs', 'usage', 'admin', 'metrics', 'claims', 'reports', 'approve', 'reject', 'resolve', 'public', 'geo', 'config', 'heat', 'paw', 'parks', 'more'])
+const FIXED = new Set(['api', 'dogs', 'walks', 'routes', 'route', 'photos', 'photo', 'friends', 'feed', 'suggestions', 'search', 'me', 'session', 'places', 'confirm', 'claim', 'report', 'events', 'entries', 'awards', 'health', 'shares', 'documents', 'file', 'registration', 'tags', 'scans', 'read', 'lost', 'invites', 'accept', 'members', 'challenges', 'leaderboards', 'pack', 'notifications', 'prefs', 'usage', 'admin', 'metrics', 'claims', 'reports', 'approve', 'reject', 'resolve', 'public', 'geo', 'config', 'heat', 'paw', 'parks', 'more'])
 export function pathPattern(v) {
   const p = String(v == null ? '' : v).split(/[?#]/)[0].slice(0, 200)
   return p.split('/').map((seg, i) => (seg === '' && i === 0 ? '' : FIXED.has(seg) ? seg : ':id')).join('/').slice(0, 80)

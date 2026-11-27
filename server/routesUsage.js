@@ -28,7 +28,7 @@ export function maskText(v, max = USAGE_LIMITS.message) {
     .replace(/\s+/g, ' ').trim().slice(0, max)
 }
 // "/dogs/biscuit-2/walks?x=1" becomes "/dogs/:id/walks": ids, dog addresses, codes and the query never stay.
-const FIXED = new Set(['api', 'dogs', 'walks', 'photos', 'photo', 'friends', 'feed', 'suggestions', 'search', 'me', 'session', 'places', 'confirm', 'claim', 'report', 'events', 'entries', 'awards', 'health', 'shares', 'documents', 'file', 'registration', 'tags', 'scans', 'read', 'lost', 'invites', 'accept', 'members', 'challenges', 'leaderboards', 'pack', 'notifications', 'prefs', 'usage', 'admin', 'metrics', 'claims', 'reports', 'approve', 'reject', 'resolve', 'public', 'geo', 'config', 'heat', 'paw', 'parks', 'more'])
+const FIXED = new Set(['api', 'dogs', 'walks', 'routes', 'route', 'photos', 'photo', 'friends', 'feed', 'suggestions', 'search', 'me', 'session', 'places', 'confirm', 'claim', 'report', 'events', 'entries', 'awards', 'health', 'shares', 'documents', 'file', 'registration', 'tags', 'scans', 'read', 'lost', 'invites', 'accept', 'members', 'challenges', 'leaderboards', 'pack', 'notifications', 'prefs', 'usage', 'admin', 'metrics', 'claims', 'reports', 'approve', 'reject', 'resolve', 'public', 'geo', 'config', 'heat', 'paw', 'parks', 'more'])
 export function pathPattern(v) {
   const p = String(v == null ? '' : v).split(/[?#]/)[0].slice(0, 200)
   return p.split('/').map((seg, i) => (seg === '' && i === 0 ? '' : FIXED.has(seg) ? seg : ':id')).join('/').slice(0, 80)
@@ -47,10 +47,14 @@ export const USAGE_EVENTS = {
   place_opened: { category: tok, curated: flag },
   place_confirmed: {}, place_claim_sent: {}, place_reported: {},
   route_built: {},
+  // The route builder and saved routes. Counts and fixed words only: never a name, a place or a coordinate.
+  route_edited: { legs: tok }, route_saved: { kind: tok }, route_favorited: {}, route_started: { source: tok },
   loop_from_here: { result: tok },
   event_marked: {}, tag_created: {}, lost_mode_on: {}, lost_mode_off: {}, registration_saved: {},
   plan_viewed: {}, notification_opened: { kind: tok },
   location_permission: { state: tok },
+  // Training: fixed words only (a track id, home/yard/out, a level number, a badge tier). Never a note or a skill a person typed.
+  training_opened: {}, training_session_logged: { track: tok, place: tok }, training_level_confirmed: { level: count }, training_badge_earned: { tier: tok },
   client_error: { message: (v) => (typeof v === 'string' ? maskText(v) : undefined), kind: tok, screen: tok, method: (v) => (typeof v === 'string' && /^(GET|POST|PUT|PATCH|DELETE)$/.test(v) ? v : undefined), path: (v) => (typeof v === 'string' ? pathPattern(v) : undefined), status: count, code: count, n: count },
 }
 export function cleanProps(name, raw) {

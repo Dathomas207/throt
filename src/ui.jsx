@@ -157,7 +157,7 @@ export function toAct(w, team) {
     real: true, id: w.id, dog: w.dog.name, dogSlug: w.dog.slug, dogPhoto: w.dog.photoUrl || null, dogDemo: !!w.dog.isDemo, avgSpeed: w.avgSpeed, maxSpeed: w.maxSpeed, sprints: w.sprints, movingMinutes: w.movingMinutes, byYou: !!w.by.you, by: w.by.id, byName: firstName(w.by.name), byColor, byInk,
     type: w.type, title: w.title, daysAgo, time, when: daysAgo > 6 ? `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${time}` : null,
     place: w.place, route: null, pts: w.route && w.route.length > 1 ? w.route : null, miles: w.miles, minutes: w.minutes, sniffs: w.sniffs,
-    paws: w.paws - (w.pawed ? 1 : 0), comments: null, note: w.note, photos: w.photos || [],
+    paws: w.paws - (w.pawed ? 1 : 0), comments: null, note: w.note, photos: w.photos || [], routeId: w.routeId || null,
   }
 }
 export function DogSwitch({ dogs, active, onPick }) {

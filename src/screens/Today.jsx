@@ -3,6 +3,10 @@ import { Ic, Paw, DogAv } from '../ui.jsx'
 import { api } from '../api.js'
 import { haversine } from '../data.js'
 import { WalkImg } from './Photos.jsx'
+import { RouteThumb } from '../RouteThumb.jsx'
+import { useRoutes, routeActions, setBuilderIntent, demoFavorites, demoRecents, usualFor } from '../routeStore.js'
+import { setHandoff, fmtDist, walkMinutes } from '../routing.js'
+import { track } from '../usage.js'
 import './today.css'
 
 // The home screen is the dog's day, not a dashboard: a greeting, what the dog could do
@@ -39,7 +43,8 @@ const day = (s) => { const d = new Date(String(s).slice(0, 10) + 'T12:00:00'); r
 // The big greeting card. `status` is one line about today; children are extra rows (a progress bar, alerts).
 // `banner` is the dog's most recent outing photo. It sits behind the card, dimmed, so the text stays readable.
 // With no photo the card is plain navy, as before.
-export function TodayHero({ name, photoUrl, demo, status, onWalk, onDog, banner, children }) {
+// `usual` is the dog's usual walk, { name, miles, onStart }: it is offered first and starts in one tap.
+export function TodayHero({ name, photoUrl, demo, status, onWalk, onDog, banner, usual, children }) {
   return (
     <section className={`today ${banner ? 'hasbanner' : ''}`}>
       {banner && <div className="tbanner" aria-hidden="true"><WalkImg p={banner} /></div>}
@@ -49,16 +54,17 @@ export function TodayHero({ name, photoUrl, demo, status, onWalk, onDog, banner,
       </div>
       <p className="tnudge">{nudge(name)}</p>
       {children}
+      {usual && <button className="tusual" onClick={usual.onStart}><span><b>Usual walk: {usual.name}, {fmtDist(usual.miles)}</b><small>One tap starts it</small></span><span className="go">Start</span></button>}
       <button className="cta" onClick={onWalk}><Paw s={22} c="#0F1B2D" />Take {name} out</button>
     </section>
   )
 }
 
 // Four ways into the rest of the dog's life.
-export function TodayTiles({ name, setTab, openCompete }) {
+export function TodayTiles({ name, setTab, openCompete, plan }) {
   const tiles = [
     ['Go somewhere', 'Parks, patios and shops', 'map', () => setTab('explore')],
-    ['Plan a route', 'A loop from where you are', 'play', () => setTab('record')],
+    ['Plan a route', 'A loop from where you are', 'play', plan || (() => { setBuilderIntent({ from: 'home' }); setTab('build') })],
     [`${name}'s care`, 'Health, ID and documents', 'heart', () => setTab('dog')],
     ['Join in', 'Events and challenges', 'trophy', () => openCompete('events')],
   ]
@@ -105,5 +111,41 @@ export function TodayIdeas({ name, setTab, openCompete, hasApi = true }) {
         </button> })}</div>
       </section>}
     </>
+  )
+}
+
+// Saved and recent routes for Today. account is true on a signed-in person's own screen; dogKey is the dog's
+// address there and its name in the demo. In the demo the sample routes stand in until the person saves their own.
+export function useTodayRoutes({ account, dogKey, name, acts, setTab, setToast }) {
+  const store = useRoutes(!!account)
+  const usual = usualFor(store.routes, dogKey, account ? null : name)
+  const favs = [...store.routes.filter((r) => r.favorite), ...(account ? [] : demoFavorites(name))]
+  const recents = account ? store.recents : demoRecents(acts)
+  const picks = usual ? [usual] : [...favs, ...recents].slice(0, 2)
+  // One tap: the whole line is fetched if the list only had a thinned one, and the walk starts.
+  const startRoute = async (r) => {
+    const x = await routeActions.full(r)
+    if (x.error || !x.route) { setToast(x.error || 'That route could not be opened.'); return }
+    const f = x.route
+    setHandoff({ kind: 'routed', name: f.name, place: f.name, pts: f.pts, miles: f.miles, minutes: f.minutes || walkMinutes(f.miles), approximate: !!f.approximate, autoStart: true, ...(f.sample ? {} : { routeId: f.id, routeName: f.name }) })
+    track('route_started', { source: 'favorite' })
+    setTab('record')
+  }
+  const openRoute = (r) => { setBuilderIntent({ from: 'home', open: r, source: r.kind === 'recent' ? 'recent' : 'favorite' }); setTab('build') }
+  const build = () => { setBuilderIntent({ from: 'home' }); setTab('build') }
+  return { usual, picks, startRoute, openRoute, build }
+}
+export function TodayRoutes({ t }) {
+  return (
+    <section className="tsec">
+      <div className="row between thead"><h2>Routes</h2><button className="tlink" onClick={t.build}>Build a route</button></div>
+      <div className="tscroll">
+        {t.picks.map((r) => <button key={r.id} className="troute" onClick={() => t.openRoute(r)}>
+          <span className="rthumb"><RouteThumb pts={r.pts} w={120} h={90} /></span>
+          <span><i>{r === t.usual ? 'Usual walk' : r.kind === 'recent' ? 'Recent' : 'Favorite'}</i><b>{r.name}</b><small>{fmtDist(r.miles)} · about {r.minutes || walkMinutes(r.miles)} min</small></span>
+        </button>)}
+        <button className="troute build" onClick={t.build}>Build a route</button>
+      </div>
+    </section>
   )
 }

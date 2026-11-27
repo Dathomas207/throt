@@ -295,7 +295,7 @@ test('notifications: welcome once, unread on /api/me, read, read all, delete, an
   assert.equal(await notify(db, a.id, { kind: 'paw', title: 'x', actorId: a.id }), false, 'never about your own action')
   assert.equal(await notify({ query: async () => { throw new Error('db is down') } }, a.id, { kind: 'welcome', title: 'x' }), false)
   assert.equal(await notify(db, null), false)
-  assert.equal(NOTIFY_KINDS.length, 11)
+  assert.equal(NOTIFY_KINDS.length, 12)
 })
 
 test('notifications: friend added goes to the other dog\'s owner and family with Add back, mutual closes the loop, the actor hears nothing', async () => {

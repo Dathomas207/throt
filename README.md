@@ -323,3 +323,16 @@ PUT    /api/notifications/prefs              { friends?, paws?, care?, reminders
 ```
 
 `GET /api/me` also carries `unread`, so the bell shows a number without a second request. The app checks again every 60 seconds while it is visible, and on focus. Server code can call `notify(db, userId, { kind, dogId, title, body, link, dedupeKey })` from `server/routesNotifications.js` anywhere; it respects the person's choices and never throws into its caller.
+
+## Training
+
+Short, reward-based lessons bundled with the app, a practice log per dog, and badges that follow from it. Everything is self-reported by the dog's family. Nothing in Trot certifies a dog, and real-world titles (for example the AKC's Canine Good Citizen) are earned through that organization's own evaluators and recorded under Awards.
+
+- **Content** lives in `src/training/content.js`: six tracks (Foundations, Loose leash walking, Recall, Out and about, Trail and park, Tricks and fun), 32 skills, a "How dogs learn" primer and a puppy note. It is original to Trot and read offline. `server/training.test.js` lints it: every field present, 4 to 7 steps, 3 to 5 minute sessions, no aversive-method wording, no em dashes, ids matching the shared list.
+- **Shared rules** live in `src/training/skills.js`, which both the browser and `server/routesTraining.js` import: skill ids, levels, the self-check questions, badge rules (`computeBadges`), streaks (`practiceStreak`) and the "next up" suggestion. `src/training/badgeArt.js` draws the badges for the app and the public page.
+- **Levels**: 0 not started, 1 learning (first session logged), 2 reliable at home, 3 proofed out and about. Anyone on the care team logs practice. Only the owner or family confirms a level, by answering yes to three questions drawn from the lesson's pass standard. Level 3 needs level 2 and at least one session logged out and about.
+- **Badges**: one per skill (level 2, upgraded at level 3), one per track (Bronze at half the track reliable at home, Silver at all of it, Gold at all of it proofed in public), plus First session, 7 day practice streak, 30 sessions, Patio pro, Trail ready and Good neighbor. They are computed, not stored. Earned ones join the badge list in the Awards card and show on the public dog page under "Self-reported by <dog>'s family". The public page never shows sessions or notes.
+- **API**: `GET /api/dogs/:slug/training`, `POST /api/dogs/:slug/training/sessions`, `POST /api/dogs/:slug/training/skills/:skillId/level`, `DELETE /api/training/sessions/:id` (the author or the owner). Tables: `training_sessions`, `training_progress`.
+- **Days and streaks** follow the `tz` the browser sends (minutes behind UTC), as health and compete do. Trot stores no time zone for a dog, so without it, and on the public page, days are UTC.
+- **Notifications**: `training_badge` goes to the owner and family when someone else's session or confirmation earns a badge, never to the person who did it. The Reminders switch covers it.
+- **Usage events**: `training_opened`, `training_session_logged` (track, place), `training_level_confirmed` (level), `training_badge_earned` (tier).

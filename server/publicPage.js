@@ -1,6 +1,8 @@
 // Server-rendered public dog page. No client JavaScript. Every interpolated value
 // goes through esc().
 
+import { badgeSvg } from '../src/training/badgeArt.js'
+
 export function esc(v) {
   return String(v == null ? '' : v)
     .replace(/&/g, '&amp;')
@@ -146,6 +148,10 @@ ${w.route ? routeSvg(w.route) : ''}
   const KIND = { title: 'Title', ribbon: 'Ribbon', certificate: 'Certificate', trick: 'Trick', other: 'Award' }
   // Recorded by the owner, who chose to show them here. Trot does not check them.
   const awards = (dog.awards || []).map((a) => `<div class="award"><span class="rib" aria-hidden="true"></span><div><div class="aw">${esc(a.title)}</div><div class="meta">${esc([KIND[a.kind] || 'Award', a.placement, a.eventName, a.awardedOn ? fmtDate(a.awardedOn + 'T00:00:00Z') : ''].filter(Boolean).join(' · '))}</div></div></div>`).join('')
+  // Training badges come from the family's own practice log. The label says so, and nothing else about the log is shown.
+  const TB = { skill: 'Skill badge', track: 'Track badge', cross: 'Practice badge' }
+  const tr = dog.training && Array.isArray(dog.training.badges) && dog.training.badges.length ? dog.training : null
+  const training = tr ? `<p class="meta">${esc(tr.label)}. Trot does not check or certify them.</p>` + tr.badges.slice(0, 60).map((b) => `<div class="award">${badgeSvg({ ...b, earned: true }, 34)}<div><div class="aw">${esc(b.name)}</div><div class="meta">${esc(TB[b.group] || 'Training badge')}</div></div></div>`).join('') : ''
   const ROLE = { owner: 'Owner', family: 'Family', walker: 'Dog walker', daycare: 'Daycare' }
   const team = (dog.team || []).map((m) => `<div class="award"><div><div class="aw">${esc(m.name)}</div><div class="meta">${esc(ROLE[m.role] || 'Care team')}</div></div></div>`).join('')
   const body = `
@@ -164,6 +170,7 @@ ${dog.bio ? `<p class="bio">${esc(dog.bio)}</p>` : ''}
 <main class="list">
 ${team ? `<h2>CARE TEAM</h2><div class="card pad">${team}</div>` : ''}
 ${awards ? `<h2>AWARDS</h2><div class="card pad">${awards}</div>` : ''}
+${training ? `<h2>TRAINING BADGES</h2><div class="card pad" id="training-badges">${training}</div>` : ''}
 <h2>RECENT OUTINGS</h2>
 ${walks || `<div class="card empty">No outings yet. ${esc(dog.name)}'s first walk will show up here.</div>`}
 </main>

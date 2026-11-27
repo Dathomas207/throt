@@ -14,8 +14,8 @@ import { dateStatus } from './routesRegistration.js'
 
 export const NOTIFY_LIMITS = { page: 30, maxPage: 50, title: 140, body: 280, keepReadDays: 90, eventDays: 3 }
 // Which preference switch covers each kind. Kinds that are not listed here are always delivered.
-export const NOTIFY_GROUPS = { friends: ['friend_added', 'friend_mutual'], paws: ['paw'], care: ['care_invite_accepted', 'care_walk_logged'], reminders: ['registration_due', 'event_reminder'] }
-export const NOTIFY_KINDS = ['friend_added', 'friend_mutual', 'paw', 'care_invite_accepted', 'care_walk_logged', 'found_report', 'registration_due', 'claim_approved', 'claim_rejected', 'event_reminder', 'welcome']
+export const NOTIFY_GROUPS = { friends: ['friend_added', 'friend_mutual'], paws: ['paw'], care: ['care_invite_accepted', 'care_walk_logged'], reminders: ['registration_due', 'event_reminder', 'training_badge'] }
+export const NOTIFY_KINDS = ['friend_added', 'friend_mutual', 'paw', 'care_invite_accepted', 'care_walk_logged', 'found_report', 'registration_due', 'claim_approved', 'claim_rejected', 'event_reminder', 'welcome', 'training_badge']
 const GROUP_OF = Object.fromEntries(Object.entries(NOTIFY_GROUPS).flatMap(([g, kinds]) => kinds.map((k) => [k, g])))
 const DAY = 864e5
 const ID_RE = /^[0-9a-f-]{36}$/

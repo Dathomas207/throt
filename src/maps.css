@@ -108,3 +108,33 @@
 /* Admin section in Settings. */
 .arow{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--line)}.arow b{font-size:14px;font-weight:600;overflow-wrap:anywhere}.arow small{display:block;font-size:12px;line-height:1.4;color:var(--grey);overflow-wrap:anywhere}.arow q{font-size:13px;line-height:1.4;quotes:none;overflow-wrap:anywhere}
 .arow .row .cta.small{flex:1;width:auto}
+
+/* Route builder: tabs, route rows with a thumbnail and a star, edit handles, the selected point's actions and the leg list. */
+.rbuild .sheet{gap:10px}.rbuild .sheet .meta{max-width:none;white-space:normal;overflow:visible}.rbuild .sheet h2{font-size:19px}
+.rbusy{background:#fff;font-size:12px;font-weight:700;min-height:36px;padding:0 12px;border-radius:18px;display:flex;align-items:center;gap:7px;box-shadow:0 2px 8px rgba(15,27,45,.15)}
+.rtabs{margin:0}.rtabs button{min-height:44px}
+.seg.shape{flex:1;margin:0;min-width:0}.seg.shape button{min-height:44px;white-space:nowrap}
+.chip.shuffle{flex-shrink:0;min-height:44px}
+.mload.quiet{min-height:28px;font-size:12.5px}
+.rgo .cta.small,.rdone{width:auto;padding:0 18px}.cta.rdone{min-height:44px;flex-shrink:0}
+.rtacts{align-items:center;flex-wrap:wrap}.rtacts .chip{flex:1 1 auto;min-height:44px}.chip.sure{background:#FFF1E8}
+.rtrow{display:flex;align-items:center;gap:4px}.rtrow .rrow{flex:1;min-width:0;align-items:center}
+.rtrow .rrow b{white-space:normal;overflow-wrap:anywhere}.rtrow .rrow small{display:block}
+.rthumb{width:64px;height:48px;border-radius:10px;overflow:hidden;flex-shrink:0;display:block}.rthumb .thumb{width:64px;height:48px}
+.starbtn{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--bg)}.starbtn.on{background:var(--volt)}
+.starbtn:focus-visible,.legmain:focus-visible,.legmode button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.lrow.usual{background:var(--bg);border-radius:12px;padding:0 12px}
+.selbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#F0F6D8;border-radius:16px;padding:8px 10px;margin-top:8px;box-shadow:0 2px 8px rgba(15,27,45,.25)}.selbar b{font:italic 800 15px Archivo,Arial,sans-serif;margin-right:auto}.selbar .chip{min-height:44px;background:#fff}
+.edtools{flex-wrap:wrap}.edtools .chip{flex:1 1 auto;min-height:44px;white-space:nowrap}
+.legs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.legrow{border:1px solid var(--line);border-radius:14px;padding:4px 6px 6px}
+.legmain{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;text-align:left;border-radius:10px;padding:2px 4px}
+.legmain b{display:block;font-size:14px;font-weight:700;overflow-wrap:anywhere}.legmain small{display:block;font-size:12px;color:var(--grey);overflow-wrap:anywhere}
+.legn{width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;font:italic 800 12px/26px Archivo,Arial,sans-serif;text-align:center;flex-shrink:0}
+.legmode{display:flex;gap:6px;padding:0 4px 0 40px}.legmode button{flex:1;min-height:44px;border-radius:12px;border:1px solid var(--line);font-size:12.5px;font-weight:700;color:var(--grey);background:#fff}.legmode button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+/* Handles: a 44px square takes the touch, the dot inside it is what shows. Dragging one never moves the map. */
+.rhwrap{background:none;border:0;display:flex!important;align-items:center;justify-content:center;touch-action:none}
+.rh{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--blue);color:var(--ink);font:italic 800 11px/16px Archivo,Arial,sans-serif;text-align:center;box-shadow:0 2px 6px rgba(15,27,45,.4);pointer-events:none}
+.rh.start{width:26px;height:26px;background:var(--volt);border-color:var(--ink)}.rh.end{width:26px;height:26px;background:var(--ink);border-color:#fff}
+.rh.on{width:32px;height:32px;line-height:26px;border-color:var(--ink);box-shadow:0 0 0 5px rgba(200,240,49,.75),0 2px 6px rgba(15,27,45,.4)}
+.leaflet-marker-draggable.rhwrap{cursor:grab}

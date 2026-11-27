@@ -4,7 +4,8 @@ import { Ic, Av } from '../ui.jsx'
 import { ROUTES, haversine } from '../data.js'
 import { api, hasToken } from '../api.js'
 import { fetchPlaces, readPlaceCache, fetchTrails, samplePlaces, bboxAround, bboxKey, snapBbox, areaSummary, mergePlaces, normalizeCommunity, communityLine, validateNewPlace, perfMark, CATEGORIES, COMMUNITY_KIND, DOG_POLICY, AMENITY, REPORT_REASONS, CLAIM_ROLE, claimRolesFor, maintainedLine, verifiedTag, checkedLine, googleMapsUrl } from '../osm.js'
-import { routeLoop, routeThrough, locate, setHandoff, loadSavedRoutes, saveRoute, deleteSavedRoute, fmtDist, walkMinutes, peekDemoRoute, resolveDemoRoute, useHereLoop, locationHelp, DEFAULT_CENTER, MAX_WAYPOINTS, MAX_SAVED } from '../routing.js'
+import { routeLoop, locate, setHandoff, fmtDist, walkMinutes, peekDemoRoute, resolveDemoRoute, useHereLoop, locationHelp } from '../routing.js'
+import { useRoutes, routeActions, setBuilderIntent } from '../routeStore.js'
 import { searchPlaces, searchMode, MIN_QUERY } from '../search.js'
 import '../maps.css'
 import { track } from '../usage.js'
@@ -17,7 +18,6 @@ const COMM_KEY = 'trot-comm1' // the last area's listed and member places, so th
 const LOOPS = [1, 2, 3]
 const MAX_PINS = 60
 const DEBOUNCE_MS = 350
-const BUILD_ZOOM = 15
 const LOCATE_MOVE_MS = 2000 // a location that arrives later than this only adds the dot; the view is left alone
 const MOVED_FRACTION = 0.3 // how far the view has to move, as a share of the screen, before "Search this area" is offered
 const HOME = [35.186, -80.812] // Eastover, Charlotte: the launch area, where the listed places are
@@ -25,7 +25,6 @@ const VIEW_KEY = 'trot-view-v2', LAYERS_KEY = 'trot-layers-v2'
 const LAYER_DEFAULTS = { places: true, trails: false, heat: false, community: true, saved: false }
 const LAYER_LABELS = [['places', 'Places'], ['trails', 'Trails'], ['heat', 'Heatmap'], ['community', 'Community places'], ['saved', 'Saved routes']]
 const SNAPS = ['peek', 'half', 'full']
-const NO_BUILD = { on: false, wps: [], route: null, status: 'idle', fit: false }
 const NO_GROUP = { status: 'idle', places: [], updating: false }
 const samePt = (a, b) => a && b && a[0] === b[0] && a[1] === b[1]
 const readJSON = (k) => { try { return JSON.parse(localStorage.getItem(k)) } catch (e) { return null } }
@@ -95,7 +94,8 @@ function PlaceSearch({ near, onChoose }) {
 }
 
 // `account` is set when the screen belongs to a signed-in person's own page. The demo never has it.
-export default function Explore({ setTab, setToast, dogName, account, focusPlace }) {
+// dogKey is the dog's address on a signed-in screen. The demo has none and uses the dog's name.
+export default function Explore({ setTab, setToast, dogName, dogKey, account, focusPlace }) {
   const dn = dogName || 'Biscuit'
   const t0 = useRef(performance.now()).current
   const first = useRef(readView()).current // the last area looked at, so the first paint is already there
@@ -117,11 +117,9 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
   const [detail, setDetail] = useState(null) // { type: 'place' | 'trail' | 'saved' | 'here', id }
   const [loop, setLoop] = useState(null) // loop from the open place
   const here = useHereLoop() // loop from the user's own location
-  const [b, setB] = useState(NO_BUILD) // route builder
   const [add, setAdd] = useState(null) // add a community place: { at, name, category, note, busy, error, tried }
-  const [rname, setRname] = useState('')
-  const [saved, setSaved] = useState(loadSavedRoutes)
-  const [showSaved, setShowSaved] = useState(false)
+  // Saved routes: the account's when signed in, this device's in the demo. The builder is its own screen.
+  const saved = useRoutes(!!account).routes
   const [del, setDel] = useState(null)
   const [demoR, setDemoR] = useState({})
   const [snap, setSnap] = useState('half')
@@ -131,7 +129,7 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
   const [topRef, topH] = useHeight()
   const sheetEl = useRef(null), rows = useRef(new Map()), drag = useRef(null), skipClick = useRef(false)
   const setSheet = useCallback((n) => { sheetEl.current = n; sheetRef(n) }, [sheetRef])
-  const bounds = useRef(null), req = useRef(0), areaCtl = useRef(null), loopReq = useRef(0), alive = useRef(true), vn = useRef(1), bReq = useRef(0), bCtl = useRef(null), lastLoad = useRef(null), wpsRef = useRef([]), touched = useRef(false), moreFor = useRef(0), commFor = useRef(0), trailsFor = useRef(0), layersRef = useRef(layers), viewTimer = useRef(null)
+  const bounds = useRef(null), req = useRef(0), areaCtl = useRef(null), loopReq = useRef(0), alive = useRef(true), vn = useRef(1), lastLoad = useRef(null), touched = useRef(false), moreFor = useRef(0), commFor = useRef(0), trailsFor = useRef(0), layersRef = useRef(layers), viewTimer = useRef(null)
   layersRef.current = layers
   const goTo = (at, zoom) => setView({ at, zoom, n: ++vn.current })
 
@@ -200,7 +198,7 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
       setUser(u)
       if (performance.now() - t0 < LOCATE_MOVE_MS && !touched.current && haversine(u, c0) > 0.2) { goTo(u, 14); load(bboxAround(u, 2), u) }
     })
-    return () => { alive.current = false; req.current++; loopReq.current++; bReq.current++; if (bCtl.current) bCtl.current.abort(); if (areaCtl.current) areaCtl.current.abort(); clearTimeout(viewTimer.current) }
+    return () => { alive.current = false; req.current++; loopReq.current++; if (areaCtl.current) areaCtl.current.abort(); clearTimeout(viewTimer.current) }
   }, [])
   const onMove = (x, byUser) => {
     bounds.current = x
@@ -262,7 +260,6 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
   // List and map stay linked: a row tap highlights and centers the pin, a pin tap highlights the row and scrolls to it.
   const rowTap = (x) => { if (hi === x.id) { openPlace(x.id); return } setHi(x.id); setFocus({ id: x.id, n: Date.now() }) }
   const pinTap = (x) => {
-    if (b.on) { addPoint(x.at); return }
     if (add) return
     if (p) { openPlace(x.id); return }
     if (detail) closeDetail()
@@ -292,60 +289,30 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
   useEffect(() => { if (hl && hl.from === 'you' && hl.at && hl.status === 'routing') { setUser(hl.at); goTo(hl.at, 15) } }, [hl && hl.status, hl && hl.at])
   const walkHere = () => { const r = hl.route; handoff({ name: `${r.miles.toFixed(1)} mi loop from ${hl.from === 'you' ? 'here' : 'the map area'}`, place: hl.from === 'you' ? 'Loop from here' : 'Loop from the map area', pts: r.pts, miles: r.miles, minutes: r.minutes, approximate: !!r.approximate }) }
 
-  // Route builder. Every change routes through all the waypoints again. A newer change aborts the
-  // request before it and its answer is ignored.
-  // wpsRef holds the newest waypoints, so two quick taps both count even before React has rendered the first.
-  const reroute = async (wps) => {
-    const id = ++bReq.current
-    wpsRef.current = wps
-    if (bCtl.current) bCtl.current.abort()
-    if (wps.length < 2) { setB((s) => ({ ...s, wps, route: null, status: 'idle', fit: false })); return }
-    const ctl = new AbortController(); bCtl.current = ctl
-    setB((s) => ({ ...s, wps, status: 'loading', fit: false }))
-    const route = await routeThrough(wps, { signal: ctl.signal })
-    if (!alive.current || id !== bReq.current) return
-    setB((s) => ({ ...s, route, status: 'ready' }))
-    track('route_built')
+  // The route builder is its own screen. It opens with a suggested route from the person's location when that
+  // is already allowed, or from the middle of this map, and can be handed a saved route to edit.
+  const openBuilder = (extra) => { setBuilderIntent({ from: 'explore', center: (bounds.current && bounds.current.center) || origin, ...extra }); setTab('build') }
+  const keep = async (route, name) => {
+    const r = await routeActions.save({ ...route, name, kind: 'built', dog: dogKey || dn })
+    if (alive.current) setToast(r.error || (account ? 'Route saved to your account' : 'Route saved on this device only'))
   }
-  const startBuild = () => {
-    closeDetail(); setAdd(null); setHi(null); setLayersOpen(false); setB((s) => ({ ...s, on: true })); if (snap !== 'half') setSnap('half')
-    // Street level, so taps land on individual paths rather than whole neighbourhoods.
-    const x = bounds.current
-    if (x && x.zoom < BUILD_ZOOM && b.wps.length === 0) goTo(x.center, BUILD_ZOOM)
-  }
-  const addPoint = (at) => {
-    const cur = wpsRef.current
-    if (cur.length >= MAX_WAYPOINTS) { setToast(`A route can have up to ${MAX_WAYPOINTS} points.`); return }
-    if (samePt(cur[cur.length - 1], at)) return
-    reroute([...cur, at])
-  }
-  const undo = () => reroute(wpsRef.current.slice(0, -1))
-  const clearBuild = () => { setRname(''); reroute([]) }
-  const closed = b.wps.length > 2 && samePt(b.wps[0], b.wps[b.wps.length - 1])
-  const backToStart = () => { if (b.wps.length > 1 && !closed) addPoint(b.wps[0]) }
-  const cancelBuild = () => { bReq.current++; if (bCtl.current) bCtl.current.abort(); wpsRef.current = []; setB(NO_BUILD); setRname(''); setDel(null) }
-  const doneBuild = () => { setB((s) => ({ ...s, on: false })); setDel(null) }
-  const built = b.status === 'ready' && b.route && b.route.pts.length > 1 && b.route.miles > 0 ? b.route : null
-  const builtName = () => rname.trim() || `${built.miles.toFixed(1)} mi route`
-  const walkBuilt = () => handoff({ name: builtName(), place: rname.trim() || 'Custom route', pts: built.pts, miles: built.miles, minutes: built.minutes, approximate: !!built.approximate })
-  const keep = (route, name) => {
-    const r = saveRoute(route, name)
-    setSaved(r.list)
-    setToast(r.ok ? (r.list.length >= MAX_SAVED ? `Route saved. Trot keeps your newest ${MAX_SAVED}.` : 'Route saved') : 'This browser would not store the route.')
-  }
-  const saveBuilt = () => { keep({ ...built, waypoints: b.wps }, builtName()); setShowSaved(true) }
-  const loadSaved = (s) => {
-    bReq.current++; if (bCtl.current) bCtl.current.abort()
-    closeDetail(); setRname(s.name); wpsRef.current = s.waypoints
-    setB({ on: true, wps: s.waypoints, route: s, status: 'ready', fit: true })
-  }
-  const removeSaved = (s) => {
+  const removeSaved = async (s) => {
     if (del !== s.id) { setDel(s.id); return }
-    const r = deleteSavedRoute(s.id)
-    setSaved(r.list); setDel(null); setToast(r.ok ? `Deleted ${s.name}` : 'This browser would not update saved routes.')
+    setDel(null)
+    const r = await routeActions.remove(s.id)
+    if (!alive.current) return
+    setToast(r.error || `Deleted ${s.name}`)
     if (detail && detail.type === 'saved' && detail.id === s.id) setDetail(null)
   }
   const walkLine = (x, extra) => handoff({ name: x.name, place: x.name, pts: x.pts, miles: x.miles, minutes: x.minutes || walkMinutes(x.miles), approximate: !!x.approximate, ...extra })
+  // A saved route from the account's list carries a thinned line, so the whole one is fetched before the walk starts.
+  const walkSaved = async (s) => {
+    const x = await routeActions.full(s)
+    if (!alive.current) return
+    if (x.error || !x.route) { setToast(x.error || 'That route could not be opened.'); return }
+    track('route_started', { source: s.favorite ? 'favorite' : 'built' })
+    walkLine(x.route, { trail: !!s.trail, routeId: s.id, routeName: s.name })
+  }
 
   // Community places. Reading works signed out. Adding and confirming need an account.
   const startAdd = () => { closeDetail(); setHi(null); setLayersOpen(false); if (snap !== 'half') setSnap('half'); setAdd({ at: null, name: '', category: filter !== 'all' && COMMUNITY_KIND[filter] ? filter : 'bar', note: '', busy: false, error: '', tried: false, signedOut: !hasToken() }) }
@@ -430,20 +397,18 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
   const ready = loop && loop.status === 'ready'
   const pa = act && p && act.id === p.id ? act : null // the form that belongs to the open place
   // What the sheet shows in place of the list. A detail whose subject has gone (a new area, a deleted route) falls back to the list.
-  const dk = b.on || add ? null : p ? 'place' : trail ? 'trail' : savedOne ? 'saved' : hereOn && here.loop ? 'here' : null
+  const dk = add ? null : p ? 'place' : trail ? 'trail' : savedOne ? 'saved' : hereOn && here.loop ? 'here' : null
   const cat = filter === 'all' || filter === 'trails' ? null : CAT[filter]
   const grp = filter === 'park' ? parks : more // the request a category chip depends on
   const needsDogTag = filter === 'bar' || filter === 'cafe'
-  const hasRoute = b.wps.length > 0
   const firstLoad = parks.status !== 'done'
   const updating = parks.updating || more.updating || parks.status === 'loading' || more.status === 'loading'
   const summary = parks.sample ? '' : areaSummary(all, areaLabel, !!user && haversine(user, origin) < 3)
-  const mapRoute = hasRoute ? (b.route && b.route.pts.length > 1 ? b.route.pts : undefined) : trail ? trail.pts : savedOne ? savedOne.pts : hereOn && hl && hl.route ? hl.route.pts : ready ? loop.route.pts : undefined
-  const lines = useMemo(() => (b.on || add ? [] : [
+  const mapRoute = trail ? trail.pts : savedOne ? savedOne.pts : hereOn && hl && hl.route ? hl.route.pts : ready ? loop.route.pts : undefined
+  const lines = useMemo(() => (add ? [] : [
     ...(layers.trails ? trailList.filter((x) => !trail || x.id !== trail.id).map((x) => ({ id: 'trail:' + x.id, pts: x.pts, kind: 'trail' })) : []),
     ...(layers.saved ? saved.filter((x) => !savedOne || x.id !== savedOne.id).map((x) => ({ id: 'saved:' + x.id, pts: x.pts, kind: 'saved' })) : []),
-  ]), [layers.trails, layers.saved, trailList, saved, trail && trail.id, savedOne && savedOne.id, b.on, !!add])
-  const bHint = b.wps.length >= MAX_WAYPOINTS ? 'That is the most points one route can have.' : b.wps.length === 0 ? 'Tap the map to drop your first point.' : b.wps.length === 1 ? 'Tap again and Trot routes between the points.' : b.status === 'loading' ? 'Routing on mapped paths' : `${b.wps.length} points · ${built && built.approximate ? 'approximate, straight lines' : 'routed on mapped paths'}`
+  ]), [layers.trails, layers.saved, trailList, saved, trail && trail.id, savedOne && savedOne.id, !!add])
   const listHead = parks.sample ? 'Sample dog places' : cat ? cat.label : places.length ? `${places.length} dog ${places.length === 1 ? 'place' : 'places'}` : firstLoad || updating ? 'Dog places' : parks.failed ? 'No places to show' : 'Nothing mapped here yet'
   const listMeta = cat
     ? (places.length ? `${places.length} on the map here${user ? ', nearest first' : ''}${parks.sample ? ' · demo data, not live' : ''}` : grp.status !== 'done' || grp.updating ? '' : grp.failed ? 'These could not be loaded just now.' : cat.empty + '.' + (needsDogTag ? ' A place only shows here when OpenStreetMap says dogs are allowed, and few are tagged so far.' : ''))
@@ -454,9 +419,9 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
 
   return (
     <div className="fill" ref={rootRef}>
-      <TrotMap wheel="always" heat={layers.heat && !b.on && !add} pins={pins} selected={p ? p.id : hi} focus={focus} onPin={pinTap} onTap={b.on ? addPoint : add ? (at) => setAdd((a) => a && ({ ...a, at })) : undefined} waypoints={hasRoute ? b.wps : undefined} drop={add ? add.at : undefined} lines={lines} onLine={openLine} fit={!b.on || b.fit} route={mapRoute} me={user} view={view} top={topH + 16} bottom={sheetH} onMove={onMove} onUserMove={() => { touched.current = true }} className="abs" />
+      <TrotMap wheel="always" heat={layers.heat && !add} pins={pins} selected={p ? p.id : hi} focus={focus} onPin={pinTap} onTap={add ? (at) => setAdd((a) => a && ({ ...a, at })) : undefined} drop={add ? add.at : undefined} lines={lines} onLine={openLine} route={mapRoute} me={user} view={view} top={topH + 16} bottom={sheetH} onMove={onMove} onUserMove={() => { touched.current = true }} className="abs" />
       <div className="over topbar" ref={topRef}>
-        {b.on || add ? <div className="mbar"><div className="pill bhint">{b.on ? 'Tap the map to add points' : 'Tap the map to drop the pin'}</div></div> : (<>
+        {add ? <div className="mbar"><div className="pill bhint">Tap the map to drop the pin</div></div> : (<>
           <PlaceSearch near={() => (bounds.current && bounds.current.center) || origin} onChoose={(r) => choose(r.at, r.name)} />
           <div className="chips"><button className={`chip ${filter === 'all' ? 'on' : ''}`} aria-pressed={filter === 'all'} onClick={() => pickFilter('all')}>All</button>{CHIPS.map((c) => <button key={c.id} className={`chip ${filter === c.id ? 'on' : ''}`} aria-pressed={filter === c.id} onClick={() => pickFilter(c.id)}>{c.label}</button>)}<button className={`chip ${filter === 'trails' ? 'on' : ''}`} aria-pressed={filter === 'trails'} onClick={() => pickFilter('trails')}>Trails</button></div>
           <div className="mbar">
@@ -466,7 +431,7 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
           </div>
         </>)}
       </div>
-      {!b.on && !add && (
+      {!add && (
         <div className="layerbox" style={{ top: topH + 8 }}>
           <button className="layerbtn" aria-expanded={layersOpen} aria-controls="layer-panel" onClick={() => setLayersOpen(!layersOpen)}><Stack />Layers</button>
           {layersOpen && (
@@ -488,33 +453,7 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
       )}
       <div className={`sheet snap ${dragH != null ? 'dragging' : ''}`} ref={setSheet} style={sheetStyle} data-snap={snap}>
         <button className="grabbtn" aria-label={`Resize the panel. It is at ${snap} height. Up and down arrows change it.`} {...grab}><span className="grab" /></button>
-        {b.on && (<>
-          <div className="row between top g10">
-            <div className="grow"><h2>Build a route</h2><div className="meta" role="status">{bHint}</div></div>
-            <div className="dist"><b>{(built ? built.miles : 0).toFixed(2)} mi</b><span>{built ? `about ${built.minutes} min` : 'no route yet'}</span></div>
-            <button className="round" aria-label="Cancel route" onClick={cancelBuild}><Ic n="x" s={18} /></button>
-          </div>
-          <div className="loops">
-            <button className="chip flat" disabled={!hasRoute} onClick={undo}>Undo</button>
-            <button className="chip flat" disabled={!hasRoute} onClick={clearBuild}>Clear</button>
-            <button className="chip flat" disabled={b.wps.length < 2 || closed || b.wps.length >= MAX_WAYPOINTS} onClick={backToStart}>Back to start</button>
-          </div>
-          {built && built.approximate && <div className="mnote"><span className="grow"><b>Approximate route.</b> The routing service did not answer, so these are straight lines between your points, not walkable paths.</span><button onClick={() => reroute(b.wps)}>Retry</button></div>}
-          <div className="saverow">
-            <label className="field lightf grow"><span>Route name</span><input value={rname} maxLength={60} placeholder={built ? `${built.miles.toFixed(1)} mi route` : 'Morning loop'} onChange={(e) => setRname(e.target.value)} /></label>
-            <button className="cta bordered small" disabled={!built} onClick={saveBuilt}>Save route</button>
-          </div>
-          <div className="row g10 nowrap"><button className="cta white bordered small" onClick={doneBuild}>Done</button><button className="cta grow" disabled={!built} onClick={walkBuilt}>Walk {dn} here</button></div>
-          <button className="stoggle" aria-expanded={showSaved} onClick={() => setShowSaved(!showSaved)}>Saved routes ({saved.length})</button>
-          {showSaved && saved.length === 0 && <div className="meta">No saved routes yet. Build one and tap Save route.</div>}
-          {showSaved && saved.map((s) => (
-            <div key={s.id} className="srow">
-              <button className="rrow" onClick={() => loadSaved(s)}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{s.name}</b><small>about {s.minutes} min{s.trail ? ' · OpenStreetMap trail' : s.approximate ? ' · approximate' : ''}</small></span><span className="num">{s.miles.toFixed(1)} mi</span></button>
-              <button className={`sdel ${del === s.id ? 'sure' : ''}`} aria-label={`${del === s.id ? 'Confirm delete' : 'Delete'} ${s.name}`} onClick={() => removeSaved(s)}>{del === s.id ? 'Delete?' : <Ic n="x" s={16} />}</button>
-            </div>
-          ))}
-        </>)}
-        {!b.on && add && (
+        {add && (
           <form className="addform" onSubmit={submitAdd} noValidate>
             <div className="row between top g10"><div className="grow"><h2>Add a place</h2><div className="meta">Only add places where you know dogs are welcome. Other Trot members can confirm it.</div></div><button type="button" className="round" aria-label="Cancel adding a place" onClick={() => setAdd(null)}><Ic n="x" s={18} /></button></div>
             {add.signedOut ? <div className="mnote info"><span className="grow"><b>Create a page to add places.</b> Adding and confirming places needs your own Trot page, so each one has a name behind it.</span></div> : (<>
@@ -555,12 +494,12 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
         </>)}
         {dk === 'saved' && (<>
           <div className="row between top g10">
-            <div className="grow"><h2>{savedOne.name}</h2><div className="meta">Saved route · {savedOne.trail ? 'trail from OpenStreetMap' : savedOne.approximate ? 'approximate, not a mapped path' : 'routed on mapped paths'}</div></div>
+            <div className="grow"><h2>{savedOne.name}</h2><div className="meta">{savedOne.favorite ? 'Favorite route' : 'Saved route'} · {savedOne.trail ? 'trail from OpenStreetMap' : savedOne.kind === 'walked' ? 'from a walk' : savedOne.approximate ? 'approximate, not a mapped path' : 'built on mapped paths'}</div></div>
             <div className="dist"><b>{savedOne.miles.toFixed(1)} mi</b><span>about {savedOne.minutes} min</span></div>
             <button className="round" aria-label="Close saved route" onClick={closeDetail}><Ic n="x" s={18} /></button>
           </div>
-          <button className="cta" onClick={() => walkLine(savedOne, { trail: !!savedOne.trail })}>Walk {dn} here</button>
-          <div className="row g10 nowrap"><button className="cta white bordered small grow" onClick={() => loadSaved(savedOne)}>Edit in the route builder</button><button className={`sdel ${del === savedOne.id ? 'sure' : ''}`} aria-label={`${del === savedOne.id ? 'Confirm delete' : 'Delete'} ${savedOne.name}`} onClick={() => removeSaved(savedOne)}>{del === savedOne.id ? 'Delete?' : <Ic n="x" s={16} />}</button></div>
+          <button className="cta" onClick={() => walkSaved(savedOne)}>Walk {dn} here</button>
+          <div className="row g10 nowrap"><button className="cta white bordered small grow" onClick={() => openBuilder({ open: savedOne, source: savedOne.favorite ? 'favorite' : 'built', edit: true })}>Edit in the route builder</button><button className={`sdel ${del === savedOne.id ? 'sure' : ''}`} aria-label={`${del === savedOne.id ? 'Confirm delete' : 'Delete'} ${savedOne.name}`} onClick={() => removeSaved(savedOne)}>{del === savedOne.id ? 'Delete?' : <Ic n="x" s={16} />}</button></div>
         </>)}
         {dk === 'place' && (<>
           <div className="row between top g10">
@@ -635,13 +574,13 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
           {(p.routes || []).filter((k) => ROUTES[k]).map((k) => { const v = demoR[k] || peekDemoRoute(k); return <button key={k} className="rrow" onClick={() => demo(k)}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{ROUTES[k].name}</b><small>{v.approximate ? 'Approximate line, not a mapped path' : 'On mapped paths'} · {ROUTES[k].note}</small></span><span className="num">{v.miles.toFixed(1)} mi</span></button> })}
           {p.osm && <a className="osmlink" href={`https://www.openstreetmap.org/${p.osm.type}/${p.osm.id}`} target="_blank" rel="noopener noreferrer">View on OpenStreetMap</a>}
         </>)}
-        {!b.on && !add && !dk && filter === 'trails' && (<>
+        {!add && !dk && filter === 'trails' && (<>
           <div className="row between top"><div><h2>Trails near here</h2><div className="meta">{!trails || trails.status === 'loading' ? <Updating text="Looking for named trails" /> : trails.error ? 'Trails could not be loaded just now.' : trailList.length ? `${trailList.length} named ${trailList.length === 1 ? 'trail' : 'trails'} and greenways from OpenStreetMap, nearest to the middle of the map first` : 'No named trails of 0.3 miles or more are mapped here on OpenStreetMap yet.'}</div></div></div>
           {trails && trails.status === 'done' && trails.error && <div className="mnote"><span className="grow">Nothing is shown rather than guessed.</span><button onClick={() => { trailsFor.current = 0; loadTrails() }}>Retry</button></div>}
           {trails && trails.clamped && <div className="mnote info"><span className="grow">Showing trails near the middle of the map. Zoom in and search this area for others.</span></div>}
           {trailList.map((x) => <button key={x.id} className="rrow" onClick={() => openLine('trail:' + x.id)}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>{x.name}</b><small>{[x.kind, ...x.labels.slice(0, 2), x.partial ? 'partial' : ''].filter(Boolean).join(' · ')}</small></span><span className="num">{x.miles.toFixed(1)} mi</span></button>)}
         </>)}
-        {!b.on && !add && !dk && filter !== 'trails' && (<>
+        {!add && !dk && filter !== 'trails' && (<>
           {(summary || (updating && !comm.length)) && <div className="asum">{summary && <span>{summary}</span>}{updating && !comm.length && <Updating />}</div>}
           {parks.sample && <div className="mnote"><span className="grow"><b>Showing sample places.</b> Live map data could not be loaded, so these are demo places around Cambridge, MA.</span><button onClick={retry}>Retry</button></div>}
           {parks.failed && <div className={places.length ? 'mnote info' : 'mnote'}><span className="grow">{places.length ? <>Showing listed places. More from OpenStreetMap could not be loaded just now.</> : <><b>Places could not be loaded.</b> The map data service did not answer for this area. Nothing is shown rather than guessed.</>}</span><button onClick={retry}>Retry</button></div>}
@@ -658,7 +597,7 @@ export default function Explore({ setTab, setToast, dogName, account, focusPlace
           {places.length > MAX_PINS && <div className="meta">{places.length - MAX_PINS} more. Zoom in or pick a category to see them.</div>}
           {layers.trails && trails && trails.status === 'done' && trailList.length > 0 && <button className="rrow" onClick={() => pickFilter('trails')}><span className="ricon"><Ic n="map" s={20} c="#1F5AE8" /></span><span className="grow"><b>Trails near here</b><small>Named trails and greenways from OpenStreetMap</small></span><span className="num">{trailList.length}</span></button>}
           <button className="cta wide" onClick={loopFromHere}>Loop from here</button>
-          <div className="row g10 nowrap"><button className="cta bordered small grow" onClick={startBuild}>{built ? `Edit your route · ${built.miles.toFixed(1)} mi` : 'Build a route'}</button>{communityOn() && <button className="cta bordered small grow" onClick={startAdd}>Add a place</button>}</div>
+          <div className="row g10 nowrap"><button className="cta bordered small grow" onClick={() => openBuilder()}>Build a route</button>{communityOn() && <button className="cta bordered small grow" onClick={startAdd}>Add a place</button>}</div>
         </>)}
       </div>
     </div>

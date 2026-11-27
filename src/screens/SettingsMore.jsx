@@ -15,7 +15,7 @@ const PREFS = [
   ['friends', 'Friends', 'When a dog adds yours as a friend, or adds yours back.'],
   ['paws', 'Paws', 'When someone on the care team paws an outing.'],
   ['care', 'Care team', 'When someone accepts your invite, or a walker or daycare logs an outing.'],
-  ['reminders', 'Reminders', 'A license or rabies date coming up, and events your dog is going to.'],
+  ['reminders', 'Reminders', 'A license or rabies date coming up, events your dog is going to, and training badges someone else on the team earned.'],
 ]
 export function NotificationPrefs({ real, setToast }) {
   const [prefs, setPrefs] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState('')

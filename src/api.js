@@ -324,3 +324,12 @@ api.notifications = {
 }
 // Admins only.
 api.admin.metrics = (days = 14, includeAdmins = false) => request('GET', `/admin/metrics${qs({ days, includeAdmins: includeAdmins ? 1 : undefined })}`)
+
+// ---- training: practice log, levels and badges (appended) ------------------------
+// Anyone on the care team logs practice; the owner or family confirms a level after a self-check.
+api.training = {
+  get: (slug) => request('GET', `/dogs/${slug}/training${qs({ tz: tz() })}`),
+  log: (slug, input) => request('POST', `/dogs/${slug}/training/sessions${qs({ tz: tz() })}`, input),
+  setLevel: (slug, skillId, level, checks) => request('POST', `/dogs/${slug}/training/skills/${skillId}/level${qs({ tz: tz() })}`, { level, checks }),
+  removeSession: (id) => request('DELETE', `/training/sessions/${id}`),
+}

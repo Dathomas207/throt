@@ -297,6 +297,33 @@ const SCHEMA = [
     off TEXT NOT NULL DEFAULT '[]',
     updated_at TIMESTAMPTZ NOT NULL
   )`,
+  // Saved routes: built in the route builder ('built') or kept from a recorded outing ('walked').
+  // Private to the person who saved them. `points` is a JSON list of [lat, lng] (2000 at most) and `control`
+  // the builder's control points and leg modes, so a built route can be edited again. `usual` marks the one
+  // favorite a person starts first for a dog. `client_id` is the id a route had on the device it was first
+  // saved on, so moving local routes to the account twice never makes a second copy.
+  `CREATE TABLE IF NOT EXISTS routes (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    dog_id TEXT,
+    name TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'built',
+    points TEXT NOT NULL,
+    control TEXT,
+    miles DOUBLE PRECISION NOT NULL DEFAULT 0,
+    minutes INTEGER NOT NULL DEFAULT 1,
+    favorite BOOLEAN NOT NULL DEFAULT FALSE,
+    usual BOOLEAN NOT NULL DEFAULT FALSE,
+    source_walk_id TEXT,
+    start_lat DOUBLE PRECISION,
+    start_lng DOUBLE PRECISION,
+    times_walked INTEGER NOT NULL DEFAULT 0,
+    last_walked_at TIMESTAMPTZ,
+    client_id TEXT,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS routes_user ON routes (user_id, updated_at)`,
   `CREATE INDEX IF NOT EXISTS usage_events_at ON usage_events (at)`,
   `CREATE INDEX IF NOT EXISTS notifications_user ON notifications (user_id, created_at)`,
   `CREATE INDEX IF NOT EXISTS dog_follows_followed ON dog_follows (followed_dog_id)`,
@@ -313,6 +340,30 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS walks_dog_started ON walks (dog_id, started_at)`,
   `CREATE INDEX IF NOT EXISTS memberships_dog ON memberships (dog_id)`,
   `CREATE INDEX IF NOT EXISTS sessions_user ON sessions (user_id)`,
+  // Training: a practice log per dog, and the level the family has confirmed for each skill.
+  // Skill ids come from src/training/skills.js. Levels: 0 not started, 1 learning, 2 reliable at home, 3 proofed in public.
+  `CREATE TABLE IF NOT EXISTS training_sessions (
+    id TEXT PRIMARY KEY,
+    dog_id TEXT NOT NULL REFERENCES dogs(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL REFERENCES users(id),
+    skill_id TEXT NOT NULL,
+    at TIMESTAMPTZ NOT NULL,
+    minutes INTEGER NOT NULL,
+    reps_ok INTEGER NOT NULL,
+    reps_total INTEGER NOT NULL,
+    place TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    walk_id TEXT
+  )`,
+  `CREATE TABLE IF NOT EXISTS training_progress (
+    dog_id TEXT NOT NULL REFERENCES dogs(id) ON DELETE CASCADE,
+    skill_id TEXT NOT NULL,
+    level INTEGER NOT NULL DEFAULT 0,
+    passed_at TIMESTAMPTZ,
+    passed_by TEXT,
+    PRIMARY KEY (dog_id, skill_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS training_sessions_dog ON training_sessions (dog_id, at)`,
 ]
 
 // Columns added after the first release. CREATE TABLE IF NOT EXISTS leaves an
@@ -357,6 +408,8 @@ const COLUMNS = [
   // Lost Dog mode. Empty unless the owner or family reported the dog lost.
   ['dogs', 'lost_since', 'TIMESTAMPTZ'],
   ['dogs', 'lost_note', "TEXT NOT NULL DEFAULT ''"],
+  // The saved route an outing was started from, when there was one. Only the person who walked it sees this.
+  ['walks', 'route_id', 'TEXT'],
 ]
 const isDuplicateColumn = (e) => e && (e.code === '42701' || /already exists|duplicate column/i.test(e.message || ''))
 // Leaderboards and the pack feed read walks by time across all dogs. pg-mem cannot

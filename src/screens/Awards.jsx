@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useId, useState } from 'react'
 import { Ic, Confirm } from '../ui.jsx'
 import { api } from '../api.js'
+import { TrainingBadge } from '../training/Row.jsx'
+import { TRAINING_CHANGED } from '../training/host.jsx'
 
 const KINDS = [['ribbon', 'Ribbon'], ['title', 'Title'], ['certificate', 'Certificate'], ['trick', 'Trick'], ['other', 'Other']]
 const date = (s) => new Date(s + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
@@ -46,6 +48,8 @@ export function RealAwards({ real, setToast }) {
   const [f, setF] = useState(blank), [err, setErr] = useState(''), [busy, setBusy] = useState(false)
   const load = useCallback(async () => { try { setData(await api.awards.list(dog.slug)) } catch (e) {} }, [dog.slug, real.totals.lifetime.outings])
   useEffect(() => { setData(null); load() }, [load])
+  // Training badges are part of this list, so it is read again when practice or a level changes.
+  useEffect(() => { window.addEventListener(TRAINING_CHANGED, load); return () => window.removeEventListener(TRAINING_CHANGED, load) }, [load])
   const submit = async (e) => {
     e.preventDefault()
     if (busy) return
@@ -78,6 +82,7 @@ export function RealAwards({ real, setToast }) {
       {a.canEdit && (ask && ask.id === a.id ? <Confirm text={`Delete "${a.title}"?`} yes="Delete" no="Keep it" busy={ask.busy} error={ask.error} onYes={() => del(a)} onNo={() => setAsk(null)} /> : <button className="tbtn" aria-label={`Delete ${a.title}`} onClick={() => setAsk({ id: a.id })}>Delete</button>)}
     </AwardRow>)}
     <div className="sl">TROT BADGES, EARNED FROM WALKS</div>
-    <ul className="tbadges">{[...earned, ...locked].map((b) => <Badge key={b.id} b={b} />)}</ul>
+    <ul className="tbadges">{[...earned.filter((b) => b.kind !== 'training'), ...locked].map((b) => <Badge key={b.id} b={b} />)}</ul>
+    {earned.some((b) => b.kind === 'training') && <><div className="sl">TRAINING BADGES, SELF-REPORTED</div><ul className="tbadges">{earned.filter((b) => b.kind === 'training').map((b) => <TrainingBadge key={b.id} b={b} />)}</ul></>}
   </section>
 }

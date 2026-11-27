@@ -48,13 +48,20 @@ const pinKey = (p, on) => `${p.category || ''}|${p.community ? 1 : 0}|${on ? 1 :
 //   follow                  with live, false stops the map recentering on the newest point
 //   onUserMove()            called when the person drags, pinches, wheels, uses the keyboard or presses a zoom button
 //   mileMarks               false hides the marker at each whole mile of a route of 2 miles or more
+//   build                   the route builder's own drawing, in place of `route`:
+//                           { legs: [{ pts, mode, pending, approximate }], points, editing, selected, fitN, focus: { leg, n },
+//                             onMove(i, [lat, lng]), onSelect(i), onInsert(leg, [lat, lng]) }
+//                           Straight legs are dashed. While editing, each control point is a handle with a 44px
+//                           hit area that drags without panning the map, and a tap on the line calls onInsert.
+//                           fitN refits the view when it changes; focus zooms to one leg.
+//   mileLine, mileMin       a line to put mile markers on when there is no `route`, and how many miles it needs before they show
 //   wheel                   'always' zooms on the wheel straight away (full-screen maps). The default 'focus' waits
 //                           for a tap or click on the map, so a map inside a scrolling page never steals the scroll.
 //                           On touch screens one-finger panning waits for that tap too. Zoom buttons always work.
-export default function TrotMap({ route, upto, pins, onPin, selected, focus, live, className = '', interactive = true, onMove, view, me, bottom = 0, top = 120, heat = false, onTap, waypoints, fit = true, drop, lines, onLine, walked, follow = true, onUserMove, wheel = 'focus', mileMarks = true }) {
+export default function TrotMap({ route, upto, pins, onPin, selected, focus, live, className = '', interactive = true, onMove, view, me, bottom = 0, top = 120, heat = false, onTap, waypoints, fit = true, drop, lines, onLine, walked, follow = true, onUserMove, wheel = 'focus', mileMarks = true, build, mileLine, mileMin = MILE_MARK_MIN }) {
   const el = useRef(null), map = useRef(null), G = useRef(null), prog = useRef(0), fitKey = useRef(null), cb = useRef({}), userZoom = useRef(false)
   const pinMap = useRef(new Map()), rt = useRef(null), heatLayer = useRef(null)
-  cb.current = { onMove, onPin, onTap, onLine, onUserMove }
+  cb.current = { onMove, onPin, onTap, onLine, onUserMove, build }
   const auto = () => { prog.current = Date.now() }
   useEffect(() => {
     const node = el.current, t0 = performance.now()
@@ -120,7 +127,7 @@ export default function TrotMap({ route, upto, pins, onPin, selected, focus, liv
       if (c && c.mapboxToken) { if (base) m.removeLayer(base); mapbox(c) } else if (!base) base = carto()
     })
     const grp = () => L.layerGroup().addTo(m)
-    G.current = { lines: grp(), route: grp(), miles: grp(), marks: grp(), me: grp(), pins: grp() }
+    G.current = { lines: grp(), route: grp(), build: grp(), miles: grp(), marks: grp(), me: grp(), pins: grp() }
     m.setView((view && view.at) || DEFAULT_VIEW, (view && view.zoom) || 14)
     m.on('moveend', () => {
       const f = cb.current.onMove; if (!f) return
@@ -194,11 +201,55 @@ export default function TrotMap({ route, upto, pins, onPin, selected, focus, liv
   useEffect(() => {
     const g = G.current && G.current.miles; if (!g) return
     g.clearLayers()
-    if (!mileMarks || !route || route.length < 2) return
-    const marks = mileMarkers(route)
-    if (marks.length < MILE_MARK_MIN) return
+    const src = mileLine || route
+    if (!mileMarks || !src || src.length < 2) return
+    const marks = mileMarkers(src)
+    if (marks.length < mileMin) return
     marks.forEach((k) => L.marker(k.at, { interactive: false, keyboard: false, zIndexOffset: 300, icon: L.divIcon({ className: '', iconSize: [40, 20], iconAnchor: [20, 10], html: `<div class="milemark">${k.mile} mi</div>` }) }).addTo(g))
-  }, [route, mileMarks])
+  }, [route, mileLine, mileMin, mileMarks])
+  // The route builder's legs and handles. Everything is rebuilt on a change: a route has at most 25 legs.
+  useEffect(() => {
+    const m = map.current, g = G.current && G.current.build; if (!m || !g) return
+    g.clearLayers()
+    if (!build) return
+    const { legs = [], points = [], editing, selected } = build
+    const B = () => cb.current.build || {}
+    legs.forEach((l, i) => {
+      if (!l.pts || l.pts.length < 2) return
+      const soft = !!(l.pending || l.approximate)
+      L.polyline(l.pts, { color: '#FFFFFF', weight: 9, opacity: 0.95, interactive: false }).addTo(g)
+      L.polyline(l.pts, { color: soft ? '#5B6472' : '#1F5AE8', weight: 5, opacity: l.pending ? 0.5 : 1, dashArray: l.pending ? '2 9' : l.mode === 'straight' || soft ? '9 10' : null, interactive: false }).addTo(g)
+      // A wide invisible line on top takes the tap that adds a point. It does not pass the tap on to the map.
+      if (editing) L.polyline(l.pts, { color: '#1F5AE8', weight: 30, opacity: 0, bubblingMouseEvents: false }).addTo(g).on('click', (e) => { const f = B().onInsert; if (f && e.latlng) f(i, [e.latlng.lat, e.latlng.lng]) })
+    })
+    const n = points.length, closed = n > 2 && Math.abs(points[0][0] - points[n - 1][0]) < 1e-6 && Math.abs(points[0][1] - points[n - 1][1]) < 1e-6
+    const preview = editing ? L.polyline([], { color: '#0F1B2D', weight: 3, opacity: 0.7, dashArray: '4 7', interactive: false }).addTo(g) : null
+    points.forEach((p, i) => {
+      if (closed && i === n - 1) return
+      const end = i === n - 1 && n > 1, kind = i === 0 ? 'start' : end ? 'end' : 'via'
+      if (!editing && kind === 'via') return
+      const label = i === 0 ? 'Start' : end ? 'End' : `Point ${i + 1}`
+      const icon = L.divIcon({ className: 'rhwrap', iconSize: [44, 44], iconAnchor: [22, 22], html: `<div class="rh ${kind}${selected === i ? ' on' : ''}">${kind === 'via' ? i + 1 : ''}</div>` })
+      const mk = L.marker(p, { icon, draggable: !!editing, interactive: !!editing, keyboard: false, autoPan: false, bubblingMouseEvents: false, title: editing ? label : '', alt: label, zIndexOffset: 1000 + (selected === i ? 600 : kind === 'via' ? 0 : 300) }).addTo(g)
+      if (!editing) return
+      mk.on('click', () => { const f = B().onSelect; if (f) f(i) })
+      // While a handle moves, a thin line shows what it will join. The router is only asked when it is let go.
+      const prev = i > 0 ? points[i - 1] : closed ? points[n - 2] : null, next = i < n - 1 ? points[i + 1] : null
+      mk.on('drag', () => { const ll = mk.getLatLng(), at = [ll.lat, ll.lng]; preview.setLatLngs([...(prev ? [prev] : []), at, ...(next ? [next] : [])]) })
+      mk.on('dragend', () => { const ll = mk.getLatLng(), f = B().onMove; preview.setLatLngs([]); if (f) f(i, [ll.lat, ll.lng]) })
+    })
+  }, [build && build.legs, build && build.points, build && build.editing, build && build.selected])
+  const fitTo = (m, pts, maxZoom) => { if (!pts || !pts.length) return; auto(); if (pts.length === 1) m.setView(pts[0], Math.max(m.getZoom(), 15), { animate: false }); else m.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [28, top + 8], paddingBottomRight: [28, bottom + 28], animate: false, ...(maxZoom ? { maxZoom } : {}) }) }
+  useEffect(() => {
+    const m = map.current; if (!m || !build || !build.fitN) return
+    const pts = (build.legs || []).flatMap((l) => l.pts || [])
+    fitTo(m, pts.length ? pts : build.points || [], 17)
+  }, [build && build.fitN])
+  useEffect(() => {
+    const m = map.current, f = build && build.focus; if (!m || !f) return
+    const l = (build.legs || [])[f.leg]
+    if (l) fitTo(m, l.pts, 18)
+  }, [build && build.focus && build.focus.n])
   useEffect(() => {
     const g = G.current && G.current.me; if (!g) return
     g.clearLayers()

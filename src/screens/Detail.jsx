@@ -7,6 +7,7 @@ import { api } from '../api.js'
 import { Gallery, PhotoPicker, UploadRows, makePicks } from './Photos.jsx'
 import { OUTING_PHOTO_MAX } from '../photo.js'
 import { peekDemoRoute, resolveDemoRoute } from '../routing.js'
+import { useRoutes, routeActions } from '../routeStore.js'
 import { ROUTES, PLACES, DOG, PEOPLE, PACK, CONNECTIONS, WEIGHTS, HEALTH, dayLabel, fmtTime, haversine } from '../data.js'
 
 export default function Detail({ a, close, pawed, paw, conn, setToast, setTab, dogName, real }) {
@@ -47,6 +48,18 @@ export default function Detail({ a, close, pawed, paw, conn, setToast, setTab, d
   const sketch = !!demoKey && !full && (!routed || routed.approximate)
   const mine = !!setTab && a.dog === (dogName || 'Biscuit')
   const [img, setImg] = useState('')
+  // The route of this outing can be kept and starred. It is saved for the person looking, not for the team.
+  const store = useRoutes(!!a.real)
+  const keptRoute = store.routes.find((r) => r.sourceWalkId === String(a.id)) || (a.routeId ? store.routes.find((r) => r.id === a.routeId) : null) || null
+  const canKeep = !!pts && pts.length > 1 && a.type !== 'Daycare' && (a.real ? !!team : mine)
+  const [keeping, setKeeping] = useState(false)
+  const keep = async (favorite) => {
+    if (keeping) return
+    setKeeping(true)
+    const x = keptRoute ? await routeActions.update(keptRoute.id, { favorite }) : await routeActions.saveWalk({ id: a.id, name: a.title, pts, dog: a.dog }, { favorite })
+    setKeeping(false)
+    setToast(x.error || (favorite ? 'Added to your favorites' : keptRoute ? 'Removed from your favorites' : a.real ? 'Route saved to your account' : 'Route saved on this device only'))
+  }
   // The person who logged the outing can delete it, and so can the dog's owner.
   const canDelete = !!(a.real && real && (a.byYou || (real.dogs.find((d) => d.slug === a.dogSlug) || {}).role === 'owner'))
   const [del, setDel] = useState({ open: false, busy: false, error: '' })
@@ -64,6 +77,11 @@ export default function Detail({ a, close, pawed, paw, conn, setToast, setTab, d
       <div className="scroll">
         {pts ? <><TrotMap route={pts} className="dmap" />{sketch && <div className="sketchnote">Sample route, drawn as an approximate line. It is not a recorded walk.</div>}</> : <div className="dmap nomap">No route for this one. {a.dog} was busy playing.</div>}
         <div className="list">
+          {canKeep && <div className="padx keeprow">
+            <button className="cta white bordered small" disabled={keeping || !!keptRoute} onClick={() => keep(false)}>{keptRoute ? (a.routeId && keptRoute.id === a.routeId ? 'Followed a saved route' : 'Route saved') : 'Save this route'}</button>
+            <button className="cta white bordered small" aria-pressed={!!(keptRoute && keptRoute.favorite)} disabled={keeping} onClick={() => keep(!(keptRoute && keptRoute.favorite))}>{keptRoute && keptRoute.favorite ? 'In your favorites' : 'Add to favorites'}</button>
+            <p className="meta">{keptRoute ? `Saved as ${keptRoute.name}. ` : ''}Saved routes are private to you{a.real ? '' : ' and stay on this device in the demo'}. Find them under Build a route.</p>
+          </div>}
           <div className="padx"><div className="row g10">{mine ? <button className="doglink" aria-label={`Open ${a.dog}'s profile`} onClick={() => { close(); setTab('dog') }}>{av}</button> : av}<div>{mine ? <button className="dogname big doglink" onClick={() => { close(); setTab('dog') }}>{a.dog}</button> : <div className="dogname big">{a.dog}</div>}<div className="meta">{a.type === 'Daycare' ? 'at' : 'with'} <b>{whoName(a)}</b>{p ? ` · ${p.role}` : ''}</div></div></div>
             <h1 className="dtitle">{a.title}</h1><div className="meta">{whenOf(a)}{a.place ? ` · ${a.place}` : ''}</div>{a.note && <p className="note">{a.note}</p>}</div>
           {!a.real && hasDemoPhoto(a.id) && <div className="card"><DemoPhoto id={a.id} /></div>}

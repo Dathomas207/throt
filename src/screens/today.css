@@ -19,3 +19,10 @@
 .tdate{width:44px;height:48px;border-radius:12px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
 .tdate i{font-style:normal;font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.5px}.tdate b{font:italic 800 18px Archivo,Arial,sans-serif;color:var(--ink)}
 .tjournal{padding:18px 16px 6px}.tjournal h2{font:italic 800 20px Archivo,Arial,sans-serif;color:var(--ink);margin:0}
+
+/* Routes on Today: the usual walk in the greeting card, and a row of saved and recent routes. */
+.troute{display:flex;align-items:center;gap:10px;text-align:left;min-width:230px;max-width:280px;flex-shrink:0;background:#fff;border-radius:16px;padding:10px 12px;border:1px solid var(--line)}
+.troute b{display:block;font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}.troute small{display:block;font-size:12px;color:var(--grey)}.troute i{display:block;font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.4px;color:var(--blue);text-transform:uppercase}
+.troute.build{min-width:150px;justify-content:center;font-weight:700;font-size:14px;color:var(--blue);min-height:68px}
+.tusual{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;border-radius:16px;background:rgba(255,255,255,.12);color:#fff;padding:8px 14px;text-align:left;margin-bottom:8px}.tusual b{display:block;font-size:14px}.tusual small{display:block;font-size:12px;color:#D5DBE4}.tusual .go{margin-left:auto;font-size:12px;font-weight:800;background:var(--volt);color:var(--ink);border-radius:14px;padding:6px 12px;flex-shrink:0}
+.troute .rthumb{width:64px;height:48px;border-radius:10px;overflow:hidden;flex-shrink:0;display:block}.troute .rthumb .thumb{width:64px;height:48px}

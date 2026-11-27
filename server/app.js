@@ -15,6 +15,8 @@ import { registerPhotos, WALK_PHOTO_LIMITS } from './routesPhotos.js'
 import { registerUsage } from './routesUsage.js'
 import { registerNotifications } from './routesNotifications.js'
 import { registerWeather } from './routesWeather.js'
+import { registerSavedRoutes } from './routesSavedRoutes.js'
+import { registerTraining } from './routesTraining.js'
 
 import { geoRouter } from './geo.js'
 
@@ -361,7 +363,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     for (let i = 0; i < max; i++) out.push(pts[Math.round((i * (pts.length - 1)) / (max - 1))])
     return out
   }
-  const WALK_COLS = 'w.id, w.dog_id, w.user_id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, w.avg_speed, w.max_speed, w.sprints, w.moving_minutes, w.run_minutes, d.slug AS dog_slug, d.name AS dog_name, d.photo_v AS dog_photo_v, d.is_demo AS dog_is_demo, u.name AS user_name'
+  const WALK_COLS = 'w.id, w.dog_id, w.user_id, w.type, w.title, w.note, w.place, w.miles, w.minutes, w.sniffs, w.started_at, w.route, w.avg_speed, w.max_speed, w.sprints, w.moving_minutes, w.run_minutes, w.route_id, d.slug AS dog_slug, d.name AS dog_name, d.photo_v AS dog_photo_v, d.is_demo AS dog_is_demo, u.name AS user_name'
   // Performance statistics are optional. A missing one is null, never zero.
   const opt = (v) => (v == null ? null : num(v))
   const perf = (r) => ({ avgSpeed: opt(r.avg_speed), maxSpeed: opt(r.max_speed), sprints: opt(r.sprints), movingMinutes: opt(r.moving_minutes), runMinutes: opt(r.run_minutes) })
@@ -389,6 +391,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
         id: r.id, dog: { slug: r.dog_slug, name: r.dog_name, photoUrl: photoUrl(r.dog_slug, r.dog_photo_v), isDemo: !!r.dog_is_demo }, by: { id: r.user_id, name: r.user_name, you: r.user_id === userId },
         type: r.type, title: r.title, note: r.note, place: r.place, miles: num(r.miles), minutes: num(r.minutes), sniffs: num(r.sniffs), ...perf(r),
         startedAt: iso(r.started_at), route: full ? pts : thin(pts), paws: counts[r.id] || 0, pawed: !!mine[r.id], photos: shots[r.id] || [],
+        // The saved route this outing was started from. Shown to the person who walked it and to nobody else.
+        ...(r.route_id && r.user_id === userId ? { routeId: r.route_id } : {}),
       }
     })
   }
@@ -641,6 +645,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const runMinutes = number(b.runMinutes, 'Running time', { max: LIMITS.minutes, optional: true })
     if ((movingMinutes != null && movingMinutes > minutes + 0.01) || (runMinutes != null && runMinutes > minutes + 0.01)) throw bad('Moving time and running time cannot be longer than the walk.')
     if (avgSpeed != null && maxSpeed != null && avgSpeed > maxSpeed + 0.05) throw bad('Average speed cannot be above top speed.')
+    if (b.routeId != null && (typeof b.routeId !== 'string' || !ID_RE.test(b.routeId))) throw bad('routeId must be the id of a saved route.')
     const now = Date.now()
     let started = now - minutes * 60e3
     if (b.startedAt !== undefined && b.startedAt !== null) {
@@ -653,6 +658,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const id = newId()
     await db.query('INSERT INTO walks (id, dog_id, user_id, type, title, note, place, miles, minutes, sniffs, started_at, route, created_at, avg_speed, max_speed, sprints, moving_minutes, run_minutes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)',
       [id, dog.id, req.user.id, type, title, note, place, round(miles, 100), round(minutes, 100), b.sniffs == null ? 0 : sniffs, iso(started), pts ? JSON.stringify(pts) : null, iso(now), avgSpeed == null ? null : round(avgSpeed, 10), maxSpeed == null ? null : round(maxSpeed, 10), sprints, movingMinutes == null ? null : round(movingMinutes, 100), runMinutes == null ? null : round(runMinutes, 100)])
+    // Started from one of this person's saved routes: the outing is linked to it and the route counts one more walk.
+    if (b.routeId) await kit.linkWalkToRoute({ walkId: id, routeId: b.routeId, userId: req.user.id, startedAt: iso(started) })
     const { rows } = await db.query(`SELECT ${WALK_COLS} FROM walks w JOIN dogs d ON d.id = w.dog_id JOIN users u ON u.id = w.user_id WHERE w.id = $1`, [id])
     // The owner and family hear about it when a walker or daycare logs an outing.
     if (role === 'walker' || role === 'daycare') await kit.notifyDogPeople(dog.id, { kind: 'care_walk_logged', actorId: req.user.id, title: `${role === 'daycare' ? req.user.name : firstName(req.user.name)} logged ${type === 'Walk' ? 'a walk' : type === 'Daycare' ? 'a daycare day' : `an outing (${type})`} for ${dog.name}`, body: `${title} · ${Math.round(minutes)} min${miles > 0 ? ` · ${round(miles, 10)} mi` : ''}`, link: { to: 'outing', id, dog: dog.slug } })
@@ -680,6 +687,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     await db.tx(async (t) => {
       await t.query('DELETE FROM paws WHERE walk_id = $1', [w.id])
       await t.query('DELETE FROM walk_photos WHERE walk_id = $1', [w.id])
+      // A route saved from this outing stays. It just no longer points at an outing that is gone.
+      await t.query('UPDATE routes SET source_walk_id = NULL WHERE source_walk_id = $1', [w.id])
       await t.query('DELETE FROM walks WHERE id = $1', [w.id])
     })
     res.json({ ok: true })
@@ -767,6 +776,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     return {
       team, city: dog.city || '',
       slug: dog.slug, name: dog.name, breed: dog.breed, bio: dog.bio, shareRoutes: !!dog.share_routes, photoUrl: photoUrl(dog.slug, dog.photo_v, true), isDemo: !!dog.is_demo,
+      // Earned training badges only, labelled as self-reported. No sessions, notes or names.
+      training: kit.trainingPublic ? await kit.trainingPublic(dog) : null,
       awards: aw.rows.map((r) => ({ title: r.title, kind: r.kind, eventName: r.event_name, placement: r.placement, awardedOn: r.awarded_on || null })),
       totals: { lifetime: await totals(dog.id), week: await totals(dog.id, since) },
       walks: w.rows.map((r) => {
@@ -822,6 +833,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   registerFriends(kit)
   registerPhotos(kit)
   registerWeather(kit)
+  registerSavedRoutes(kit)
+  registerTraining(kit)
   // Read-only lookups, no sign-in. They sit on the API router, so only the per-address read limit applies.
   api.use('/geo', geoRouter(db))
 

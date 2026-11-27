@@ -137,3 +137,7 @@ img.av{object-fit:cover;display:block}.av.avart{overflow:hidden}.av.avart svg{wi
 button.brow{width:100%;text-align:left}
 
 .sketchnote{font-size:12px;color:#5B6472;padding:6px 16px 0}
+
+/* Keeping the route of an outing: on the saved step of a walk and on the outing's page. */
+.keeprow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.keeprow .cta{flex:1;width:auto;white-space:nowrap}.keeprow .meta{flex-basis:100%}
+.savedcard{display:flex;flex-direction:column;gap:12px}.savedcard .thumb{border-radius:14px;height:150px}

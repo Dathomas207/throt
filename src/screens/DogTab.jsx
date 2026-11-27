@@ -5,6 +5,7 @@ import { RealHealth, DemoHealth } from './Health.jsx'
 import { RealDocuments, DemoDocuments } from './Documents.jsx'
 import { RealAwards, DemoAwards } from './Awards.jsx'
 import { DogId, DemoDogId } from './Registration.jsx'
+import { TrainingCard } from '../training/Row.jsx'
 import { DEMO_DOGS } from '../data.js'
 
 export default function DogTab(props) { return props.real ? <RealDogTab {...props} /> : <DemoDogTab {...props} /> }
@@ -51,6 +52,7 @@ function RealDogTab({ real, pawed, paw, setOpen, setToast, openSettings, regNonc
       {sub === 'Activity' && <div className="list">
         <WeekBars days={days} title="Last 7 days" meta={`${totals.week.miles.toFixed(1)} mi · ${totals.week.outings} ${totals.week.outings === 1 ? 'outing' : 'outings'}`} />
         <RealAwards real={real} setToast={setToast} />
+        <TrainingCard real={real} />
         <TypeFilter acts={dogActs} type={type} setType={setType} />
         {dogActs.length === 0 && <div className="card empty"><b>No outings yet</b><p>{dog.name}'s walks will be listed here.</p></div>}
         {shown.map((a) => <Card key={a.id} a={a} pawed={pawed} paw={paw} setOpen={setOpen} />)}
@@ -81,6 +83,7 @@ function DemoDogTab({ acts, week, todayMin, pawed, paw, setOpen, setToast, openS
       {sub === 'Activity' && <div className="list">
         <WeekBars days={days} title="This week" meta={`${week.miles.toFixed(1)} mi · ${week.walks} outings`} />
         <DemoAwards acts={acts} dd={dd} />
+        <TrainingCard dd={dd} />
         <TypeFilter acts={acts} type={type} setType={setType} />
         {shown.map((a) => <Card key={a.id} a={a} pawed={pawed} paw={paw} setOpen={setOpen} />)}
       </div>}

@@ -152,6 +152,127 @@ export async function routeThrough(points, opts = {}) {
   try { return { ...(await osrm(wps, opts)), approximate: false } } catch (e) { return straightThrough(wps) }
 }
 
+// ---- legs: the route builder's router -----------------------------------------
+// The same two services as above, asked for turn steps as well, so each leg between two control points
+// comes back with its own line and the name of the road or path it mostly follows.
+const legCache = new Map()
+const LEG_CACHE_MAX = 600
+export const legKey = (a, b) => `${a[0].toFixed(5)},${a[1].toFixed(5)}>${b[0].toFixed(5)},${b[1].toFixed(5)}`
+const coordList = (points) => points.map((p) => `${p[1].toFixed(5)},${p[0].toFixed(5)}`).join(';')
+export const osrmLegsUrl = (points) => OSRM_BASE + coordList(points) + '?overview=full&geometries=geojson&steps=true'
+export const mapboxLegsUrl = (points, token) => 'https://api.mapbox.com/directions/v5/mapbox/walking/' + coordList(points) + '?overview=full&geometries=geojson&steps=true&access_token=' + encodeURIComponent(token)
+const PATH_CLASS = /^(path|pedestrian|track|footway|steps|cycleway|bridleway)$/
+// Mapbox or OSRM directions JSON -> one { pts, miles, name, roads, kind } per leg. Throws "OSRM: ..." when there is no route.
+export function parseLegs(json) {
+  if (!json || json.code !== 'Ok' || !Array.isArray(json.routes) || !json.routes.length) throw new Error('OSRM: ' + ((json && (json.message || json.code)) || 'no route'))
+  const legs = json.routes[0].legs
+  if (!Array.isArray(legs) || !legs.length) throw new Error('OSRM: no legs')
+  return legs.map((leg) => {
+    const pts = [], by = new Map(), roads = []
+    let unnamed = 0, unnamedPath = 0, known = false
+    for (const st of leg.steps || []) {
+      const coords = (st.geometry && st.geometry.coordinates) || []
+      for (const c of coords) { const p = [round5(c[1]), round5(c[0])], l = pts[pts.length - 1]; if (!l || l[0] !== p[0] || l[1] !== p[1]) pts.push(p) }
+      const name = typeof st.name === 'string' ? st.name.trim() : '', d = Number(st.distance) || 0
+      if (name) { by.set(name, (by.get(name) || 0) + d); if (roads[roads.length - 1] !== name && d > 0) roads.push(name) }
+      else {
+        unnamed += d
+        const cls = st.intersections && st.intersections[0] && st.intersections[0].mapbox_streets_v8 && st.intersections[0].mapbox_streets_v8.class
+        if (cls) { known = true; if (PATH_CLASS.test(cls)) unnamedPath += d }
+      }
+    }
+    if (pts.length < 2) throw new Error('OSRM: empty leg')
+    let name = '', top = 0
+    for (const [k, d] of by) if (d > top) { top = d; name = k }
+    // A leg that is mostly an unnamed way is called by what it is, not by the short named stretch at one end.
+    if (unnamed > top * 2) name = ''
+    return { pts, miles: pathMiles(pts), name, roads: [...new Set(roads)].slice(0, 4), kind: name ? '' : known && unnamedPath < unnamed / 2 ? 'road' : 'path' }
+  })
+}
+async function legsVia(url, opts) {
+  const fetchImpl = opts.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)
+  if (!fetchImpl) throw new Error('fetch is not available')
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), opts.timeoutMs || TIMEOUT_MS)
+  const onOuter = () => ctl.abort()
+  if (opts.signal) { if (opts.signal.aborted) ctl.abort(); else opts.signal.addEventListener('abort', onOuter) }
+  try {
+    const res = await fetchImpl(url, { signal: ctl.signal })
+    let json = null
+    try { json = await res.json() } catch (e) {}
+    if (!res.ok && !(json && json.code)) { const err = new Error('OSRM HTTP ' + res.status); err.service = true; throw err }
+    return parseLegs(json)
+  } catch (e) {
+    if (!/^OSRM: /.test(String(e && e.message))) e.service = true
+    throw e
+  } finally { clearTimeout(timer); if (opts.signal) opts.signal.removeEventListener('abort', onOuter) }
+}
+// One leg per pair of neighbouring points (2 to 25 points). Legs already known for the same rounded
+// endpoints come from memory; when every leg is known nothing is requested. Rejects when no service answers.
+export async function routeLegs(points, opts = {}) {
+  const wps = (points || []).filter(okPt).slice(0, MAX_WAYPOINTS)
+  if (wps.length < 2) throw new Error('OSRM: two points are needed')
+  const keys = wps.slice(1).map((p, i) => legKey(wps[i], p))
+  if (!opts.noCache && keys.every((k) => legCache.has(k))) return keys.map((k) => legCache.get(k))
+  let legs = null
+  if (!opts.fetchImpl) {
+    let token = ''
+    try { token = ((await getConfig()) || {}).mapboxToken || '' } catch (e) {}
+    if (token) { try { legs = await legsVia(mapboxLegsUrl(wps, token), opts) } catch (e) { if (!e.service || (opts.signal && opts.signal.aborted)) throw e } }
+  }
+  if (!legs) legs = await legsVia(osrmLegsUrl(wps), opts)
+  if (legs.length !== keys.length) throw new Error('OSRM: wrong number of legs')
+  legs.forEach((l, i) => { if (legCache.size >= LEG_CACHE_MAX) legCache.delete(legCache.keys().next().value); legCache.set(keys[i], l) })
+  return legs
+}
+export const routeLeg = (a, b, opts) => routeLegs([a, b], opts).then((l) => l[0])
+
+// The route the builder opens with: a loop from `start`, or a walk out and back the same way, of about
+// `miles`. Resolves to { points, legs, approximate }: control points and one leg between each pair, ready
+// for the editor. Never rejects. When no router answers, the legs are straight lines and approximate is true.
+const OUT_FACTOR = 1.3 // a routed walk to a point is roughly this much longer than the straight line to it
+const suggestCache = new Map()
+const flatLeg = (a, b) => { const pts = [a.map(round5), b.map(round5)]; return { mode: 'path', pts, miles: pathMiles(pts), name: '', approximate: true } }
+const pathLeg = (l) => ({ mode: 'path', pts: l.pts, miles: l.miles, name: l.name || '', ...(l.roads && l.roads.length ? { roads: l.roads } : {}), ...(l.kind ? { kind: l.kind } : {}) })
+export async function suggestRoute(start, miles, opts = {}) {
+  const shape = opts.shape === 'out' ? 'out' : 'loop', bearing = opts.bearing == null ? 45 : opts.bearing
+  const key = `${shape}:${start[0].toFixed(4)},${start[1].toFixed(4)}:${miles}:${bearing}`
+  if (suggestCache.has(key) && !opts.noCache) return suggestCache.get(key)
+  const S = start.map(round5), tries = opts.tries || 3
+  const control = (scale) => (shape === 'out' ? [S, destination(S, bearing, (miles / 2 / OUT_FACTOR) * scale).map(round5)] : [S, ...loopWaypoints(S, (miles / STREET_FACTOR) * scale, bearing).map((p) => p.map(round5)), S])
+  let best = null, scale = 1
+  for (let i = 0; i < tries; i++) {
+    if (opts.signal && opts.signal.aborted) break
+    const pts = control(scale)
+    try {
+      const legs = await routeLegs(pts, opts)
+      const got = legs.reduce((s, l) => s + l.miles, 0) * (shape === 'out' ? 2 : 1)
+      if (!best || Math.abs(got - miles) < Math.abs(best.got - miles)) best = { pts, legs, got }
+      if (Math.abs(best.got - miles) / miles <= 0.1) break
+      scale = Math.min(2.5, Math.max(0.4, scale * (miles / Math.max(0.05, got))))
+    } catch (e) { if (e.service) break }
+  }
+  if (!best) {
+    const pts = shape === 'out' ? [...control(1), S] : control(1)
+    return { points: pts, legs: pts.slice(1).map((p, i) => flatLeg(pts[i], p)), approximate: true, target: miles }
+  }
+  let out
+  if (shape === 'out') { const go = pathLeg(best.legs[0]); out = { points: [best.pts[0], best.pts[1], best.pts[0]], legs: [go, { ...go, pts: go.pts.slice().reverse(), ...(go.roads ? { roads: go.roads.slice().reverse() } : {}) }] } }
+  else out = { points: best.pts, legs: best.legs.map(pathLeg) }
+  out = { ...out, approximate: false, target: miles }
+  suggestCache.set(key, out)
+  return out
+}
+// Whether the browser has already been told it may share the location. Never shows a prompt.
+// Resolves to 'granted', 'denied', 'prompt' or 'unknown'.
+export async function locationState() {
+  try {
+    if (lastKnownFix()) return 'granted'
+    if (!navigator.permissions || !navigator.permissions.query) return 'unknown'
+    const r = await navigator.permissions.query({ name: 'geolocation' })
+    return r && typeof r.state === 'string' ? r.state : 'unknown'
+  } catch (e) { return 'unknown' }
+}
+
 // Seeded demo routes are drawn shapes. One that carries `via` (points around the real place) is resolved once
 // through the walking router as a closed loop, so the demo follows mapped paths. The answer is kept in memory
 // and in localStorage. Until it resolves, or when routing fails, the seeded line is returned marked approximate.
@@ -210,21 +331,25 @@ export function thin(pts, max = MAX_SAVED_PTS) {
   for (let i = 0; i < max; i++) out.push(pts[Math.round((i * (pts.length - 1)) / (max - 1))])
   return out
 }
-// Drops anything that is not a usable route and caps the list.
+// Drops anything that is not a usable route and caps the list. Favorites are never the ones dropped.
+const okControl = (c) => !!c && Array.isArray(c.points) && c.points.length > 1 && c.points.length <= MAX_WAYPOINTS + 1 && c.points.every(okPt) && Array.isArray(c.modes) && c.modes.length === c.points.length - 1
 export function cleanSaved(list) {
   if (!Array.isArray(list)) return []
-  return list.filter((r) => r && typeof r === 'object' && r.id && Array.isArray(r.pts) && r.pts.length > 1 && r.pts.every(okPt) && r.miles > 0)
-    .map((r) => ({ id: String(r.id), name: String(r.name || 'My route').slice(0, 60), miles: r.miles, minutes: Math.max(1, Math.round(r.minutes) || 1), pts: r.pts, waypoints: Array.isArray(r.waypoints) && r.waypoints.every(okPt) ? r.waypoints : [r.pts[0], r.pts[r.pts.length - 1]], approximate: !!r.approximate, trail: !!r.trail, at: r.at || 0 }))
-    .slice(0, MAX_SAVED)
+  const all = list.filter((r) => r && typeof r === 'object' && r.id && Array.isArray(r.pts) && r.pts.length > 1 && r.pts.every(okPt) && r.miles > 0)
+    .map((r) => ({ id: String(r.id), name: String(r.name || 'My route').slice(0, 60), miles: r.miles, minutes: Math.max(1, Math.round(r.minutes) || 1), pts: r.pts, waypoints: Array.isArray(r.waypoints) && r.waypoints.every(okPt) ? r.waypoints : [r.pts[0], r.pts[r.pts.length - 1]], approximate: !!r.approximate, trail: !!r.trail, at: r.at || 0,
+      kind: r.kind === 'walked' ? 'walked' : 'built', control: okControl(r.control) ? { points: r.control.points, modes: r.control.modes.map((m) => (m === 'straight' ? 'straight' : 'path')) } : null, favorite: !!r.favorite, usualFor: r.favorite && typeof r.usualFor === 'string' ? r.usualFor.slice(0, 60) : '', dog: typeof r.dog === 'string' ? r.dog.slice(0, 60) : '',
+      sourceWalkId: r.sourceWalkId ? String(r.sourceWalkId).slice(0, 80) : '', timesWalked: Math.max(0, Math.round(r.timesWalked) || 0), lastWalkedAt: Number(r.lastWalkedAt) || 0 }))
+  let room = MAX_SAVED - all.filter((r) => r.favorite).length
+  return all.filter((r) => r.favorite || room-- > 0).slice(0, MAX_SAVED * 2)
 }
 export function addSaved(list, route, name) {
   // The stored distance is measured from the stored line, so a thinned line never carries a stale number.
   const pts = thin(route.pts), miles = Math.round(pathMiles(pts) * 100) / 100
-  const entry = { id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: String(name || '').trim() || `${miles.toFixed(1)} mi route`, miles, minutes: walkMinutes(miles), pts, waypoints: route.waypoints, approximate: !!route.approximate, trail: !!route.trail, at: Date.now() }
+  const entry = { ...route, id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: String(name || '').trim() || `${miles.toFixed(1)} mi route`, miles, minutes: walkMinutes(miles), pts, waypoints: route.waypoints, approximate: !!route.approximate, trail: !!route.trail, at: Date.now() }
   return cleanSaved([entry, ...cleanSaved(list)])
 }
 export function loadSavedRoutes() { try { return cleanSaved(JSON.parse(localStorage.getItem(SAVED_KEY))) } catch (e) { return [] } }
-function storeSaved(list) { try { localStorage.setItem(SAVED_KEY, JSON.stringify(list)); return true } catch (e) { return false } }
+export function storeSaved(list) { try { localStorage.setItem(SAVED_KEY, JSON.stringify(list)); return true } catch (e) { return false } }
 // Both resolve to { list, ok }. ok is false when the browser refused to store the list.
 export function saveRoute(route, name) { const list = addSaved(loadSavedRoutes(), route, name); return { list, ok: storeSaved(list) } }
 export function deleteSavedRoute(id) { const list = loadSavedRoutes().filter((r) => r.id !== id); return { list, ok: storeSaved(list) } }
