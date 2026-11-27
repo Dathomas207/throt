@@ -1,6 +1,6 @@
 {
- "note": "Charlotte seed list compiled 2026-11-25 from public listings. Dog policies, hours and fees change: each entry links to its source and should be checked before visiting. Entries have addresses, not coordinates.",
- "city": "Charlotte, NC",
+ "note": "Charlotte seed list compiled 2026-11-25 from public listings. Dog policies, hours and fees change: each entry links to its source and should be checked before visiting. Entries have addresses, not coordinates. Boston, MA and Greater Boston entries were compiled on 2026-11-27 from public listings in the same way.",
+ "city": "Charlotte, NC and Boston, MA",
  "places": [
   {
    "name": "Frazier Park Dog Park",
@@ -1394,6 +1394,790 @@
    "address": "8315 Byrum Drive, Charlotte, NC 28217",
    "note": "The city animal shelter near the airport, for adoptions, lost and found pets and reporting dog bites.",
    "source_url": "https://www.axios.com/local/charlotte/2017/08/31/agenda-guide-dog-ownership-charlotte-101251"
+  },
+  {
+   "name": "Peters Park Dog Run",
+   "category": "park",
+   "address": "230 Shawmut Avenue, Boston, MA",
+   "note": "City off-leash dog recreation space in the South End. Listed as fenced with a separate area for small dogs.",
+   "source_url": "https://www.boston.gov/departments/parks-and-recreation/dogs-and-boston-parks"
+  },
+  {
+   "name": "Ronan Park Dog Park",
+   "category": "park",
+   "address": "92 Mount Ida Road, Boston, MA",
+   "note": "City off-leash dog recreation space in Dorchester. Listed as a fenced dog run in a corner of the park.",
+   "source_url": "https://www.boston.gov/departments/parks-and-recreation/dogs-and-boston-parks"
+  },
+  {
+   "name": "RUFF North End Dog Park at DeFilippo Playground",
+   "category": "park",
+   "address": "135 Prince Street, Boston, MA",
+   "note": "City off-leash dog recreation space in the North End, reached through DeFilippo Playground. Listed with separate sections for small and large dogs.",
+   "source_url": "https://www.boston.gov/departments/parks-and-recreation/dogs-and-boston-parks"
+  },
+  {
+   "name": "Downer Avenue Playground dog recreation space",
+   "category": "park",
+   "address": "40 Downer Avenue, Boston, MA",
+   "note": "City of Boston off-leash dog recreation space in Dorchester.",
+   "source_url": "https://www.boston.gov/departments/parks-and-recreation/dogs-and-boston-parks"
+  },
+  {
+   "name": "Garvey Playground dog recreation space",
+   "category": "park",
+   "address": "340 Neponset Avenue, Boston, MA",
+   "note": "City of Boston off-leash dog recreation space in Dorchester.",
+   "source_url": "https://www.boston.gov/departments/parks-and-recreation/dogs-and-boston-parks"
+  },
+  {
+   "name": "Boston Common off-leash area",
+   "category": "park",
+   "address": "131 Tremont Street, Boston, MA 02111",
+   "note": "Off-leash program area that rotates among lawn sections of the Common and is not fenced. Look for the signs; the Common Canine group publishes the current parcel map.",
+   "source_url": "https://www.boston.gov/departments/parks-and-recreation/dogs-and-boston-parks"
+  },
+  {
+   "name": "South Boston Bark Park",
+   "category": "park",
+   "address": "1280 Columbia Road, Boston, MA",
+   "note": "Volunteer-maintained dog park near Carson Beach. Listed as fenced and double gated, with a separate section for smaller dogs.",
+   "source_url": "https://bostonmagazine.com/?p=2406635"
+  },
+  {
+   "name": "Carleton Court Dog Park",
+   "category": "park",
+   "address": "Carleton Street, Boston, MA",
+   "note": "DCR off-leash dog park in Southwest Corridor Park, beside Carleton Street between Braddock Park and Holyoke Street. Listed as fully fenced.",
+   "source_url": "https://www.mass.gov/guides/dogs-in-dcr-parks"
+  },
+  {
+   "name": "Bremen Street Dog Park",
+   "category": "park",
+   "address": "145 Bremen Street, Boston, MA 02128",
+   "note": "Off-leash dog park in Bremen Street Park in East Boston, at Bremen and Porter streets. Listed with separate areas for large and small dogs.",
+   "source_url": "https://www.dogster.com/lifestyle/off-leash-dog-parks-in-boston-ma/"
+  },
+  {
+   "name": "East 1st Dog Park",
+   "category": "park",
+   "address": "768 East 1st Street, Boston, MA",
+   "note": "Off-leash dog park in South Boston, long and narrow, listed with agility equipment and no separate small dog area.",
+   "source_url": "https://www.dogster.com/lifestyle/off-leash-dog-parks-in-boston-ma/"
+  },
+  {
+   "name": "Paul Revere Park dog area",
+   "category": "park",
+   "address": "North Washington Street, Boston, MA",
+   "note": "Park in Charlestown near the Zakim Bridge with an area dog owners use off leash. Sources disagree on whether it is fully fenced, so check on arrival.",
+   "source_url": "https://www.dogster.com/lifestyle/off-leash-dog-parks-in-boston-ma/"
+  },
+  {
+   "name": "Richmond Street Dog Park",
+   "category": "park",
+   "address": "96 Richmond Street, Boston, MA 02113",
+   "note": "Small dog park in the North End, listed as fully fenced.",
+   "source_url": "https://www.rover.com/blog/top-10-boston-dog-parks"
+  },
+  {
+   "name": "Mansfield Street Dog Park",
+   "category": "park",
+   "address": "Mansfield Street, Boston, MA",
+   "note": "Small dog park in Allston near Packards Corner, listed as fenced with a double gate.",
+   "source_url": "https://bostonmagazine.com/?p=2406635"
+  },
+  {
+   "name": "Smith Playground Dog Park",
+   "category": "park",
+   "address": "235 Western Avenue, Boston, MA",
+   "note": "Dog park at Smith Playground in Allston. Listed as fully fenced with a small dog area and drinking water.",
+   "source_url": "https://sniffspot.com/listings/arlington-ma"
+  },
+  {
+   "name": "Tudor Dog Park at Pacific Street Park",
+   "category": "park",
+   "address": "Tudor Street, Cambridge, MA",
+   "note": "Dedicated fenced off-leash space in Cambridgeport, on Tudor Street between Pacific Street and Sidney Street.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Danehy Park dog park",
+   "category": "park",
+   "address": "99 Sherman Street, Cambridge, MA",
+   "note": "Dedicated fenced off-leash space near the New Street entrance of Danehy Park. Listed with separate small and large dog sections.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Giacobbe Dog Run",
+   "category": "park",
+   "address": "Pemberton Street, Cambridge, MA",
+   "note": "Dedicated fenced dog run in North Cambridge, near Pemberton Street and Yerxa Road. Formerly called the Pemberton Street Dog Run.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Timothy J. Toomey Jr. Park dog run",
+   "category": "park",
+   "address": "Bent Street, Cambridge, MA",
+   "note": "Dedicated fenced off-leash space in East Cambridge, near Third Street and Bent Street.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Binney Street Park dog park",
+   "category": "park",
+   "address": "Binney Street, Cambridge, MA",
+   "note": "Dedicated fenced off-leash space near Binney Street, Fulkerson Street and Galileo Galilei Way.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Fresh Pond Reservation",
+   "category": "park",
+   "address": "250 Fresh Pond Parkway, Cambridge, MA",
+   "note": "Shared use off-leash area around the reservoir loop, not fenced off from other users. Off-leash use is for dogs with a Cambridge license under voice control.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Fort Washington Park",
+   "category": "park",
+   "address": "95 Waverly Street, Cambridge, MA",
+   "note": "Historic park in Cambridgeport listed by the city as a shared use off-leash area.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Raymond Park (Corcoran Field) off-leash hours",
+   "category": "park",
+   "address": "106 Raymond Street, Cambridge, MA",
+   "note": "Unfenced shared field with early morning off-leash hours for dogs licensed in Cambridge.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Gold Star Mothers Park off-leash hours",
+   "category": "park",
+   "address": "Gore Street, Cambridge, MA",
+   "note": "East Cambridge park at Gore Street and 6th Street with early morning shared use off-leash hours. Not fenced.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Joan Lorentz Park off-leash hours",
+   "category": "park",
+   "address": "Ellery Street, Cambridge, MA",
+   "note": "Mid-Cambridge park at Broadway and Ellery Street with morning shared use off-leash hours. Not fenced.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Greene-Rose Heritage Park off-leash hours",
+   "category": "park",
+   "address": "Moore Street, Cambridge, MA",
+   "note": "Park in The Port at Harvard Street and Moore Street with early morning shared use off-leash hours. Not fenced.",
+   "source_url": "https://www.cambridgema.gov/cdd/parks/osplanning/offleash"
+  },
+  {
+   "name": "Little Fresh Pond Dog Beach",
+   "category": "water",
+   "address": "691 Huron Avenue, Cambridge, MA",
+   "note": "Small pond across from Fresh Pond Reservation where dogs swim. Listed as unfenced; the bank can be awkward for some dogs.",
+   "source_url": "https://sniffspot.com/listings/arlington-ma"
+  },
+  {
+   "name": "Nunziato Field Dog Park",
+   "category": "park",
+   "address": "32 Vinal Avenue, Somerville, MA 02143",
+   "note": "City off-leash recreational area at Summer Street and Putnam Street near Union Square. Listed as fenced; dogs need a valid license.",
+   "source_url": "https://somervillema.gov/dogs"
+  },
+  {
+   "name": "Zero New Washington Dog Park",
+   "category": "park",
+   "address": "New Washington Street, Somerville, MA",
+   "note": "City off-leash recreational area near Inner Belt Road, listed as fenced with agility obstacles and a gazebo. Dogs need a valid license.",
+   "source_url": "https://somervillema.gov/dogs"
+  },
+  {
+   "name": "Ed Leathers Community Park dog park",
+   "category": "park",
+   "address": "Walnut Street, Somerville, MA",
+   "note": "Small city off-leash recreational area, listed as fully fenced. Dogs need a valid license.",
+   "source_url": "https://somervillema.gov/dogs"
+  },
+  {
+   "name": "Lincoln Park Dog Park",
+   "category": "park",
+   "address": "25 Perry Street, Somerville, MA",
+   "note": "City off-leash recreational area inside Lincoln Park, listed as fully fenced. Dogs need a valid license.",
+   "source_url": "https://somervillema.gov/dogs"
+  },
+  {
+   "name": "Hunnewell Playground off-leash area",
+   "category": "park",
+   "address": "Newton Street, Newton, MA",
+   "note": "City of Newton off-leash area, fully fenced, entered from Newton Street. Dogs must wear a Newton off-leash medallion.",
+   "source_url": "https://www.newtonma.gov/government/parks-recreation-culture/off-leash-dog-parks"
+  },
+  {
+   "name": "Cabot Park off-leash area",
+   "category": "park",
+   "address": "East Side Parkway, Newton, MA",
+   "note": "City of Newton off-leash area at Newtonville Avenue and East Side Parkway, not fenced. Dogs must wear a Newton off-leash medallion.",
+   "source_url": "https://www.newtonma.gov/government/parks-recreation-culture/off-leash-dog-parks"
+  },
+  {
+   "name": "Claflin Park off-leash area",
+   "category": "park",
+   "address": "Lowell Avenue, Newton, MA",
+   "note": "City of Newton off-leash area, not fenced, entered by the Lowell Avenue gate. Dogs must wear a Newton off-leash medallion.",
+   "source_url": "https://www.newtonma.gov/government/parks-recreation-culture/off-leash-dog-parks"
+  },
+  {
+   "name": "Newton Centre Playground off-leash area",
+   "category": "park",
+   "address": "Tyler Terrace, Newton, MA",
+   "note": "City of Newton off-leash area, not fenced, with entrances from Bowen Street, Centre Street, Homer Street and Tyler Terrace. A Newton off-leash medallion is required.",
+   "source_url": "https://www.newtonma.gov/government/parks-recreation-culture/off-leash-dog-parks"
+  },
+  {
+   "name": "Cold Spring Park off-leash area",
+   "category": "park",
+   "address": "1094 Beacon Street, Newton, MA",
+   "note": "City of Newton off-leash area, not fenced, also reached from Duncklee Street or Plymouth Road. A Newton off-leash medallion is required.",
+   "source_url": "https://www.newtonma.gov/government/parks-recreation-culture/off-leash-dog-parks"
+  },
+  {
+   "name": "Griggs Park off-leash area",
+   "category": "park",
+   "address": "Griggs Road, Brookline, MA",
+   "note": "Brookline Green Dog program area, not fenced, with off-leash use in set morning hours. Dogs must be registered and wear a current Green Dog tag.",
+   "source_url": "https://www.bringfido.com/attraction/city/brookline_ma_us/"
+  },
+  {
+   "name": "Jean B. Waldstein Playground off-leash area",
+   "category": "park",
+   "address": "Dean Road, Brookline, MA",
+   "note": "Brookline Green Dog program field, not fenced, with early morning off-leash hours for registered dogs.",
+   "source_url": "https://www.bringfido.com/attraction/city/brookline_ma_us/"
+  },
+  {
+   "name": "Daniel J. Warren Playground off-leash area",
+   "category": "park",
+   "address": "Eliot Street, Brookline, MA",
+   "note": "Brookline Green Dog program area with morning off-leash hours for registered dogs. Leashed dogs are welcome the rest of the time.",
+   "source_url": "https://www.bringfido.com/attraction/city/brookline_ma_us/"
+  },
+  {
+   "name": "Coolidge Park off-leash area",
+   "category": "park",
+   "address": "Columbia Street, Brookline, MA",
+   "note": "Brookline Green Dog program area, grassy and not fenced, with early morning off-leash hours for registered dogs.",
+   "source_url": "https://www.sniffspot.com/listings/brookline-ma/coolidge-park-off-leash-area-269713"
+  },
+  {
+   "name": "Soule Recreation Center off-leash area",
+   "category": "park",
+   "address": "Hammond Street, Brookline, MA",
+   "note": "Brookline Green Dog program off-leash area at the Soule Recreation Center. Registration and a Green Dog tag are required.",
+   "source_url": "https://www.sniffspot.com/listings/brookline-ma/griggs-park-off-leash-area-269706"
+  },
+  {
+   "name": "Larz Anderson Park off-leash area",
+   "category": "park",
+   "address": "Avon Street, Brookline, MA",
+   "note": "Brookline Green Dog program area at the top of the hill on the Avon Street side, used off leash in set hours from March through November by registered dogs.",
+   "source_url": "https://www.bringfido.com/attraction/city/brookline_ma_us/"
+  },
+  {
+   "name": "Amory Playground off-leash area",
+   "category": "park",
+   "address": "Amory Street, Brookline, MA",
+   "note": "Brookline Green Dog program area, not fenced, with off-leash use at set times for registered and licensed dogs.",
+   "source_url": "https://www.bringfido.com/attraction/city/brookline_ma_us/"
+  },
+  {
+   "name": "Brookline Avenue Playground off-leash area",
+   "category": "park",
+   "address": "Brookline Avenue, Brookline, MA",
+   "note": "Brookline Green Dog program park where registered dogs may be off leash in designated areas from March through November.",
+   "source_url": "https://www.bringfido.com/attraction/city/brookline_ma_us/"
+  },
+  {
+   "name": "How Park off-leash area",
+   "category": "park",
+   "address": "70 Bacon Street, Watertown, MA",
+   "note": "Watertown off-leash area at How Park, at Pleasant Street and Bacon Street. Subject to Watertown dog rules.",
+   "source_url": "https://www.sniffspot.com/listings/watertown-ma-dog-fields"
+  },
+  {
+   "name": "Arlington Reservoir Beach off-leash hours",
+   "category": "park",
+   "address": "210 Lowell Street, Arlington, MA",
+   "note": "Unfenced area at the Arlington Reservoir listed with early morning off-leash hours.",
+   "source_url": "https://sniffspot.com/listings/arlington-ma"
+  },
+  {
+   "name": "Pine Banks Park dog park",
+   "category": "park",
+   "address": "1087 Main Street, Malden, MA",
+   "note": "Dog park in Pine Banks Park on the Malden and Melrose line, listed as fully fenced.",
+   "source_url": "https://www.sniffspot.com/listings/malden-ma/dog-park-at-pine-banks-park-270170"
+  },
+  {
+   "name": "Melrose Dog Park",
+   "category": "park",
+   "address": "350 Lynn Fells Parkway, Melrose, MA",
+   "note": "Public dog park in Melrose listed among the fenced parks north of Boston.",
+   "source_url": "https://www.sniffspot.com/listings/malden-ma/dog-park-at-pine-banks-park-270170"
+  },
+  {
+   "name": "Bark Place at Breakheart Reservation",
+   "category": "park",
+   "address": "177 Forest Street, Saugus, MA",
+   "note": "DCR off-leash dog area inside Breakheart Reservation. Dogs must be leashed in the parking area and elsewhere in the reservation.",
+   "source_url": "https://www.mass.gov/guides/dogs-in-dcr-parks"
+  },
+  {
+   "name": "Stodder's Neck",
+   "category": "park",
+   "address": "457 Lincoln Street, Hingham, MA 02043",
+   "note": "DCR peninsula on the Back River with designated off-leash areas, bordered by water on three sides. Bring water for your dog.",
+   "source_url": "https://www.mass.gov/guides/dogs-in-dcr-parks"
+  },
+  {
+   "name": "Randolph Dog Park",
+   "category": "park",
+   "address": "169 West Street, Randolph, MA 02368",
+   "note": "Town dog park with two fenced areas, one for small dogs and one for large dogs.",
+   "source_url": "https://www.rover.com/blog/top-10-boston-dog-parks"
+  },
+  {
+   "name": "Burlington Dog Park",
+   "category": "park",
+   "address": "84 Mill Street, Burlington, MA",
+   "note": "Town dog park listed as fully fenced and suitable for small dogs.",
+   "source_url": "https://www.sniffspot.com/listings/burlington-ma"
+  },
+  {
+   "name": "Woburn Dog Park",
+   "category": "park",
+   "address": "880 Main Street, Woburn, MA",
+   "note": "Public dog park in Woburn listed with agility equipment and seating.",
+   "source_url": "https://www.sniffspot.com/listings/burlington-ma"
+  },
+  {
+   "name": "Medway Dog Park",
+   "category": "park",
+   "address": "298 Village Street, Medway, MA",
+   "note": "Off-leash dog park listed with separate large and small dog areas and a woodchip surface.",
+   "source_url": "https://www.dogster.com/lifestyle/off-leash-dog-parks-in-boston-ma/"
+  },
+  {
+   "name": "Richard McGrath Park off-leash area",
+   "category": "park",
+   "address": "1600 Washington Street, Newton, MA",
+   "note": "City of Newton off-leash area, fully fenced, entered from Washington Street with its own parking lot. Dogs must wear a Newton off-leash medallion.",
+   "source_url": "https://www.newtonma.gov/government/parks-recreation-culture/off-leash-dog-parks"
+  },
+  {
+   "name": "Sheepfold at Middlesex Fells Reservation",
+   "category": "park",
+   "address": "Route 28, Stoneham, MA 02180",
+   "note": "Large DCR meadow that is the only off-leash area in the Middlesex Fells, reached from the Sheepfold parking area off Route 28. Dogs must be leashed entering and leaving, with one leash in hand per dog.",
+   "source_url": "https://www.mass.gov/location-details/dogs-at-middlesex-fells-reservation"
+  },
+  {
+   "name": "Park-9 Dog Bar",
+   "category": "bar",
+   "address": "48 Waters Avenue, Everett, MA 02149",
+   "note": "Indoor and outdoor dog park with a full bar, plus daycare, boarding and training. Dogs must be registered and meet the entry requirements; day passes and memberships are sold.",
+   "source_url": "https://www.park9dogbar.com/"
+  },
+  {
+   "name": "Trillium Brewing Fort Point",
+   "category": "bar",
+   "address": "50 Thomson Place, Boston, MA",
+   "note": "Brewery taproom and restaurant in Fort Point. The brewery says dogs are welcome on the patio.",
+   "source_url": "https://trilliumbrewing.com/pages/faq"
+  },
+  {
+   "name": "Trillium Brewing Fenway",
+   "category": "bar",
+   "address": "401 Park Drive, Boston, MA",
+   "note": "Brewery taproom in the Fenway. The brewery says dogs are welcome on the patio.",
+   "source_url": "https://trilliumbrewing.com/pages/faq"
+  },
+  {
+   "name": "Trillium Garden on the Greenway",
+   "category": "bar",
+   "address": "Atlantic Avenue, Boston, MA 02110",
+   "note": "Outdoor beer garden on the Rose Kennedy Greenway at Atlantic Avenue and High Street. The brewery says dogs are welcome; it does not run in winter.",
+   "source_url": "https://trilliumbrewing.com/pages/faq"
+  },
+  {
+   "name": "Night Shift Brewing Everett Taproom",
+   "category": "bar",
+   "address": "87 Santilli Highway, Everett, MA 02149",
+   "note": "Brewery taproom whose own site lists a dog-friendly patio.",
+   "source_url": "https://nightshiftbrewing.com/locations/"
+  },
+  {
+   "name": "Night Shift On the Greenway Beer Garden",
+   "category": "bar",
+   "address": "600 Atlantic Avenue, Boston, MA 02210",
+   "note": "Seasonal outdoor beer garden at Dewey Square where dogs are welcome. Closed for the winter and listed as reopening in May 2027.",
+   "source_url": "https://nightshiftbrewing.com/locations/"
+  },
+  {
+   "name": "Lamplighter Brewing CX Taproom",
+   "category": "bar",
+   "address": "110 North First Street, Cambridge, MA 02139",
+   "note": "Brewery taproom at Cambridge Crossing. Dogs are welcome in the outdoor seating areas, which open seasonally, and are not allowed indoors.",
+   "source_url": "https://lamplighterbrewing.com/faqs/"
+  },
+  {
+   "name": "Dorchester Brewing Company",
+   "category": "bar",
+   "address": "1250 Massachusetts Avenue, Boston, MA 02125",
+   "note": "Brewery and taproom listed as dog friendly on the ground-level front patio only. It has hosted regular dog nights.",
+   "source_url": "https://mortadellahead.com/?p=5501"
+  },
+  {
+   "name": "Castle Island Brewing South Boston",
+   "category": "bar",
+   "address": "10 Old Colony Avenue, Boston, MA",
+   "note": "Brewery taproom approved by the city for dogs on its outdoor patio during patio season.",
+   "source_url": "https://www.cbsnews.com/amp/boston/news/boston-dog-friendly-restaurants-beer-gardens-patios"
+  },
+  {
+   "name": "Castle Island Brewing Norwood",
+   "category": "bar",
+   "address": "31 Astor Avenue, Norwood, MA",
+   "note": "Brewery headquarters taproom listed by the Mass Brewers Guild as dog friendly indoors and outdoors.",
+   "source_url": "https://www.massbrewersguild.org/news/2023/8/17/the-mbg-member-guide-to-dog-friendly-breweries-in-massachusetts"
+  },
+  {
+   "name": "Notch Brewing Brighton at the Charles River Speedway",
+   "category": "bar",
+   "address": "525 Western Avenue, Boston, MA",
+   "note": "Brewery tap room and beer garden at the Speedway. Listed as dog friendly in the outdoor areas.",
+   "source_url": "https://www.cbsnews.com/amp/boston/news/boston-dog-friendly-restaurants-beer-gardens-patios"
+  },
+  {
+   "name": "Notch Brewing Salem",
+   "category": "bar",
+   "address": "283R Derby Street, Salem, MA",
+   "note": "Tap room with a riverside beer garden. The Mass Brewers Guild lists the beer garden as dog friendly with its own dog entrance from the parking lot.",
+   "source_url": "https://www.massbrewersguild.org/news/2023/8/17/the-mbg-member-guide-to-dog-friendly-breweries-in-massachusetts"
+  },
+  {
+   "name": "Idle Hands Craft Ales",
+   "category": "bar",
+   "address": "89 Commercial Street, Malden, MA 02148",
+   "note": "Brewery taproom listed as welcoming leashed dogs in the outdoor beer garden.",
+   "source_url": "https://mortadellahead.com/?p=5501"
+  },
+  {
+   "name": "Aeronaut Allston beer garden",
+   "category": "bar",
+   "address": "267 Western Avenue, Boston, MA",
+   "note": "Seasonal outdoor beer garden approved by the city for dogs. Note that the Aeronaut taproom in Somerville does not allow pets.",
+   "source_url": "https://www.cbsnews.com/amp/boston/news/boston-dog-friendly-restaurants-beer-gardens-patios"
+  },
+  {
+   "name": "Long Live Roxbury",
+   "category": "bar",
+   "address": "152 Hampden Street, Boston, MA",
+   "note": "Brewery tap room listed as dog friendly on the patio beside the parking lot.",
+   "source_url": "https://www.cbsnews.com/amp/boston/news/boston-dog-friendly-restaurants-beer-gardens-patios"
+  },
+  {
+   "name": "Roundhead Brewing Company",
+   "category": "bar",
+   "address": "1 Westinghouse Plaza, Boston, MA 02136",
+   "note": "Brewery in Hyde Park listed as dog friendly in the outdoor seating area.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "Distraction Brewing Company",
+   "category": "bar",
+   "address": "2 Belgrade Avenue, Boston, MA 02131",
+   "note": "Brewery in Roslindale Square listed as allowing dogs on the outdoor patio.",
+   "source_url": "https://mortadellahead.com/?p=5501"
+  },
+  {
+   "name": "Cisco Brewers Seaport beer garden",
+   "category": "bar",
+   "address": "81 Northern Avenue, Boston, MA",
+   "note": "Outdoor beer garden in the Seaport approved by the city for dogs. It is seasonal, so check that it is open.",
+   "source_url": "https://www.cbsnews.com/amp/boston/news/boston-dog-friendly-restaurants-beer-gardens-patios"
+  },
+  {
+   "name": "The Tip Tap Room",
+   "category": "bar",
+   "address": "138 Cambridge Street, Boston, MA",
+   "note": "Beacon Hill tap room listed as dog friendly on its seasonal outdoor patio.",
+   "source_url": "https://www.cbsnews.com/amp/boston/news/boston-dog-friendly-restaurants-beer-gardens-patios"
+  },
+  {
+   "name": "The Anchor",
+   "category": "bar",
+   "address": "1 Shipyard Park, Boston, MA 02129",
+   "note": "Open-air wine and beer garden in the Charlestown Navy Yard approved by the city for dogs. Hours are seasonal.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "Stats Bar and Grille",
+   "category": "bar",
+   "address": "77 Dorchester Street, Boston, MA 02127",
+   "note": "South Boston sports bar listed as dog friendly on the patio.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "Shy Bird South Boston",
+   "category": "cafe",
+   "address": "12 Old Colony Avenue, Boston, MA",
+   "note": "All-day cafe and rotisserie approved by the city for dogs on its patio.",
+   "source_url": "https://www.cbsnews.com/amp/boston/news/boston-dog-friendly-restaurants-beer-gardens-patios"
+  },
+  {
+   "name": "Bell in Hand Tavern",
+   "category": "bar",
+   "address": "45 Union Street, Boston, MA 02108",
+   "note": "Historic tavern near Faneuil Hall listed as dog friendly on the Union Street patio.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "Brendan Behan Pub",
+   "category": "bar",
+   "address": "378 Centre Street, Boston, MA 02130",
+   "note": "Jamaica Plain pub long listed as dog friendly. Sources differ on whether dogs may come inside or only sit at the street patio, so ask at the door.",
+   "source_url": "https://www.rover.com/blog/favorite-dog-friendly-bars-boston"
+  },
+  {
+   "name": "The Yard at the Liberty Hotel",
+   "category": "bar",
+   "address": "215 Charles Street, Boston, MA 02114",
+   "note": "Hotel courtyard known for its seasonal Yappier Hour dog socials in the warmer months.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "Break Rock Brewing",
+   "category": "bar",
+   "address": "534 Victory Road, Quincy, MA 02171",
+   "note": "Brewery taproom on the Marina Bay boardwalk listed as allowing well-behaved leashed dogs inside the taproom and on the deck.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "The Pour Yard",
+   "category": "bar",
+   "address": "210 Washington Street, Quincy, MA 02169",
+   "note": "Self-pour tap bar listed as dog friendly on its enclosed patio.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "BearMoose Brewing",
+   "category": "bar",
+   "address": "1934 Revere Beach Parkway, Everett, MA 02149",
+   "note": "Brewery taproom listed in a 2022 guide as allowing dogs inside and outside.",
+   "source_url": "https://mortadellahead.com/?p=5501"
+  },
+  {
+   "name": "Short Path Distillery",
+   "category": "bar",
+   "address": "71 Kelvin Street, Everett, MA 02149",
+   "note": "Distillery tasting room listed as welcoming dogs on the patio.",
+   "source_url": "https://mortadellahead.com/?p=5501"
+  },
+  {
+   "name": "Mighty Squirrel Brewing Waltham Taproom",
+   "category": "bar",
+   "address": "411 Waverley Oaks Road, Waltham, MA 02452",
+   "note": "Brewery taproom listed as dog friendly in the outdoor areas.",
+   "source_url": "https://mortadellahead.com/?p=5501"
+  },
+  {
+   "name": "Mighty Squirrel Watertown Biergarten",
+   "category": "bar",
+   "address": "130 Arsenal Yards Boulevard, Watertown, MA 02472",
+   "note": "Beer garden at Arsenal Yards listed as dog friendly in the outdoor areas.",
+   "source_url": "https://mortadellahead.com/?p=5501"
+  },
+  {
+   "name": "Remnant Brewing at Bow Market",
+   "category": "bar",
+   "address": "2 Bow Market Way, Somerville, MA 02143",
+   "note": "Brewery and cafe in Bow Market. The market courtyard and the Remnant patio are listed as dog friendly outdoors.",
+   "source_url": "https://mortadellahead.com/?p=5501"
+  },
+  {
+   "name": "Boston Harbor Distillery",
+   "category": "bar",
+   "address": "12R Ericsson Street, Boston, MA 02122",
+   "note": "Distillery on the Dorchester waterfront listed in a 2022 guide as allowing dogs indoors and outdoors.",
+   "source_url": "https://mortadellahead.com/?p=5501"
+  },
+  {
+   "name": "Baramor",
+   "category": "bar",
+   "address": "45 Union Street, Newton, MA 02459",
+   "note": "Newton Centre bar and restaurant listed as dog friendly on the patio.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "Cambridge Common",
+   "category": "bar",
+   "address": "1667 Massachusetts Avenue, Cambridge, MA 02138",
+   "note": "Neighborhood restaurant and beer bar listed as dog friendly at its outdoor tables.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "Five Horses Tavern South End",
+   "category": "bar",
+   "address": "535 Columbus Avenue, Boston, MA 02118",
+   "note": "Tavern listed as dog friendly in its outdoor space.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "The Kinsale",
+   "category": "bar",
+   "address": "2 Center Plaza, Boston, MA 02108",
+   "note": "Irish pub at Government Center listed as allowing dogs on the outdoor patio.",
+   "source_url": "https://www.rover.com/blog/favorite-dog-friendly-bars-boston"
+  },
+  {
+   "name": "Samuel Adams Boston Brewery",
+   "category": "bar",
+   "address": "30 Germania Street, Boston, MA 02130",
+   "note": "Jamaica Plain brewery and tap room listed as pet friendly on its seasonal patio. Pets are not allowed on tours.",
+   "source_url": "https://www.bringfido.com/restaurant/city/boston_ma_us/"
+  },
+  {
+   "name": "Bent Water Brewing Company",
+   "category": "bar",
+   "address": "180 Commercial Street, Lynn, MA",
+   "note": "Brewery taproom listed by the Mass Brewers Guild as welcoming dogs indoors and outdoors.",
+   "source_url": "https://www.massbrewersguild.org/news/2023/8/17/the-mbg-member-guide-to-dog-friendly-breweries-in-massachusetts"
+  },
+  {
+   "name": "Exhibit 'A' Brewing Company",
+   "category": "bar",
+   "address": "81 Morton Street, Framingham, MA",
+   "note": "Brewery with a seasonal beer garden listed as dog friendly.",
+   "source_url": "https://www.thefoodlens.com/boston/sides/guide/where-to-find-dog-friendly-patios-beyond-boston"
+  },
+  {
+   "name": "Vitamin Sea Brewing Weymouth",
+   "category": "bar",
+   "address": "30 Moore Road, Weymouth, MA",
+   "note": "Brewery taproom listed in 2023 as allowing dogs outdoors daily and indoors only on Mondays and Tuesdays.",
+   "source_url": "https://www.massbrewersguild.org/news/2023/8/17/the-mbg-member-guide-to-dog-friendly-breweries-in-massachusetts"
+  },
+  {
+   "name": "Far From the Tree Cider",
+   "category": "bar",
+   "address": "108 Jackson Street, Salem, MA 01970",
+   "note": "Cider house and taproom listed as welcoming dogs at its outdoor seating.",
+   "source_url": "https://www.k9ofmine.com/?p=4155241"
+  },
+  {
+   "name": "OAK Long Bar + Kitchen",
+   "category": "bar",
+   "address": "138 Saint James Avenue, Boston, MA",
+   "note": "Bar at the Fairmont Copley Plaza listed as dog friendly on its Copley Square patio.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "Taberna de Haro",
+   "category": "cafe",
+   "address": "999 Beacon Street, Brookline, MA 02446",
+   "note": "Spanish restaurant and wine bar listed as allowing dogs on the outdoor patio.",
+   "source_url": "https://www.rover.com/blog/favorite-dog-friendly-bars-boston"
+  },
+  {
+   "name": "75 Chestnut",
+   "category": "cafe",
+   "address": "75 Chestnut Street, Boston, MA",
+   "note": "Beacon Hill restaurant approved by the city for dogs on its patio. It has offered a menu of dog treats.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "75 on Liberty Wharf",
+   "category": "cafe",
+   "address": "220 Northern Avenue, Boston, MA",
+   "note": "Seaport waterfront restaurant approved by the city for dogs on its patio.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "State Street Provisions",
+   "category": "cafe",
+   "address": "255 State Street, Boston, MA",
+   "note": "Waterfront restaurant listed by Meet Boston as dog-friendly dining, at the outdoor tables when weather allows.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "The Berkeley Bistro + Bar",
+   "category": "cafe",
+   "address": "350 Stuart Street, Boston, MA",
+   "note": "Back Bay restaurant listed by Meet Boston as dog-friendly dining.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "Trade",
+   "category": "cafe",
+   "address": "540 Atlantic Avenue, Boston, MA",
+   "note": "Restaurant near South Station listed by Meet Boston as dog-friendly dining.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "LUCIE drink + dine",
+   "category": "cafe",
+   "address": "120 Huntington Avenue, Boston, MA",
+   "note": "Restaurant at the Colonnade Hotel approved by the city for dogs on its outdoor patio.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "Uni",
+   "category": "cafe",
+   "address": "370 Commonwealth Avenue, Boston, MA",
+   "note": "Restaurant at the Eliot Hotel approved by the city for dogs on its Commonwealth Avenue patio.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "Bow Market",
+   "category": "other",
+   "address": "1 Bow Market Way, Somerville, MA",
+   "note": "Open-air market courtyard in Union Square with food, drink and shops. All outdoor areas are listed as dog friendly.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "Faneuil Hall Marketplace",
+   "category": "other",
+   "address": "4 South Market Street, Boston, MA",
+   "note": "Outdoor marketplace listed by Meet Boston as dog-friendly shopping in its open-air areas.",
+   "source_url": "https://www.meetboston.com/blog/post/dog-friendly-activities-in-boston/"
+  },
+  {
+   "name": "Coppa",
+   "category": "cafe",
+   "address": "253 Shawmut Avenue, Boston, MA",
+   "note": "South End enoteca listed as dog friendly at its outdoor tables when the weather is nice.",
+   "source_url": "https://bostonmagazine.com/?p=2304838"
+  },
+  {
+   "name": "Toro",
+   "category": "cafe",
+   "address": "1704 Washington Street, Boston, MA",
+   "note": "South End tapas restaurant listed as dog friendly at its outdoor tables.",
+   "source_url": "https://bostonmagazine.com/?p=2304838"
+  },
+  {
+   "name": "Area Four Cambridge",
+   "category": "cafe",
+   "address": "500 Technology Square, Cambridge, MA",
+   "note": "Pizza restaurant and coffee bar near Kendall Square listed with a dog-friendly deck.",
+   "source_url": "https://bostonmagazine.com/?p=2304838"
+  },
+  {
+   "name": "The Friendly Toast Back Bay",
+   "category": "cafe",
+   "address": "35 Stanhope Street, Boston, MA",
+   "note": "Brunch restaurant listed as welcoming dogs at its outdoor seating.",
+   "source_url": "https://bostonmagazine.com/?p=2304838"
   }
  ]
 }

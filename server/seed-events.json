@@ -28,6 +28,45 @@
    "description": "AKC all-breed show with junior showmanship."
   },
   {
+   "name": "Home for the Holidays at the Animal Rescue League of Boston",
+   "kind": "other",
+   "starts_on": "2026-11-29",
+   "ends_on": null,
+   "venue": "ARL Solomon Family Administration Building, 10 Anna's Place",
+   "city": "Dedham",
+   "region": "MA",
+   "lat": 42.242,
+   "lng": -71.166,
+   "url": "https://www.arlboston.org/event/home-for-the-holidays/",
+   "description": "Free family and dog friendly holiday afternoon with a dog cookie and photo station, story time and a raffle."
+  },
+  {
+   "name": "Dog Photos with Santa at Fairmont Copley Plaza",
+   "kind": "other",
+   "starts_on": "2026-11-29",
+   "ends_on": null,
+   "venue": "Fairmont Copley Plaza, 138 St James Avenue",
+   "city": "Boston",
+   "region": "MA",
+   "lat": 42.349,
+   "lng": -71.077,
+   "url": "https://www.eventbrite.com/e/dog-photos-with-santa-tickets-2003915418962",
+   "description": "Holiday photo session for dogs with Santa at the hotel. The listing shows more dates after this one."
+  },
+  {
+   "name": "Santa Paws at Alibi: Holiday Sips and Photos with Your Pup",
+   "kind": "meetup",
+   "starts_on": "2026-11-30",
+   "ends_on": null,
+   "venue": "Alibi at the Liberty Hotel",
+   "city": "Boston",
+   "region": "MA",
+   "lat": 42.362,
+   "lng": -71.07,
+   "url": "https://www.eventbrite.com/e/santa-paws-at-alibi-holiday-sips-photos-with-your-pup-tickets-2004962611142",
+   "description": "Evening holiday drinks and dog photos at the Liberty Hotel bar. The listing shows more dates after this one."
+  },
+  {
    "name": "Champlain Valley Kennel Club shows",
    "kind": "conformation",
    "starts_on": "2026-12-03",
@@ -54,6 +93,19 @@
    "description": "All-breed AKC dog show and obedience event."
   },
   {
+   "name": "Yankee Golden Retriever Club obedience trials",
+   "kind": "obedience",
+   "starts_on": "2026-12-04",
+   "ends_on": "2026-12-06",
+   "venue": "American K9 Country",
+   "city": "Amherst",
+   "region": "NH",
+   "lat": 42.861,
+   "lng": -71.626,
+   "url": "https://my.pawprinttrials.com/public/trials?p=o",
+   "description": "Trials listed for the Yankee Golden Retriever Club on the Pawprint Trials obedience calendar. Check the premium list for classes and entry dates."
+  },
+  {
    "name": "The Pup Pop-Up CLT",
    "kind": "other",
    "starts_on": "2026-12-05",
@@ -67,6 +119,58 @@
    "description": "Pet-friendly holiday pop-up benefiting the Humane Society of Charlotte. Listed on the society's calendar; pets are invited."
   },
   {
+   "name": "Dog-Friendly Pictures with Santa at Park-9 Dog Bar",
+   "kind": "other",
+   "starts_on": "2026-12-05",
+   "ends_on": null,
+   "venue": "Park-9 Dog Bar, 48 Waters Avenue",
+   "city": "Everett",
+   "region": "MA",
+   "lat": 42.403,
+   "lng": -71.061,
+   "url": "https://www.thebostoncalendar.com/events/dog-friendly-pictures-with-santa",
+   "description": "Donation-based photos with Santa and Mrs. Claus for dogs and families at the dog bar, free to enter."
+  },
+  {
+   "name": "Santa Paws Holiday Market",
+   "kind": "other",
+   "starts_on": "2026-12-05",
+   "ends_on": null,
+   "venue": "Cisco Brewers Fenway",
+   "city": "Boston",
+   "region": "MA",
+   "lat": 42.347,
+   "lng": -71.097,
+   "url": "https://www.eventbrite.com/e/santa-paws-holiday-market-tickets-2005314025231",
+   "description": "Dog themed holiday market at the Cisco Brewers Fenway beer garden."
+  },
+  {
+   "name": "Holiday Paws Downtown Block Pawty",
+   "kind": "meetup",
+   "starts_on": "2026-12-06",
+   "ends_on": null,
+   "venue": "Corner of Westminster Street and Aborn Street",
+   "city": "Providence",
+   "region": "RI",
+   "lat": 41.823,
+   "lng": -71.414,
+   "url": "https://www.eventbrite.com/e/holiday-paws-downtown-block-pawty-tickets-2004523648192",
+   "description": "Pet friendly holiday block party in downtown Providence, about 41 miles from Boston."
+  },
+  {
+   "name": "Be Kind with the Middlesex Mutts Sunset Walk",
+   "kind": "meetup",
+   "starts_on": "2026-12-06",
+   "ends_on": null,
+   "venue": "Upper Sheepfold parking lot, Middlesex Fells Reservation",
+   "city": "Stoneham",
+   "region": "MA",
+   "lat": 42.455,
+   "lng": -71.106,
+   "url": "https://www.eventbrite.com/e/be-kind-with-the-middlesex-mutts-sunset-walk-tickets-2004794509345",
+   "description": "Group dog walk in the Middlesex Fells starting from the upper Sheepfold lot in the afternoon."
+  },
+  {
    "name": "AKC Royal Canin National All-Breed Puppy and Junior Stakes",
    "kind": "conformation",
    "starts_on": "2026-12-11",
@@ -78,6 +182,19 @@
    "lng": -81.469,
    "url": "https://www.akc.org/sports/conformation/royal-canin-puppy-junior-stakes/",
    "description": "For dogs aged 6 to 18 months, held with the AKC National Championship."
+  },
+  {
+   "name": "Picture Your Pet with Santa at The Colonnade",
+   "kind": "other",
+   "starts_on": "2026-12-11",
+   "ends_on": null,
+   "venue": "The Colonnade Hotel, 120 Huntington Avenue",
+   "city": "Boston",
+   "region": "MA",
+   "lat": 42.346,
+   "lng": -71.082,
+   "url": "https://www.eventbrite.com/e/picture-your-pet-with-santa-tickets-2003917773003",
+   "description": "Annual pet photo with Santa event at the hotel. In past years entry was a donation to the MSPCA."
   },
   {
    "name": "AKC National Championship",
@@ -106,6 +223,45 @@
    "description": "Held with the AKC National Championship."
   },
   {
+   "name": "Yankee Golden Paws for Claus: Photos with Santa",
+   "kind": "other",
+   "starts_on": "2026-12-12",
+   "ends_on": null,
+   "venue": "Yankee Golden Retriever Rescue, Chapin Road",
+   "city": "Hudson",
+   "region": "MA",
+   "lat": 42.392,
+   "lng": -71.566,
+   "url": "https://www.eventbrite.com/e/yankee-golden-paws-for-claus-photos-with-santa-2026-tickets-2005050362609",
+   "description": "Photos with Santa for dogs at the Yankee Golden Retriever Rescue, about 26 miles west of Boston."
+  },
+  {
+   "name": "Agility Club of New Hampshire agility trial",
+   "kind": "agility",
+   "starts_on": "2026-12-12",
+   "ends_on": "2026-12-13",
+   "venue": "American K9 Country",
+   "city": "Amherst",
+   "region": "NH",
+   "lat": 42.861,
+   "lng": -71.626,
+   "url": "https://my.pawprinttrials.com/pdf/2026-12-12_AK9C_premium.pdf?ver=2",
+   "description": "AKC agility trial indoors in southern New Hampshire, about 41 miles from Boston."
+  },
+  {
+   "name": "Park-9 New Year's Early Eve Bash",
+   "kind": "meetup",
+   "starts_on": "2026-12-31",
+   "ends_on": null,
+   "venue": "Park-9 Dog Bar, 48 Waters Avenue",
+   "city": "Everett",
+   "region": "MA",
+   "lat": 42.403,
+   "lng": -71.061,
+   "url": "https://www.eventbrite.com/e/park-9-new-years-early-eve-bash-tickets-2003312791487",
+   "description": "Early evening New Year party at the indoor dog park and bar."
+  },
+  {
    "name": "Merrimack Valley Kennel Club shows",
    "kind": "conformation",
    "starts_on": "2027-01-09",
@@ -117,6 +273,58 @@
    "lng": -72.62,
    "url": "https://caninechronicleshowcalendar.com/K9shows.php?st1=1&state%5B%5D=MA&perf=conf&fmt=1",
    "description": "AKC all-breed shows with junior showmanship."
+  },
+  {
+   "name": "Agility Club of New Hampshire agility trial",
+   "kind": "agility",
+   "starts_on": "2027-01-09",
+   "ends_on": "2027-01-10",
+   "venue": "American K9 Country",
+   "city": "Amherst",
+   "region": "NH",
+   "lat": 42.861,
+   "lng": -71.626,
+   "url": "https://my.pawprinttrials.com/pdf/2027-01-09_AK9C_premium.pdf?ver=2",
+   "description": "AKC agility trial indoors in southern New Hampshire, about 41 miles from Boston."
+  },
+  {
+   "name": "Souhegan Kennel Club agility trial",
+   "kind": "agility",
+   "starts_on": "2027-01-15",
+   "ends_on": "2027-01-17",
+   "venue": "American K9 Country",
+   "city": "Amherst",
+   "region": "NH",
+   "lat": 42.861,
+   "lng": -71.626,
+   "url": "https://my.pawprinttrials.com/pdf/2027-01-15_AK9C_premium.pdf?ver=3",
+   "description": "Three day AKC agility trial indoors in southern New Hampshire, about 41 miles from Boston."
+  },
+  {
+   "name": "Park-9 Puppy Yoga with Great Dog Rescue New England",
+   "kind": "class",
+   "starts_on": "2027-01-17",
+   "ends_on": null,
+   "venue": "Park-9 Dog Bar, 48 Waters Avenue",
+   "city": "Everett",
+   "region": "MA",
+   "lat": 42.403,
+   "lng": -71.061,
+   "url": "https://www.eventbrite.com/e/park-9-puppy-yoga-with-great-dog-rescue-new-england-tickets-2004043104874",
+   "description": "Morning yoga class with adoptable puppies from Great Dog Rescue New England at the dog bar."
+  },
+  {
+   "name": "Doggy Open Play at Fenway Bark Dog Resort",
+   "kind": "meetup",
+   "starts_on": "2027-01-23",
+   "ends_on": null,
+   "venue": "Fenway Bark Dog Resort",
+   "city": "Clinton",
+   "region": "MA",
+   "lat": 42.417,
+   "lng": -71.683,
+   "url": "https://www.eventbrite.com/e/doggy-open-play-registration-2003584142104",
+   "description": "Open play session for dogs at a boarding and daycare resort, about 32 miles west of Boston. Registration is required."
   },
   {
    "name": "Westminster Kennel Club Dog Show",
@@ -312,6 +520,32 @@
    "lng": -80.5,
    "url": "https://showdogcentral.com/events/2027039805-salisbury-north-carolina-kennel-club",
    "description": "All-breed shows with junior showmanship and beginner puppy, about 25 miles from Charlotte."
+  },
+  {
+   "name": "Doggy Open Play and Fenway's 3rd Birthday Bash",
+   "kind": "meetup",
+   "starts_on": "2027-07-17",
+   "ends_on": null,
+   "venue": "Fenway Bark Dog Resort",
+   "city": "Clinton",
+   "region": "MA",
+   "lat": 42.417,
+   "lng": -71.683,
+   "url": "https://www.eventbrite.com/e/doggy-open-play-fenways-3rd-birthday-bash-registration-2003581091981",
+   "description": "Open play session and birthday party for dogs at the resort. Registration is required."
+  },
+  {
+   "name": "Doggy Open Play and Howl-O-Ween Party",
+   "kind": "meetup",
+   "starts_on": "2027-10-16",
+   "ends_on": null,
+   "venue": "Fenway Bark Dog Resort",
+   "city": "Clinton",
+   "region": "MA",
+   "lat": 42.417,
+   "lng": -71.683,
+   "url": "https://www.eventbrite.com/e/doggy-open-play-howl-o-ween-party-registration-2003580343743",
+   "description": "Open play session and Halloween party for dogs at the resort. Registration is required."
   }
  ]
 }
