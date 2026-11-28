@@ -1,6 +1,6 @@
 {
- "note": "Charlotte seed list compiled 2026-11-25 from public listings. Dog policies, hours and fees change: each entry links to its source and should be checked before visiting. Entries have addresses, not coordinates. Boston, MA and Greater Boston entries were compiled on 2026-11-27 from public listings in the same way.",
- "city": "Charlotte, NC and Boston, MA",
+ "note": "Charlotte seed list compiled 2026-11-25 from public listings. Dog policies, hours and fees change: each entry links to its source and should be checked before visiting. Entries have addresses, not coordinates. Boston, MA and Greater Boston entries were compiled on 2026-11-27 from public listings in the same way. Stowe, VT and northern Vermont entries were compiled on 2026-11-28 from public listings in the same way.",
+ "city": "Charlotte, NC, Boston, MA and Stowe, VT",
  "places": [
   {
    "name": "Frazier Park Dog Park",
@@ -2054,13 +2054,6 @@
    "source_url": "https://www.massbrewersguild.org/news/2023/8/17/the-mbg-member-guide-to-dog-friendly-breweries-in-massachusetts"
   },
   {
-   "name": "Exhibit 'A' Brewing Company",
-   "category": "bar",
-   "address": "81 Morton Street, Framingham, MA",
-   "note": "Brewery with a seasonal beer garden listed as dog friendly.",
-   "source_url": "https://www.thefoodlens.com/boston/sides/guide/where-to-find-dog-friendly-patios-beyond-boston"
-  },
-  {
    "name": "Vitamin Sea Brewing Weymouth",
    "category": "bar",
    "address": "30 Moore Road, Weymouth, MA",
@@ -2500,6 +2493,454 @@
    "address": "1 Lovejoy Wharf, Boston, MA 02114",
    "note": "Brewery taproom near North Station described in a 2025 guide as a place where dogs can sit and relax. The brewery site does not state a dog policy for this location, so ask first.",
    "source_url": "https://www.thefarmersdog.com/digest/?p=43228"
+  },
+  {
+   "name": "Hoyt Field off-leash hours",
+   "category": "park",
+   "address": "12 Gilmore Street, Cambridge, MA 02139",
+   "note": "Riverside park with a shared off-leash area for dogs from 6 to 9 a.m. under the city shared-use hours program. Leashed at other times.",
+   "source_url": "https://www.cambridgema.gov/CDD/parks/osplanning/offleash"
+  },
+  {
+   "name": "Sacramento Field off-leash hours",
+   "category": "park",
+   "address": "Sacramento Street, Cambridge, MA 02138",
+   "note": "Dogs may be off leash from 7 to 9 a.m. in a designated area of the field, leashed when entering and leaving, and owners must carry a leash. Leashed at all other times.",
+   "source_url": "https://cambridgema.gov/CDD/parks/parksinfo/Parks/sacramentofield"
+  },
+  {
+   "name": "Corey Hill Park off-leash area",
+   "category": "park",
+   "address": "Summit Avenue, Brookline, MA 02446",
+   "note": "Brookline Green Dog off-leash area, for registered dogs from dawn to 9 a.m.",
+   "source_url": "https://patch.com/massachusetts/brookline/brookline-officials-reminding-dog-owners-leash-program"
+  },
+  {
+   "name": "Hood Park Dog Playground",
+   "category": "park",
+   "address": "10 Stack Street, Boston, MA 02129",
+   "note": "Fenced, double-gated dog run in the Hood Park development in Charlestown with separate sections for small and large dogs. Visitors report a hard, rough ground surface.",
+   "source_url": "https://www.barkparkfinder.com/?p=17482"
+  },
+  {
+   "name": "Thorndike Field Dog Off-Leash Recreation Area",
+   "category": "park",
+   "address": "99 Margaret Street, Arlington, MA 02474",
+   "note": "Arlington town off-leash recreation area, open 6 a.m. to 9 p.m. daily.",
+   "source_url": "https://www.arlingtonma.gov/i-want-to/learn-about/dog-ownership/olra"
+  },
+  {
+   "name": "Quincy Dog Park",
+   "category": "park",
+   "address": "Quarry Street, Quincy, MA 02169",
+   "note": "City dog park opened in 2020 on a hilltop, with three fenced areas for active dogs, small dogs and senior dogs, plus shelter pavilions, benches and water stations.",
+   "source_url": "https://patch.com/massachusetts/quincy/quincy-dog-park-open"
+  },
+  {
+   "name": "North Quincy Dog Park",
+   "category": "park",
+   "address": "2 Russell Street, Quincy, MA 02171",
+   "note": "Small fenced grassy off-leash area in a residential neighborhood with benches. Gates from Atlantic Street and North Street. No water on site.",
+   "source_url": "https://www.barkparkfinder.com/?p=143259"
+  },
+  {
+   "name": "Dedham Dog Park",
+   "category": "park",
+   "address": "269 Common Street, Dedham, MA 02026",
+   "note": "Town dog park open dawn to dusk to members only. Yearly memberships with a key fob come from the Parks and Recreation office at 310 Sprague Street.",
+   "source_url": "https://www.dedham-ma.gov/town-departments/parks-and-recreation/dog-park"
+  },
+  {
+   "name": "Waltham City Dog Ranch",
+   "category": "park",
+   "address": "Metropolitan Parkway North, Waltham, MA 02452",
+   "note": "Two fenced off-leash areas for dogs of different sizes, with walking paths nearby. Visitors report dirt ground and no water or bags, so bring your own.",
+   "source_url": "https://www.barkparkfinder.com/?p=105049"
+  },
+  {
+   "name": "Millennium Park",
+   "category": "park",
+   "address": "Gardner Street, Boston, MA 02132",
+   "note": "Large West Roxbury park with walking loops, soccer fields and a canoe launch on the Charles. City rules: dogs on a leash of up to eight feet outside designated off-leash spaces.",
+   "source_url": "https://www.boston.gov/departments/parks-and-recreation/project/millennium-park-improvements"
+  },
+  {
+   "name": "The Broadway",
+   "category": "bar",
+   "address": "726 East Broadway, Boston, MA 02127",
+   "note": "South Boston bar and restaurant with a dog-friendly patio, per Time Out (2024).",
+   "source_url": "https://timeout.com/boston/things-to-do/pet-friendly-boston"
+  },
+  {
+   "name": "Dbar",
+   "category": "bar",
+   "address": "1236 Dorchester Avenue, Boston, MA 02125",
+   "note": "Dorchester bar and restaurant where part of the outdoor patio is dog friendly, per Time Out (2024).",
+   "source_url": "https://timeout.com/boston/things-to-do/pet-friendly-boston"
+  },
+  {
+   "name": "Bully Boy Distillers",
+   "category": "bar",
+   "address": "44 Cedric Street, Boston, MA 02119",
+   "note": "Roxbury distillery and cocktail bar. Time Out (2024) says its summer cocktail garden across the street is dog friendly.",
+   "source_url": "https://timeout.com/boston/things-to-do/pet-friendly-boston"
+  },
+  {
+   "name": "The Quiet Few",
+   "category": "bar",
+   "address": "331 Sumner Street, Boston, MA 02128",
+   "note": "East Boston bar whose outdoor patio welcomes dogs, per Time Out (2024).",
+   "source_url": "https://timeout.com/boston/things-to-do/pet-friendly-boston"
+  },
+  {
+   "name": "Dovetail",
+   "category": "cafe",
+   "address": "1 6th Street, Boston, MA 02129",
+   "note": "Charlestown Navy Yard restaurant whose seasonal outdoor seating has a designated dog-friendly section.",
+   "source_url": "https://www.timeout.com/boston/restaurants/dovetail"
+  },
+  {
+   "name": "The Salty Pig",
+   "category": "cafe",
+   "address": "130 Dartmouth Street, Boston, MA 02116",
+   "note": "Back Bay restaurant and bar where leashed dogs can join you at the outdoor tables.",
+   "source_url": "https://www.bringfido.ca/restaurant/112583"
+  },
+  {
+   "name": "Alcove",
+   "category": "cafe",
+   "address": "50 Lovejoy Wharf, Boston, MA 02114",
+   "note": "Restaurant by North Station with a harborside patio; Time Out (2024) says it sets out water bowls for dogs.",
+   "source_url": "https://timeout.com/boston/things-to-do/pet-friendly-boston"
+  },
+  {
+   "name": "Moonshine 152",
+   "category": "cafe",
+   "address": "152 Dorchester Avenue, Boston, MA 02127",
+   "note": "South Boston restaurant with street-side and courtyard patios in warm months; the restaurant says diners with dogs are welcome on the patio.",
+   "source_url": "https://opentable.com/r/moonshine-152-boston"
+  },
+  {
+   "name": "Shy Bird Fenway",
+   "category": "cafe",
+   "address": "201 Brookline Avenue, Boston, MA 02215",
+   "note": "Cafe and bar with a dog-friendly outdoor patio.",
+   "source_url": "https://opentable.com/r/shy-bird-fenway-boston"
+  },
+  {
+   "name": "Midnight Morning",
+   "category": "cafe",
+   "address": "14 Birch Street, Boston, MA 02131",
+   "note": "Roslindale Village cafe and restaurant whose courtyard patio is dog friendly in season.",
+   "source_url": "https://opentable.com/r/midnight-morning-boston"
+  },
+  {
+   "name": "Josephine",
+   "category": "cafe",
+   "address": "515 Somerville Avenue, Somerville, MA 02143",
+   "note": "Restaurant with a large outdoor patio, outdoor bar and fire pit where dogs are welcome.",
+   "source_url": "https://www.opentable.com/r/josephine-somerville"
+  },
+  {
+   "name": "Stowe Recreation Path",
+   "category": "park",
+   "address": "67 Main Street, Stowe, VT 05672",
+   "note": "Paved 5.3 mile path from Stowe Village to Topnotch. Dogs must be leashed and owners clean up. Village parking at Lintilhac Park behind the Stowe Community Church; more lots at Chase Park, Thompson Park and off Brook Road.",
+   "source_url": "https://www.stowevt.gov/Departments/Parks-Recreation/Parks-Facilities/Stowe-Recreation-Path"
+  },
+  {
+   "name": "Quiet Path",
+   "category": "park",
+   "address": "Weeks Hill Road, Stowe, VT 05672",
+   "note": "Walking and jogging loop by the Recreation Path. Town rule: dogs must be under voice control or on a leash, and owners clean up. Parking on Mayo Farm Road, Weeks Hill Road and Cemetery Road.",
+   "source_url": "https://www.stowevt.gov/Departments/Parks-Recreation/Parks-Facilities/Quiet-Path"
+  },
+  {
+   "name": "Wiessner Woods",
+   "category": "park",
+   "address": "Edson Hill Road, Stowe, VT 05672",
+   "note": "Stowe Land Trust woods with a lot past the Stowehof entrance; do not park on the road. Dogs may be off leash only under voice control and in sight, otherwise leashed. Carry out waste.",
+   "source_url": "https://stowelandtrust.org/visitorinfo"
+  },
+  {
+   "name": "Cady Hill Forest",
+   "category": "park",
+   "address": "Cady Hill Road, Stowe, VT 05672",
+   "note": "Town forest with hiking and bike trails. Main 19-car lot on Mountain Road across from the Town and Country Resort; the end of Cady Hill Road closes in winter. Dogs under voice control or leashed.",
+   "source_url": "https://www.trailfinder.info/trails/trail/cady-hill"
+  },
+  {
+   "name": "Sterling Forest",
+   "category": "park",
+   "address": "Sterling Valley Road, Stowe, VT 05672",
+   "note": "Town forest trails reached by Sterling Valley Road off Stagecoach Road, with lots at the Split Rock trailhead, the end of Sterling Valley Road and Sterling Gorge Road. Dogs permitted on leash.",
+   "source_url": "https://www.trailfinder.info/trails/trail/sterling-forest-trails"
+  },
+  {
+   "name": "Stowe Pinnacle trailhead",
+   "category": "park",
+   "address": "Upper Hollow Road, Stowe, VT 05672",
+   "note": "Popular hike in C.C. Putnam State Forest from a lot on Upper Hollow Road that is plowed in winter. Dogs permitted on leash. Busy on weekends; pick another trail if the lot is full.",
+   "source_url": "https://trailfinder.info/trails/trail/stowe-pinnacle"
+  },
+  {
+   "name": "Moss Glen Falls",
+   "category": "park",
+   "address": "Moss Glen Falls Road, Stowe, VT 05672",
+   "note": "Short walk to a waterfall in C.C. Putnam State Forest, with parking at the sharp bend on Moss Glen Falls Road. Dogs permitted on leash.",
+   "source_url": "https://www.trailfinder.info/trails/trail/moss-glen-falls"
+  },
+  {
+   "name": "Mill Trail to Bingham Falls",
+   "category": "park",
+   "address": "Notchbrook Road, Stowe, VT 05672",
+   "note": "Trail to Bingham Falls from a small pull-off 0.6 miles up Notchbrook Road; a second pull-off is on Route 108. Stowe Land Trust lists both as open for dog walking; keep control of your dog and pack out waste.",
+   "source_url": "https://www.stowelandtrust.org/get-outside/activities/dog-walking"
+  },
+  {
+   "name": "Smugglers' Notch State Park",
+   "category": "park",
+   "address": "6443 Mountain Road, Stowe, VT 05672",
+   "note": "State park at the foot of the Notch, open the third weekend in May to the second Monday in October. Pets are permitted; clean up after them.",
+   "source_url": "https://vtstateparks.com/smugglers.html"
+  },
+  {
+   "name": "Elmore State Park and Mount Elmore",
+   "category": "park",
+   "address": "856 Vermont Route 12, Elmore, VT 05657",
+   "note": "Lake Elmore park with trails to the Mount Elmore fire tower. Pets allowed on the hiking trails and in the campground, never on the day-use beach. Open Memorial Day weekend to the second Monday in October.",
+   "source_url": "https://vtstateparks.com/elmore.html"
+  },
+  {
+   "name": "Little River State Park",
+   "category": "park",
+   "address": "3444 Little River Road, Waterbury, VT 05676",
+   "note": "Park on the Waterbury Reservoir, open mid May to the third weekend in October. Pets are not allowed on beaches, in swim areas or in most cabins; the Bear cabin takes pets.",
+   "source_url": "https://vtstateparks.com/littleriver.html"
+  },
+  {
+   "name": "Waterbury Dog Park",
+   "category": "park",
+   "address": "546 River Road, Waterbury, VT 05676",
+   "note": "Fenced dog park with a large off-leash area, a separate small fenced section, running water, picnic tables and seating. The address can land at the corner of River Road; keep going down River Road to the entrance.",
+   "source_url": "https://www.barkparkfinder.com/?p=9970"
+  },
+  {
+   "name": "Hubbard Park dog field",
+   "category": "park",
+   "address": "362 Parkway Street, Montpelier, VT 05602",
+   "note": "Unfenced off-leash dog field by the Parkway Street lot, no water. Under the 2024 city policy dogs may be off leash on trails in the northern 150 acres of Hubbard Park and must be leashed in the part nearest downtown.",
+   "source_url": "https://vtdigger.org/2026/03/09/one-close-election-two-vocal-sides-and-a-dog-leash-debate-montpelier-cant-shake/"
+  },
+  {
+   "name": "Wheeler Dog Park",
+   "category": "park",
+   "address": "1000 Dorset Street, South Burlington, VT 05403",
+   "note": "Fenced, double-gated dog park in Wheeler Nature Park with areas split by energy level, water hoses, benches and shade trees. Open dawn to dusk.",
+   "source_url": "https://www.barkparkfinder.com/?p=9029"
+  },
+  {
+   "name": "Farrell Park dog park",
+   "category": "park",
+   "address": "Farrell Street, South Burlington, VT 05403",
+   "note": "Fenced off-leash dog park with separate sections for large and small dogs. No water and little shade. Parking can be tight on weekdays.",
+   "source_url": "https://www.barkparkfinder.com/?p=9035"
+  },
+  {
+   "name": "Starr Farm Dog Park",
+   "category": "park",
+   "address": "Starr Farm Road, Burlington, VT 05401",
+   "note": "Fully fenced grass dog park at the north end of Starr Farm Park with separate large and small dog areas. The city says it can be used year round when the volunteer-run gates are unlocked.",
+   "source_url": "https://enjoyburlington.com/?p=3831"
+  },
+  {
+   "name": "Mad River Valley Dog Park",
+   "category": "park",
+   "address": "School Road, Warren, VT 05674",
+   "note": "Volunteer-built dog park opened in 2023 past the Warren tennis courts and skate park, by the Eaton Forest trailhead, with separate large and small dog areas and agility structures. No water supply; bring your own.",
+   "source_url": "https://valleyreporter.com/index.php/news/local-news/18331-mad-river-valley-dog-park-dedication-makes-it-official-the-dog-park-is-open"
+  },
+  {
+   "name": "Lamoille Valley Rail Trail, Hyde Park trailhead",
+   "category": "park",
+   "address": "43 Mill Street, Hyde Park, VT 05655",
+   "note": "Trailhead parking for the Lamoille Valley Rail Trail, a long multi-use rail trail across Lamoille County. Pets permitted on leash.",
+   "source_url": "https://www.trailfinder.info/print/trails/trail/lamoille-valley-rail-trail"
+  },
+  {
+   "name": "The Alchemist Stowe",
+   "category": "bar",
+   "address": "100 Cottage Club Road, Stowe, VT 05672",
+   "note": "Brewery with a beer cafe and a beer garden open daily. Pets are welcome outside only; only trained service dogs inside.",
+   "source_url": "https://alchemistbeer.com/contact-us/"
+  },
+  {
+   "name": "Idletyme Brewing Company",
+   "category": "bar",
+   "address": "1859 Mountain Road, Stowe, VT 05672",
+   "note": "Brewery and restaurant on Mountain Road. Dogs are welcome on the outdoor patio.",
+   "source_url": "https://www.gopetfriendly.com/blog/guide-to-pet-friendly-stowe-vermont/"
+  },
+  {
+   "name": "von Trapp Brewery and Bierhall",
+   "category": "bar",
+   "address": "1333 Luce Hill Road, Stowe, VT 05672",
+   "note": "Brewery and Bierhall with mountain views. A 2023 pet guide says dogs are welcome at the outdoor seating; reviewers say dogs sit outside in the back. Call ahead.",
+   "source_url": "https://www.gopetfriendly.com/blog/guide-to-pet-friendly-stowe-vermont/"
+  },
+  {
+   "name": "Stowe Cider",
+   "category": "bar",
+   "address": "17 Town Farm Lane, Stowe, VT 05672",
+   "note": "Cidery and tasting room. Go Stowe says dogs are welcome in the outdoor areas.",
+   "source_url": "https://gostowe.com/travel-tips/blog/stowe-with-your-best-friend-a-dog-friendly-guide"
+  },
+  {
+   "name": "Doc Ponds",
+   "category": "bar",
+   "address": "294 Mountain Road, Stowe, VT 05672",
+   "note": "Pub with a dog-friendly outdoor patio.",
+   "source_url": "https://www.gopetfriendly.com/blog/guide-to-pet-friendly-stowe-vermont/"
+  },
+  {
+   "name": "Rock Art Brewery",
+   "category": "bar",
+   "address": "632 Laporte Road, Morrisville, VT 05661",
+   "note": "The brewery says leashed dogs that are friendly with people and other dogs are welcome on the porch and in the downstairs area.",
+   "source_url": "https://www.rockartbrewery.com/"
+  },
+  {
+   "name": "Prohibition Pig",
+   "category": "bar",
+   "address": "23 South Main Street, Waterbury, VT 05676",
+   "note": "Restaurant with its brewery and shop at the back. BringFido lists it as dog friendly, with dogs at the outdoor tables.",
+   "source_url": "https://www.bringfido.ca/restaurant/68956"
+  },
+  {
+   "name": "Lawson's Finest Liquids Taproom",
+   "category": "bar",
+   "address": "155 Carroll Road, Waitsfield, VT 05673",
+   "note": "Dogs are welcome only on the Bark Park Patio, not on the main patio or indoors. Service animals welcome.",
+   "source_url": "https://www.lawsonsfinest.com/about-us/faqs/"
+  },
+  {
+   "name": "Zero Gravity Pine Street Brewery",
+   "category": "bar",
+   "address": "716 Pine Street, Burlington, VT 05401",
+   "note": "Leashed dogs are welcome on the outdoor patio only.",
+   "source_url": "https://www.zerogravitybeer.com/locations"
+  },
+  {
+   "name": "Black Cap Coffee and Bakery Stowe",
+   "category": "cafe",
+   "address": "144 Main Street, Stowe, VT 05672",
+   "note": "Village coffee shop where dogs can join you at an outdoor table. No table service, so dogs wait outside while you order.",
+   "source_url": "https://www.bringfido.ca/restaurant/99964"
+  },
+  {
+   "name": "Ranch Camp",
+   "category": "cafe",
+   "address": "311 Mountain Road, Stowe, VT 05672",
+   "note": "Restaurant and bike shop where dogs are welcome in the outdoor seating area, per a 2023 pet guide.",
+   "source_url": "https://www.gopetfriendly.com/blog/guide-to-pet-friendly-stowe-vermont/"
+  },
+  {
+   "name": "Sushi Yoshi",
+   "category": "cafe",
+   "address": "1128 Mountain Road, Stowe, VT 05672",
+   "note": "Restaurant whose covered, heated outdoor seating is dog friendly, per a 2023 pet guide.",
+   "source_url": "https://www.gopetfriendly.com/blog/guide-to-pet-friendly-stowe-vermont/"
+  },
+  {
+   "name": "Shaw's General Store",
+   "category": "shop",
+   "address": "54 Main Street, Stowe, VT 05672",
+   "note": "Historic general store in Stowe Village. Go Stowe says it welcomes leashed dogs inside.",
+   "source_url": "https://gostowe.com/travel-tips/blog/stowe-with-your-best-friend-a-dog-friendly-guide"
+  },
+  {
+   "name": "Pinnacle Ski and Sports",
+   "category": "shop",
+   "address": "1652 Mountain Road, Stowe, VT 05672",
+   "note": "Ski, bike and outdoor gear shop. Go Stowe says dogs can come inside while you shop or rent gear.",
+   "source_url": "https://gostowe.com/take-a-dogcation-to-pet-friendly-stowe-vermont/"
+  },
+  {
+   "name": "Pet Food Warehouse South Burlington",
+   "category": "shop",
+   "address": "2500 Williston Road, South Burlington, VT 05403",
+   "note": "Local pet food and supply store. A second store is at 2455 Shelburne Road in Shelburne.",
+   "source_url": "https://www.citymarket.coop/membership/community-connections/pet-food-warehouse"
+  },
+  {
+   "name": "Ben & Jerry's Factory",
+   "category": "other",
+   "address": "1281 Waterbury-Stowe Road, Waterbury, VT 05676",
+   "note": "Leashed, supervised dogs are welcome on the outdoor grounds. Pets are not allowed inside the factory; service dogs are. Do not leave dogs in the car in warm months.",
+   "source_url": "https://www.benjerry.com/about-us/factory-tours"
+  },
+  {
+   "name": "Humane Society of Chittenden County",
+   "category": "other",
+   "address": "142 Kindness Court, South Burlington, VT 05403",
+   "note": "Animal shelter and adoption center for the Burlington area.",
+   "source_url": "https://www.petfinder.com/member/us/vt/south-burlington/humane-society-of-chittenden-county-vt01"
+  },
+  {
+   "name": "Central Vermont Humane Society",
+   "category": "other",
+   "address": "1589 VT Route 14 South, East Montpelier, VT 05651",
+   "note": "Animal shelter and adoption center serving central Vermont.",
+   "source_url": "https://startpage.mapquest.com/us/vermont/central-vermont-humane-society-518843"
+  },
+  {
+   "name": "Burlington Emergency and Veterinary Specialists",
+   "category": "vet",
+   "address": "1417 Marshall Avenue, Williston, VT 05495",
+   "note": "Vermont's only 24/7 emergency and specialty animal hospital, and the nearest round-the-clock emergency vet to Stowe.",
+   "source_url": "https://bevsvt.com/"
+  },
+  {
+   "name": "Stowe Veterinary Clinic",
+   "category": "vet",
+   "address": "1606 Pucker Street, Stowe, VT 05672",
+   "note": "Veterinary clinic on Route 100 north of Stowe Village.",
+   "source_url": "https://petinsurancereview.com/find-a-vet/vt/stowe/stowe-veterinary-clinic"
+  },
+  {
+   "name": "Sequist Animal Hospital",
+   "category": "vet",
+   "address": "147 Stancliffe Road, Morrisville, VT 05661",
+   "note": "Small animal hospital serving Morrisville since 1980, with medical, surgical and dental care.",
+   "source_url": "https://petinsurancereview.com/find-a-vet/vt/morristown/sequist-animal-hospital"
+  },
+  {
+   "name": "Waterbury Veterinary Hospital",
+   "category": "vet",
+   "address": "2597 Waterbury-Stowe Road, Waterbury Center, VT 05677",
+   "note": "General practice for small companion animals on Route 100 between Waterbury and Stowe.",
+   "source_url": "https://www.waterburyvethospital.com/"
+  },
+  {
+   "name": "Mad River Veterinary Service",
+   "category": "vet",
+   "address": "637 Mill Brook Road, Waitsfield, VT 05673",
+   "note": "Veterinary clinic with a large fenced field for walks before or after exams.",
+   "source_url": "https://madrivervalley.com/?p=49200"
+  },
+  {
+   "name": "Montpelier Veterinary Hospital",
+   "category": "vet",
+   "address": "403 Barre Street, Montpelier, VT 05602",
+   "note": "Veterinary hospital in Montpelier.",
+   "source_url": "https://petinsurancereview.com/find-a-vet/vt/montpelier/montpelier-veterinary-hospital"
+  },
+  {
+   "name": "Dogs Etc Grooming and Day Care",
+   "category": "care",
+   "address": "782 South Main Street, Stowe, VT 05672",
+   "note": "Full grooming, a self-service dog wash, nail trims and dog daycare.",
+   "source_url": "https://www.bringfido.ca/resource/40989"
   }
  ]
 }

@@ -15,7 +15,7 @@ import { POLL_MS, isStale } from '../live.js'
 // Water and Other have no chip of their own. They show under All.
 const CHIPS = CATEGORIES.filter((c) => c.id !== 'water' && c.id !== 'other')
 const CAT = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]))
-const JUMPS = [{ name: 'Eastover, Charlotte', at: [35.186, -80.812] }, { name: 'Charlotte, NC', at: [35.2271, -80.8431] }, { name: 'Boston, MA', at: [42.3601, -71.0589] }]
+const JUMPS = [{ name: 'Eastover, Charlotte', at: [35.186, -80.812] }, { name: 'Charlotte, NC', at: [35.2271, -80.8431] }, { name: 'Boston, MA', at: [42.3601, -71.0589] }, { name: 'Stowe, VT', at: [44.4654, -72.6874] }]
 const COMM_KEY = 'trot-comm1' // the last area's listed and member places, so they show at once next time
 const LOOPS = [1, 2, 3]
 const MAX_PINS = 60

@@ -210,6 +210,19 @@
    "description": "Group dog walk in the Middlesex Fells starting from the upper Sheepfold lot in the afternoon."
   },
   {
+   "name": "South End Holiday Stroll at Polkadog",
+   "kind": "other",
+   "starts_on": "2026-12-09",
+   "ends_on": null,
+   "venue": "Polkadog Bakery South End, 256 Shawmut Avenue",
+   "city": "Boston",
+   "region": "MA",
+   "lat": 42.344,
+   "lng": -71.068,
+   "url": "https://www.arlboston.org/get-involved/events/",
+   "description": "Evening holiday stroll stop at the South End dog bakery, listed on the Animal Rescue League of Boston events calendar."
+  },
+  {
    "name": "AKC Royal Canin National All-Breed Puppy and Junior Stakes",
    "kind": "conformation",
    "starts_on": "2026-12-11",
@@ -312,6 +325,19 @@
    "lng": -71.468,
    "url": "https://mydogentry.com/content/2026/pdf/2026-12-12_RK9_CPE_premium.pdf?ver=1",
    "description": "Two day CPE agility trial in southern New Hampshire."
+  },
+  {
+   "name": "Dog-Friendly Ugly Sweater Party at Park-9",
+   "kind": "other",
+   "starts_on": "2026-12-12",
+   "ends_on": null,
+   "venue": "Park-9 Dog Bar, 48 Waters Avenue",
+   "city": "Everett",
+   "region": "MA",
+   "lat": 42.403,
+   "lng": -71.061,
+   "url": "https://www.thebostoncalendar.com/events/dog-friendly-ugly-sweater-party",
+   "description": "Free evening party with dog treat decorating, a pup cup bar, Santa, a DJ and karaoke, and an ugly sweater contest."
   },
   {
    "name": "TDAA agility trial in Hooksett",
