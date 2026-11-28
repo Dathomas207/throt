@@ -1,0 +1,21 @@
+/* Training screen only: the demonstration card, outside links, reminders, trainers and badge sharing.
+   Loaded with Help.jsx in the Training chunk, so the main stylesheet does not grow. */
+.tr-anim{padding:12px}
+.tr-animwait{aspect-ratio:320/190;border-radius:14px;background:#EEF1F6}
+.tr-steps li.on .num{background:var(--volt);color:var(--ink)}
+.tr-out{display:flex;align-items:center;gap:8px;min-height:44px;color:var(--blue);font-size:14px;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.tr-out b{display:block;color:var(--ink);font-size:14px;text-decoration:none}.tr-out small{display:block;font-size:12px;color:var(--grey);font-weight:500;text-decoration:none}
+.tr-out .grow{text-decoration:none}
+.tr-out:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:6px}
+.tr-ext{flex-shrink:0;font-size:13px;text-decoration:none}
+.tr-reads,.tr-dirs,.tr-trainers{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.tr-reads li,.tr-dirs li{border-top:1px solid var(--line);padding-top:4px}
+.tr-trainers li{border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:2px}
+.tr-trainers p{margin:0}.tr-dirs p{margin:0 0 6px}
+.tr-kind{font-size:11.5px;font-weight:700;color:#12389B}
+.tr-helprow{background:var(--bg)}
+.tr-remind{align-self:flex-start;padding:0 18px}
+.tr-remindf{display:flex;flex-direction:column;gap:10px;background:var(--bg);border-radius:12px;padding:12px}
+.tr-remindf .field input{height:48px;border-radius:12px;border:1px solid var(--line);padding:0 12px;font:500 15px Inter,sans-serif;color:var(--ink);background:#fff}
+.tr-remindf .tr-f{display:flex;flex-direction:column;gap:6px}
+.tr-share{margin-top:-6px}

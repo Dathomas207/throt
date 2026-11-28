@@ -1,0 +1,27 @@
+/* The lesson demonstration. Loaded with anim.jsx, so it is not in the main stylesheet. */
+.an{margin:0;display:flex;flex-direction:column;gap:8px}
+.an-stage{border-radius:14px;overflow:hidden;background:#EEF1F6;line-height:0;aspect-ratio:320/190}
+.an-svg{display:block;width:100%;height:100%}
+.an-say{font:700 15px Inter,Arial,sans-serif;fill:#0F1B2D}
+.an-cap{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.4;font-weight:600;min-height:41px}
+.an-n{flex-shrink:0;font-size:12px;background:var(--ink);color:var(--volt);border-radius:9px;padding:2px 7px;margin-top:1px}
+.an-ctl{display:flex;align-items:center;gap:8px}
+.an-ctl button{width:44px;height:44px;border-radius:22px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.an-ctl .an-play{background:var(--ink);color:var(--volt);border-color:var(--ink)}
+.an-ctl button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.an-dots{display:flex;gap:5px;margin-left:auto;padding-right:4px}
+.an-dots i{width:7px;height:7px;border-radius:50%;background:#C5CBD4}.an-dots i.on{background:var(--blue)}
+.an-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}
+.an-wag{animation:an-wag .7s ease-in-out infinite alternate;transform-box:view-box;transform-origin:0 0}
+@keyframes an-wag{from{transform:rotate(-10deg)}to{transform:rotate(12deg)}}
+.an-pop{animation:an-pop .35s ease-out both}
+@keyframes an-pop{from{opacity:0}to{opacity:1}}
+.an-path{animation:an-dash 1.2s linear infinite}
+@keyframes an-dash{to{stroke-dashoffset:-20}}
+.an-paused .an-wag,.an-paused .an-pop,.an-paused .an-path{animation-play-state:paused}
+/* Reduced motion: a still storyboard, two frames to a row. */
+.an-strip{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.an-strip li{display:flex;flex-direction:column;gap:5px;font-size:12.5px;line-height:1.35}
+.an-strip svg{width:100%;height:auto;border-radius:10px;background:#EEF1F6;display:block}
+.an-strip .num{display:inline-block;min-width:18px;text-align:center;background:var(--ink);color:var(--volt);border-radius:7px;font-size:11px;margin-right:3px}
+@media (prefers-reduced-motion:reduce){.an-wag,.an-pop,.an-path{animation:none}}

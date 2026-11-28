@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
+import React, { lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Ic, Confirm } from '../ui.jsx'
 import { api } from '../api.js'
 import { track } from '../usage.js'
@@ -7,7 +7,11 @@ import { LESSONS, PRIMER, PUPPY_NOTE, CARE_NOTE, PRO_NOTE, TITLES_NOTE, TRACK_NO
 import { demoTraining } from '../training/demo.js'
 import { BadgeArt, TrainIcon, streakText } from '../training/Row.jsx'
 import { trainingChanged } from '../training/host.jsx'
+import { LearnMore, TrainersView, ShareBadge } from '../training/Help.jsx'
 import './training.css'
+
+// The lesson demonstration loads with the lesson, in its own chunk.
+const LessonAnim = lazy(() => import('../training/anim.jsx'))
 
 const NEEDS_ACCOUNT = 'That needs an account. The demo saves nothing.'
 const PLACE_NAME = Object.fromEntries(PLACES)
@@ -58,7 +62,7 @@ export default function Training({ close, start = {}, real, dd, setToast, goAwar
     return newBadges || []
   }
   const sk = view.v === 'skill' ? skillOf(view.id) : null
-  const title = view.v === 'track' ? trackOf(view.id).name : sk ? sk.name : view.v === 'badges' ? 'Badges' : view.v === 'primer' ? PRIMER.title : 'Training'
+  const title = view.v === 'track' ? trackOf(view.id).name : sk ? sk.name : view.v === 'badges' ? 'Badges' : view.v === 'primer' ? PRIMER.title : view.v === 'trainers' ? 'Find a trainer' : 'Training'
   const ctx = { data, name, slug, real, go, apply, setToast, reload: load, goAwards }
   return (
     <div className="detail tr" role="dialog" aria-modal="true" aria-label={`Training: ${title}`}>
@@ -69,6 +73,7 @@ export default function Training({ close, start = {}, real, dd, setToast, goAwar
             : sk ? <SkillView key={sk.id} skill={sk} fresh={fresh} {...ctx} />
               : view.v === 'badges' ? <BadgeWall {...ctx} />
                 : view.v === 'primer' ? <Primer />
+                  : view.v === 'trainers' ? <TrainersView />
                   : <TrackList {...ctx} />}
       </div>
     </div>
@@ -98,6 +103,7 @@ function TrackList({ data, name, go }) {
       </button>
     })}
     <button className="rrow box" onClick={() => go({ v: 'badges' })}><span className="ricon"><TrainIcon /></span><span className="grow"><b>Badges</b><small>{earned} earned · see what each one needs</small></span></button>
+    <button className="rrow box" onClick={() => go({ v: 'trainers' })}><span className="ricon"><Ic n="users" s={20} c="#1F5AE8" /></span><span className="grow"><b>Find a trainer</b><small>Certified directories and trainers listed near you</small></span></button>
     <button className="rrow box" onClick={() => go({ v: 'primer' })}><span className="ricon"><Ic n="file" s={20} c="#1F5AE8" /></span><span className="grow"><b>{PRIMER.title}</b><small>Timing, rewards, short sessions and when to stop</small></span></button>
     <Note pro>{PRO_NOTE}</Note>
   </div>
@@ -122,11 +128,13 @@ function TrackView({ t, data, name, go, goAwards }) {
   </div>
 }
 
-function SkillView({ skill, data, name, slug, real, apply, setToast, fresh, reload }) {
+function SkillView({ skill, data, name, slug, real, apply, setToast, fresh, reload, go }) {
   const l = LESSONS[skill.id], t = trackOf(skill.track)
   const p = data.progress[skill.id] || { level: 0, sessions: 0, outSessions: 0 }
   const history = data.sessions.filter((s) => s.skillId === skill.id)
   const [ask, setAsk] = useState(null)
+  // The lesson step the demonstration is showing, lit up in the written steps.
+  const [beatStep, setBeatStep] = useState(null)
   const del = async (s) => {
     setAsk({ id: s.id, busy: true })
     try { await api.training.removeSession(s.id); setAsk(null); await reload(); trainingChanged(); setToast('Session deleted') } catch (e) { setAsk({ id: s.id, busy: false, error: e.message }) }
@@ -137,6 +145,9 @@ function SkillView({ skill, data, name, slug, real, apply, setToast, fresh, relo
       <p className="tr-goal">{l.goal}</p>
       <ol className="tr-levels" aria-label={`Level: ${LEVELS[p.level]}`}>{LEVELS.map((x, i) => <li key={x} className={i === p.level ? 'on' : i < p.level ? 'done' : ''} aria-current={i === p.level ? 'step' : undefined}><i aria-hidden="true" />{x}</li>)}</ol>
     </div>
+    <section className="card padc tr-anim" aria-label="Demonstration">
+      <Suspense fallback={<div className="tr-animwait" aria-hidden="true" />}><LessonAnim skillId={skill.id} skillName={skill.name} name={name} onBeat={setBeatStep} /></Suspense>
+    </section>
     {fresh.length > 0 && <div className="card padc tr-fresh" role="status"><b>{fresh.length === 1 ? 'New badge' : 'New badges'}</b>{fresh.map((b) => <div key={b.id} className="row g12"><BadgeArt b={{ ...b, earned: true }} s={40} /><span className="grow"><b>{b.name}</b><small className="meta">{data.selfReported}</small></span></div>)}</div>}
     <LogPanel skill={skill} lesson={l} history={history} name={name} slug={slug} real={real} apply={apply} setToast={setToast} reload={real ? real.reload : null} />
     <section className="card padc" aria-label="Lesson">
@@ -144,7 +155,7 @@ function SkillView({ skill, data, name, slug, real, apply, setToast, fresh, relo
       <div className="sl">YOU WILL NEED</div>
       <ul className="tr-need">{l.need.map((x) => <li key={x}>{x}</li>)}</ul>
       <div className="sl">STEPS</div>
-      <ol className="tr-steps">{l.steps.map((x, i) => <li key={i}><span className="num" aria-hidden="true">{i + 1}</span><span>{x}</span></li>)}</ol>
+      <ol className="tr-steps">{l.steps.map((x, i) => <li key={i} className={i === beatStep ? 'on' : ''}><span className="num" aria-hidden="true">{i + 1}</span><span>{x}</span></li>)}</ol>
       <div className="tr-two"><div><div className="sl">MAKE IT EASIER</div><p>{l.easier}</p></div><div><div className="sl">MAKE IT HARDER</div><p>{l.harder}</p></div></div>
       <div className="sl">COMMON MISTAKES</div>
       <ul className="tr-need">{l.mistakes.map((x) => <li key={x}>{x}</li>)}</ul>
@@ -156,6 +167,7 @@ function SkillView({ skill, data, name, slug, real, apply, setToast, fresh, relo
       <div className="tr-pass"><span className="tr-pill l3">{LEVELS[3]}</span><p>{l.pass.out}.</p></div>
       <SelfCheck skill={skill} lesson={l} p={p} data={data} name={name} slug={slug} real={real} apply={apply} setToast={setToast} />
     </section>
+    <LearnMore skill={skill} lesson={l} name={name} goTrainers={() => go({ v: 'trainers' })} />
     <section className="card padc" aria-label="Practice history">
       <div className="row between"><b>Practice history</b><span className="meta">{history.length ? `${history.length} ${history.length === 1 ? 'session' : 'sessions'}` : ''}</span></div>
       {history.length === 0 && <p className="meta">No practice logged for this skill yet.</p>}
@@ -256,7 +268,7 @@ function SelfCheck({ skill, lesson, p, data, name, slug, real, apply, setToast }
   </div>
 }
 
-function BadgeWall({ data, name, goAwards }) {
+function BadgeWall({ data, name, goAwards, real, setToast }) {
   const groups = [['track', 'Track badges', 'Bronze at half a track reliable at home, Silver at the whole track, Gold when the whole track is proofed in public.'], ['cross', 'Practice and places', 'For showing up, and for sets of skills that go together.'], ['skill', 'Skill badges', 'One per skill at "Reliable at home", upgraded at "Proofed out and about".']]
   const earned = data.badges.filter((b) => b.earned).length
   return <div className="list">
@@ -266,6 +278,7 @@ function BadgeWall({ data, name, goAwards }) {
       <ul className="tr-wall">{data.badges.filter((b) => b.group === g).map((b) => <li key={b.id} className={b.earned ? 'on' : ''}>
         <BadgeArt b={b} s={g === 'skill' ? 44 : 52} />
         <b>{b.name}</b>
+        {b.earned && <ShareBadge b={b} name={name} real={real} setToast={setToast} />}
         <small>{b.earned ? (b.group === 'track' && b.tier !== 'gold' ? `Earned. Next: ${b.how}` : b.group === 'skill' && b.tier === 'reliable' ? 'Earned. Proof it in public to upgrade.' : 'Earned') : `Locked. ${b.how}${b.group !== 'skill' && b.target > 1 && b.progress > 0 ? ` ${b.progress} of ${b.target} so far.` : ''}`}</small>
       </li>)}</ul>
     </section>)}
