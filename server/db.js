@@ -430,6 +430,10 @@ const COLUMNS = [
   ['walks', 'route_id', 'TEXT'],
   // "Share my walks with friends by default". Off until the person turns it on.
   ['users', 'share_walks_default', 'BOOLEAN NOT NULL DEFAULT FALSE'],
+  // The WorkOS user behind this account, set the first time the email is proven with a code.
+  ['users', 'workos_id', 'TEXT'],
+  // TRUE only for a session made after a code was checked. With email codes on, any other session is refused.
+  ['sessions', 'verified', 'BOOLEAN NOT NULL DEFAULT FALSE'],
 ]
 const isDuplicateColumn = (e) => e && (e.code === '42701' || /already exists|duplicate column/i.test(e.message || ''))
 // Leaderboards and the pack feed read walks by time across all dogs. pg-mem cannot

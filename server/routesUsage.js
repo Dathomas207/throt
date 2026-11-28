@@ -92,7 +92,7 @@ export function registerUsage(kit) {
         let userId = null
         const h = /^Bearer ([A-Za-z0-9_-]{20,200})$/.exec(req.get('authorization') || '')
         const t = h ? h[1] : typeof b.auth === 'string' && BEARER_RE.test(b.auth) ? b.auth : null
-        if (t) { const s = await db.query('SELECT user_id FROM sessions WHERE token_hash = $1 AND expires_at > $2', [sha(t), iso(Date.now())]); userId = s.rows[0] ? s.rows[0].user_id : null }
+        if (t) { const s = await db.query('SELECT user_id, verified FROM sessions WHERE token_hash = $1 AND expires_at > $2', [sha(t), iso(Date.now())]); userId = s.rows[0] && !(kit.wos && kit.wos.on && s.rows[0].verified !== true) ? s.rows[0].user_id : null }
         // A signed-in event carries the user and nothing else. The browser id is only kept for signed-out and demo use.
         const anon = !userId && typeof b.anon === 'string' && ANON_RE.test(b.anon) ? b.anon : null
         if (!userId && !anon) return done()

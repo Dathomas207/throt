@@ -136,8 +136,8 @@ A TestFlight build stops working 90 days after upload. Upload a new build before
 | Privacy policy URL | App Store Connect, App Privacy. Also Test Information for external testers | NOT DONE. Trot has no privacy policy page. One has to be written and published at a public address |
 | Support URL | App Store Connect, version page | NOT DONE. Trot has no support page. A simple page with a contact email is enough |
 | App Privacy answers ("nutrition label") | App Store Connect, App Privacy | Ready to fill in. Use `docs/app-store-privacy.md` |
-| Account deletion inside the app | App Review, for any app that lets people create an account | NOT DONE. Trot has no way to delete an account, in the app or on the server. Required before App Store review. TestFlight review may also raise it |
-| A sign-in the reviewer can use | App Review notes and Test Information | Works today, with a caveat. Sign-in is a name and an email with no password or code, so a reviewer can use any address. Create one for them, for example `review@your-domain`, with a dog and a few walks, and put it in the notes |
+| Account deletion inside the app | App Review, for any app that lets people create an account | Done. Settings, Delete my account, at the bottom. It asks for a fresh emailed code (or the typed email when codes are off) |
+| A sign-in the reviewer can use | App Review notes and Test Information | Needs setup. With email codes on (`docs/workos-setup.md`), a reviewer cannot read your inbox, so give them an address they can receive mail at, or ask Apple in the notes to contact you for a code. Put a dog and a few walks on that account first |
 | Export compliance | Each upload | Done. `ITSAppUsesNonExemptEncryption` is `false` in `Info.plist`, which is the right answer for an app that only uses HTTPS and the encryption built into iOS. Change it if Trot ever adds its own encryption |
 | Why the app uses location in the background | App Review notes | Write one sentence: "Trot records the route of a dog walk while the phone is locked. Start a walk on the Walk tab, lock the phone, and walk." |
 | Screenshots | App Store Connect, version page | NOT DONE. iPhone screenshots are needed for the App Store. TestFlight does not need them. The app is iPhone only, so no iPad screenshots |
@@ -146,8 +146,7 @@ A TestFlight build stops working 90 days after upload. Upload a new build before
 
 ## Known gaps, stated plainly
 
-- Sign-in has no password and no emailed code. Anyone who knows a person's email address can sign in as that person. This is a trial shortcut. It should be replaced before the app reaches people you do not know, and App Review may reject it if they notice.
-- There is no account deletion. Apple requires it for the App Store.
+- Sign-in uses an emailed code only once `WORKOS_API_KEY` and `WORKOS_CLIENT_ID` are set in Render. Until then anyone who knows a person's email can sign in as that person. Turn codes on before TestFlight testers outside your circle.
 - There is no privacy policy and no support page.
 - Settings shows paid plans with prices (Trot Plus, Trot Pro) that cannot be bought. Apple rejects apps that show prices for digital features without In-App Purchase, and apps with placeholder features. Hide that section inside the app before review. `isNative` from `src/native/platform.js` is the switch to use.
 - Several connections read "Coming soon". App Review treats those as unfinished features. Hide them inside the app or remove them before App Store review.

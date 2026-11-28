@@ -17,8 +17,10 @@ export function setToken(t) {
 }
 export function setAuthLost(fn) { onAuthLost = fn }
 
+// `code` is a short fixed word from the server for the cases the app acts on (see server/routesAuth.js).
+// `retryAfter` is the number of seconds a 429 asked the app to wait.
 export class ApiError extends Error {
-  constructor(status, message) { super(message); this.status = status }
+  constructor(status, message, code, retryAfter) { super(message); this.status = status; this.code = code || ''; this.retryAfter = retryAfter || 0 }
 }
 
 // True only when a real Trot API answers. A static host that rewrites every path
@@ -39,6 +41,7 @@ export async function probe(ms = 3000) {
 // Each entry is [method, path, event name or a function of the answer]. Nothing from the request body is sent.
 const COUNTED = [
   ['POST', /^\/session$/, (r) => (r && r.created ? 'sign_up' : 'sign_in')],
+  ['POST', /^\/auth\/(?:verify|complete)$/, (r) => (r && r.token ? (r.created ? 'sign_up' : 'sign_in') : null)],
   ['POST', /^\/dogs$/, 'dog_created'],
   ['PUT', /^\/dogs\/[^/]+\/friends\/[^/]+$/, (r) => (r && r.already ? null : 'friend_added')],
   ['DELETE', /^\/dogs\/[^/]+\/friends\/[^/]+$/, 'friend_removed'],
@@ -71,8 +74,9 @@ async function request(method, path, body) {
   if (!res.ok) {
     if (res.status >= 500) failed(method, path, res.status)
     const sent = !!headers.authorization
-    if (res.status === 401 && sent) { setToken(null); if (onAuthLost) onAuthLost() }
-    throw new ApiError(res.status, (data && data.error) || 'Something went wrong. Try again.')
+    const code = (data && typeof data.code === 'string' && data.code) || ''
+    if (res.status === 401 && sent) { setToken(null); if (onAuthLost) onAuthLost(code) }
+    throw new ApiError(res.status, (data && data.error) || 'Something went wrong. Try again.', code, Number(res.headers.get('retry-after')) || 0)
   }
   counted(method, path, data)
   return data
@@ -111,6 +115,29 @@ export function loadPhoto(url) {
 // After an upload the browser already holds the picture, so it is shown without a second download.
 export function primePhoto(url, src) { if (url && src) { photoReady.set(url, src); photos.set(url, Promise.resolve(src)) } }
 function clearPhotos() { for (const url of [...photos.keys(), ...photoReady.keys()]) forget(url) }
+
+// Sign-in with a code sent by email. The server says whether it is turned on; when it is not, the app
+// shows the name-and-email sign-in it always had. Asked once per page load.
+let authConfig = null
+export function getAuthConfig() {
+  if (!authConfig) authConfig = request('GET', '/auth/config').then((c) => ({ emailCodes: !!(c && c.emailCodes) }), () => { authConfig = null; return { emailCodes: false } })
+  return authConfig
+}
+api.auth = {
+  // Always answers the same way, whether or not the email has an account.
+  start: (email) => request('POST', '/auth/start', { email }),
+  // Answers { token, user, created }, or { needName, ticket } for a new email that came without a name.
+  verify: (email, code, name) => request('POST', '/auth/verify', { email, code, ...(name ? { name } : {}) }),
+  complete: (ticket, name) => request('POST', '/auth/complete', { ticket, name }),
+  // `proof` is { code } when email codes are on and { email } when they are off.
+  deleteAccount: (proof) => request('POST', '/me/delete', proof),
+}
+// After the account is deleted there is no session left to end on the server, so this only clears the device.
+export async function forgetSession() {
+  setToken(null)
+  clearPhotos()
+  try { if (typeof caches !== 'undefined') (await caches.keys()).forEach((k) => caches.delete(k)) } catch (e) {}
+}
 
 export async function signOut() {
   try { if (token) await request('DELETE', '/session') } catch (e) {}

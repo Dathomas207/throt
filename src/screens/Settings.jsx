@@ -10,6 +10,8 @@ import { track } from '../usage.js'
 import { NotificationPrefs, MetricsSection, MeasuresNote, Diagnostics } from './SettingsMore.jsx'
 import { LiveShareSetting } from '../liveHooks.jsx'
 import { SITE_ORIGIN, isNative } from '../native/platform.js'
+import DeleteAccount from './DeleteAccount.jsx'
+import { useEmailCodes } from './CodeEntry.jsx'
 
 export const PLANS = [
   { id: 'free', name: 'Free', price: '$0', items: ['One dog', 'Phone tracking', 'Feed and paws', 'Care team of up to three', 'Public dog page', 'Story cards', 'Places map'] },
@@ -75,9 +77,9 @@ function AdminSection({ setToast }) {
 // One screen for the account, tracking level, connections, plans and, in the demo, the demo tools.
 // `real` is set when signed in. Everything else is the demo's local state.
 export default function Settings({ close, real, setToast, plan, setPlan, level, setLevel, conn, setConn, me, setMe, reset, leaveDemo, signedIn, demoName = 'Biscuit' }) {
-  const back = useRef(null), diagOpen = useRef(false)
+  const back = useRef(null), diagOpen = useRef(false), delOpen = useRef(false)
   useEffect(() => { if (back.current) back.current.focus() }, [])
-  useEffect(() => { const k = (e) => { if (e.key === 'Escape') { if (diagOpen.current) setDiag(false); else close() } }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [close])
+  useEffect(() => { const k = (e) => { if (e.key === 'Escape') { if (delOpen.current) return; if (diagOpen.current) setDiag(false); else close() } }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [close])
   const dog = real ? real.dog : null
   const owner = !!dog && dog.role === 'owner'
   const name = dog ? dog.name : demoName
@@ -88,6 +90,10 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
   const [naming, setNaming] = useState(null)
   const [diag, setDiag] = useState(false)
   diagOpen.current = diag
+  // Deleting the account is its own screen on top of this one. Escape does not close it by accident.
+  const [deleting, setDeleting] = useState(false)
+  delOpen.current = deleting
+  const emailCodes = useEmailCodes()
   // Counted once per visit to Settings, when the plans actually scroll into view.
   const plansRef = useRef(null)
   useEffect(() => {
@@ -131,7 +137,7 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
                   {naming.error ? <p className="ferr" id="set-name-note" role="alert">{naming.error}</p> : <p className="fhint" id="set-name-note">Your first name is what shows next to walks you log.</p>}</div>
                 <div className="row g8"><button className="cta small" type="submit" disabled={naming.busy}>{naming.busy ? 'Saving' : 'Save name'}</button><button className="cta small white bordered" type="button" onClick={() => setNaming(null)} disabled={naming.busy}>Cancel</button></div>
               </form>
-              : <div className="row between g8"><span className="grow yourow"><b>{real.user.name}</b><small>Signed in as {real.user.email}. Trial sign-in, no password yet.</small></span><button className="tbtn" onClick={() => setNaming({ value: real.user.name, busy: false, error: '' })}>Edit name</button></div>}
+              : <div className="row between g8"><span className="grow yourow"><b>{real.user.name}</b><small>{emailCodes ? `Signed in as ${real.user.email}, with a code sent to that email.` : `Signed in as ${real.user.email}. Trial sign-in, no password yet.`}</small></span><button className="tbtn" onClick={() => setNaming({ value: real.user.name, busy: false, error: '' })}>Edit name</button></div>}
             <button className="rrow box line signout" onClick={real.signOut}><span className="grow"><b>Sign out</b><small>Signed in as {real.user.name}, on this device</small></span></button>
             <button className="rrow box line" onClick={real.toDemo}><span className="grow"><b>Open the Biscuit demo</b><small>Sample data. Your dogs stay as they are.</small></span></button>
           </> : <>
@@ -202,7 +208,12 @@ export default function Settings({ close, real, setToast, plan, setPlan, level, 
           <div className="chips wrap">{['dale', 'pat', 'sue'].map((id) => <button key={id} className={`chip flat ${me === id ? 'on' : ''}`} aria-pressed={me === id} onClick={() => { setMe(id); setToast(`Now signed in as ${PEOPLE[id].name}`) }}>{PEOPLE[id].name}</button>)}</div>
           <button className="rrow box line" onClick={reset}><span className="grow"><b>Reset demo data</b><small>Clears saved walks, paws, connections, level and plan on this device</small></span></button>
         </Section>}
+
+        {real && <Section title="DELETE ACCOUNT" id="set-delete">
+          <button className="rrow box line signout" onClick={() => setDeleting(true)}><span className="grow"><b>Delete my account</b><small>Removes your account and the dogs only you own, for good</small></span></button>
+        </Section>}
       </div></div>
+      {deleting && real && <ErrorBoundary name="delete-account" kind="sheet" onClose={() => setDeleting(false)}><DeleteAccount real={real} close={() => setDeleting(false)} /></ErrorBoundary>}
       {diag && <ErrorBoundary name="diagnostics" kind="sheet" onClose={() => setDiag(false)}><Diagnostics close={() => setDiag(false)} setToast={setToast} /></ErrorBoundary>}
       {sheet && <div className="scrim" onClick={() => setSheet(null)}><div className="modal" role="dialog" aria-label={sheet.name} onClick={(e) => e.stopPropagation()}>
         <div className="grab" /><h2>{sheet.name}</h2><p>{sheet.what}</p><p className="meta"><b>For real:</b> {sheet.real}</p>

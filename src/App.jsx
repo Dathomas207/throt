@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useStat
 import { Ic, Paw, Av, DogAv, RangeOff, toAct } from './ui.jsx'
 import { PEOPLE, SEED, CONNECTIONS, ACTIVITY_TYPES, DEMO_DOGS, demoDogByName } from './data.js'
 import DemoDogSheet from './screens/DemoDogSheet.jsx'
-import { api, probe, hasToken, setAuthLost, signOut, takeInviteFromUrl, pendingInvite, primePhoto, takeFriendFromUrl, pendingFriend, clearFriend } from './api.js'
+import { api, probe, hasToken, setAuthLost, signOut, forgetSession, takeInviteFromUrl, pendingInvite, primePhoto, takeFriendFromUrl, pendingFriend, clearFriend } from './api.js'
 import { fitJpeg, OUTING_PHOTO_MAX } from './photo.js'
 import FriendsScreen, { FriendConfirm, realFriendsModel, demoFriendsModel } from './screens/Friends.jsx'
 import Home from './screens/Home.jsx'
@@ -60,6 +60,10 @@ export default function App() {
   const [me, setMe] = useState(null)
   const [slug, setSlug] = useState(null)
   const [notice, setNotice] = useState('')
+  // Welcome opens on "Sign back in" when an old session was ended by the switch to email codes.
+  const [signInFirst, setSignInFirst] = useState(false)
+  // One line for the first screen after the account was deleted.
+  const [flash, setFlash] = useState('')
 
   const enter = useCallback((m, pick, note) => {
     setMe(m); writeMe(m)
@@ -76,7 +80,8 @@ export default function App() {
       const invite = takeInviteFromUrl()
       // A friend link (/?friend=<dog>) waits in sessionStorage until someone is signed in with a dog of their own.
       const friend = takeFriendFromUrl()
-      const lost = () => { setLS(MECACHE, null); setMe(null); setNotice('Your session ended. Sign in again.'); setPhase('welcome') }
+      // `code` is 'verify_required' when the session was made before sign-in needed a code.
+      const lost = (code) => { setLS(MECACHE, null); setMe(null); const v = code === 'verify_required'; setSignInFirst(v); setNotice(v ? 'Sign-in got more secure. Enter your email to get a code.' : 'Your session ended. Sign in again.'); setPhase('welcome') }
       // Open from what this device already knows, then check with the server. Without this the
       // first screen waits for a round trip to the API, which is slow on a phone signal.
       let early = false
@@ -119,13 +124,15 @@ export default function App() {
     track('app_open', { mode, standalone: isStandalone() })
   }, [phase, me, slug])
   const toWelcome = () => { setLS(MODE, null); setNotice(''); setPhase(me && me.dogs.length ? 'real' : 'welcome') }
-  const out = async () => { await signOut(); setLS(MECACHE, null); setMe(null); setSlug(null); setLS(DOGKEY, null); setNotice(''); setPhase('welcome') }
+  const out = async () => { await signOut(); setLS(MECACHE, null); setMe(null); setSlug(null); setLS(DOGKEY, null); setNotice(''); setSignInFirst(false); setPhase('welcome') }
+  // The account is gone on the server, so there is no session to end there. Only this device is cleared.
+  const gone = async () => { await forgetSession(); setLS(MECACHE, null); setLS(DOGKEY, null); setLS(MODE, null); setMe(null); setSlug(null); setNotice(''); setSignInFirst(false); setFlash('Your account was deleted.'); setPhase('welcome') }
 
   // The demo saves nothing, so usage.js only counts looking around while it is showing.
   setUsageMode(phase === 'demo' || (phase === 'real' && !(me && slug)) ? 'demo' : 'real')
   if (phase === 'boot') return <div className="shell"><div className="welcome splash" role="status" aria-label="Loading Trot"><div className="wlogo">TROT</div></div></div>
-  if (phase === 'welcome') return <div className="shell"><main className="screen"><Welcome user={me} notice={notice} onDemo={toDemo} onReady={enter} /></main></div>
-  if (phase === 'real' && me && slug) return <RealApp key={me.user.id} me={me} setMe={setMe} slug={slug} pickDog={(s) => { setSlug(s); setLS(DOGKEY, s) }} notice={notice} signOut={out} toDemo={toDemo} />
+  if (phase === 'welcome') return <div className="shell"><main className="screen"><Welcome key={signInFirst ? 'again' : 'start'} user={me} notice={notice} signInFirst={signInFirst} flash={flash} onDemo={() => { setFlash(''); toDemo() }} onReady={(...a) => { setFlash(''); setSignInFirst(false); enter(...a) }} /></main></div>
+  if (phase === 'real' && me && slug) return <RealApp key={me.user.id} me={me} setMe={setMe} slug={slug} pickDog={(s) => { setSlug(s); setLS(DOGKEY, s) }} notice={notice} signOut={out} accountDeleted={gone} toDemo={toDemo} />
   return <DemoApp leaveDemo={hasApi ? toWelcome : null} signedIn={!!(me && me.dogs.length)} hasApi={hasApi} />
 }
 
@@ -221,7 +228,7 @@ const thinTo = (pts, max) => {
 }
 const clamp = (v, hi) => Math.min(hi, Math.max(0, Number.isFinite(Number(v)) ? Number(v) : 0))
 
-function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo }) {
+function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, accountDeleted, toDemo }) {
   const [tab, setTab] = useState('home')
   const [open, setOpen] = useState(null)
   const [toast, setToast] = useState(notice || '')
@@ -444,7 +451,7 @@ function RealApp({ me, setMe, slug, pickDog, notice, signOut: doSignOut, toDemo 
   const todayMin = data.weekWalks.filter((w) => w.type !== 'Daycare' && new Date(w.startedAt).toDateString() === new Date().toDateString()).reduce((s, w) => s + w.minutes, 0)
   const real = { user: me.user, dogs, dog, totals: data.totals, team, weekWalks: data.weekWalks, dogActs, switchDog, scope: scope === 'pack' || scope === 'friends' ? scope : all ? 'all' : 'dog', setScope,
     friends: { ...fr, rev: frRev, add: addFriend, remove: removeFriend, open: () => setFriendsOpen(true), reload: () => { loadFriends(); setFrRev((n) => n + 1) } },
-    photos: { jobs, rev: photoRev, add: addPhotos, retry: retryPhoto, dismiss: dropJob, remove: deletePhoto }, reload, hasMore: !!feed.cursor, more, loadingMore: feed.more, createInvite, patchDog, saveProfile, renameMe, listInvites, cancelInvite, removeMember, deleteWalk, refreshMe, signOut: doSignOut, toDemo, hasPendingInvite: !!pendingInvite() }
+    photos: { jobs, rev: photoRev, add: addPhotos, retry: retryPhoto, dismiss: dropJob, remove: deletePhoto }, reload, hasMore: !!feed.cursor, more, loadingMore: feed.more, createInvite, patchDog, saveProfile, renameMe, listInvites, cancelInvite, removeMember, deleteWalk, refreshMe, signOut: doSignOut, accountDeleted, toDemo, hasPendingInvite: !!pendingInvite() }
   // A tapped dog: one of your own opens its profile here, any other opens its public page.
   const onDog = (a) => { if (dogs.some((d) => d.slug === a.dogSlug)) { setOpen(null); switchDog(a.dogSlug); setTab('dog') } else window.open(`/d/${a.dogSlug}`, '_blank', 'noopener') }
   // Where a tapped notification goes. A dog named in the link becomes the one showing first, when it is one of yours.

@@ -56,6 +56,10 @@ The app loads maps and looks things up from these services directly. Each reques
 - Google Fonts: the two typefaces.
 - Google Maps: only as a link the person taps. Nothing is sent until they do.
 
+The server, not the app, also talks to:
+
+- WorkOS: when email codes are on, the server sends WorkOS the email address to sign in with, WorkOS emails the code, and the server sends the code back to WorkOS to check it. WorkOS keeps a user record with that email until the account is deleted in Trot, which deletes it there too. This makes WorkOS a processor of email addresses and should be named in the privacy policy.
+
 Apple's form asks about data that you or your third-party partners collect. Map and routing requests are needed for the feature the person is using and are not linked to their identity by Trot. Many apps do not list these, but the privacy policy should name the services.
 
 ## Things that are public
@@ -66,7 +70,8 @@ A dog's page is public by default: photo, name, breed, bio, totals and the last 
 
 There is no privacy policy yet. App Store Connect requires a public URL for one. At minimum it should cover: what is collected (this page), why, who can see it (care team, friends, the public page), the outside services above, how long data is kept, how to ask for deletion, and a contact address.
 
-Two things the policy cannot honestly promise yet, because the app does not do them:
+One thing the policy cannot honestly promise yet:
 
-- Account deletion: there is no way to delete an account or a dog, in the app or on the server. Apple requires in-app account deletion for the App Store.
-- Verified sign-in: sign-in is a name and an email with no password or code, so an account is only as private as its email address.
+- Verified sign-in, until email codes are turned on: without them, sign-in is a name and an email with no proof, so an account is only as private as its email address.
+
+Account deletion now exists (Settings, Delete my account). The policy should say what it removes: the account, dogs only that person owns with everything on them, and their own data. Walks they logged on someone else's dog stay on that dog, shown as from a former member.

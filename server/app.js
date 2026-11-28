@@ -18,6 +18,7 @@ import { registerWeather } from './routesWeather.js'
 import { registerSavedRoutes } from './routesSavedRoutes.js'
 import { registerTraining } from './routesTraining.js'
 import { registerLive } from './routesLive.js'
+import { registerAuth, workosConfig } from './routesAuth.js'
 
 import { geoRouter } from './geo.js'
 import { nativeCors } from './cors.js'
@@ -60,7 +61,8 @@ const INVITE_DAYS = 14
 const DAY = 864e5
 
 class HttpError extends Error {
-  constructor(status, message) { super(message); this.status = status }
+  // `code` is a short fixed word the app can act on, sent beside the message. Never anything from a request.
+  constructor(status, message, code) { super(message); this.status = status; if (code) this.appCode = code }
 }
 const bad = (msg) => new HttpError(400, msg)
 
@@ -201,7 +203,7 @@ function limiter({ windowMs, max }) {
   }
 }
 
-export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = {}, demoOnBoards = process.env.DEMO_ON_LEADERBOARDS !== '0', adminEmails = process.env.ADMIN_EMAILS, liveNow } = {}) {
+export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = {}, demoOnBoards = process.env.DEMO_ON_LEADERBOARDS !== '0', adminEmails = process.env.ADMIN_EMAILS, liveNow, workos, authFetch, authNow } = {}) {
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', trustProxy)
@@ -210,6 +212,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   const writeLimit = limiter({ windowMs: R.writeWindowMs, max: R.writeMax })
   const readLimit = limiter({ windowMs: R.readWindowMs, max: R.readMax })
   const limited = (res, r) => { res.set('Retry-After', String(r.retry)); throw new HttpError(429, 'Too many requests. Wait a moment and try again.') }
+  // Email codes through WorkOS. On only when both WORKOS_API_KEY and WORKOS_CLIENT_ID are set (server/routesAuth.js).
+  const wos = workosConfig(workos)
   const origin = (req) => (baseUrl || `${req.protocol}://${req.get('host') || 'localhost'}`).replace(/\/+$/, '')
 
   app.use((req, res, next) => {
@@ -241,12 +245,12 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     // Usage batches bring their own 4 KB parser (routesUsage.js), so nothing larger is ever read for them.
     if (req.method === 'POST' && /^\/usage\/?$/.test(req.path)) return next()
     if (req.method === 'POST' && /^\/dogs\/[^/]+\/documents\/?$/.test(req.path)) {
-      if (!(await userFor(req))) throw new HttpError(401, 'Sign in to continue.')
+      if (!(await userFor(req))) throw signedOut(req)
       return jsonDocBody(req, res, next)
     }
     // An outing photo is the other body above the default size. Same rule: signed in before any of it is read.
     if (req.method === 'POST' && /^\/walks\/[^/]+\/photos\/?$/.test(req.path)) {
-      if (!(await userFor(req))) throw new HttpError(401, 'Sign in to continue.')
+      if (!(await userFor(req))) throw signedOut(req)
       return jsonWalkPhotoBody(req, res, next)
     }
     return (req.method === 'PATCH' && /^\/dogs\/[^/]+\/?$/.test(req.path) ? jsonPhotoBody : jsonBody)(req, res, next)
@@ -297,10 +301,45 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     const m = /^Bearer ([A-Za-z0-9_-]{20,200})$/.exec(h)
     if (!m) return null
     const { rows } = await db.query(
-      'SELECT u.id, u.name, u.email FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > $2',
+      'SELECT u.id, u.name, u.email, s.verified FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > $2',
       [sha(m[1]), iso(Date.now())])
-    return rows[0] ? { ...rows[0], tokenHash: sha(m[1]) } : null
+    if (!rows[0]) return null
+    // With email codes on, a session that was made without a code no longer counts. Someone else may hold
+    // a token for this email from the days when typing an email was enough.
+    if (wos.on && rows[0].verified !== true) { req.unverifiedSession = true; return null }
+    const { verified, ...u } = rows[0]
+    return { ...u, tokenHash: sha(m[1]) }
   }
+  // The 401 for a caller with no usable session. An old unverified session gets its own message and code,
+  // so the app can explain why it is asking for the email again.
+  const signedOut = (req) => (req.unverifiedSession
+    ? new HttpError(401, 'Sign-in got more secure. Enter your email to get a code.', 'verify_required')
+    : new HttpError(401, 'Sign in to continue.'))
+  // One row per sign-in. `verified` is true only when the email was proven with a code.
+  async function issueSession(userId, verified) {
+    const token = newToken(), now = Date.now()
+    await db.query('DELETE FROM sessions WHERE expires_at < $1', [iso(now)])
+    await db.query('INSERT INTO sessions (token_hash, user_id, created_at, expires_at, verified) VALUES ($1, $2, $3, $4, $5)', [sha(token), userId, iso(now), iso(now + SESSION_DAYS * DAY), verified === true])
+    return token
+  }
+  // Accounts are matched by their normalised email, so a person keeps their dogs, walks and routes
+  // however they sign in. `name` is only used when the account is new.
+  const demoMail = (mail) => mail.endsWith('@' + DEMO_EMAIL_DOMAIN) || mail.endsWith('.invalid')
+  async function findOrCreateUser(mail, name) {
+    let { rows } = await db.query('SELECT id, name, email FROM users WHERE email = $1', [mail])
+    let created = false
+    if (!rows[0]) {
+      try {
+        await db.query('INSERT INTO users (id, name, email, created_at) VALUES ($1, $2, $3, $4)', [newId(), name, mail, iso(Date.now())])
+        created = true
+      } catch (e) { if (!isUnique(e)) throw e }
+      rows = (await db.query('SELECT id, name, email FROM users WHERE email = $1', [mail])).rows
+    }
+    // One welcome note on the first sign-in. It is keyed, so it is never written twice.
+    if (created) await kit.welcome(rows[0].id)
+    return { user: rows[0], created }
+  }
+  const userOut = (u) => ({ id: u.id, name: u.name, email: u.email, isAdmin: isAdmin(u) })
   // Admins are the signed-in people whose email is in ADMIN_EMAILS (comma separated). With it unset there are none.
   const admins = new Set(String(adminEmails || '').split(',').map((e) => e.trim().toLowerCase()).filter((e) => e && !e.endsWith('.invalid')))
   const isAdmin = (u) => !!(u && u.email && admins.has(String(u.email).toLowerCase()))
@@ -309,7 +348,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   const adminIds = async () => { const list = [...admins]; return new Set(list.length ? (await db.query(`SELECT id FROM users WHERE LOWER(email) IN (${list.map((_, i) => `$${i + 1}`).join(', ')})`, list)).rows.map((r) => r.id) : []) }
   const auth = async (req, res, next) => {
     const u = await userFor(req)
-    if (!u) throw new HttpError(401, 'Sign in to continue.')
+    if (!u) throw signedOut(req)
     req.user = u
     if (req.method !== 'GET') {
       const r = writeLimit('user:' + u.id)
@@ -401,30 +440,19 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   }
 
   // -- session
+  // The sign-in with no proof of email. It only works while email codes are off. With them on, the one way
+  // to get a session is POST /api/auth/verify with the code that was emailed (server/routesAuth.js).
   api.post('/session', async (req, res) => {
     const r = sessionLimit('ip:' + req.ip)
     if (!r.ok) return limited(res, r)
+    if (wos.on) throw new HttpError(403, 'Sign-in now uses a code sent to your email. Reload Trot, or update the app, and sign in again.', 'email_code_required')
     const b = object(req.body)
     const mail = email(b.email)
-    if (mail.endsWith('@' + DEMO_EMAIL_DOMAIN) || mail.endsWith('.invalid')) throw new HttpError(403, 'That address belongs to a demo account and cannot be used to sign in.')
+    if (demoMail(mail)) throw new HttpError(403, 'That address belongs to a demo account and cannot be used to sign in.')
     const name = text(b.name, 'Your name', { min: 1, max: LIMITS.name })
-    const now = Date.now()
-    let { rows } = await db.query('SELECT id, name, email FROM users WHERE email = $1', [mail])
-    let created = false
-    if (!rows[0]) {
-      try {
-        await db.query('INSERT INTO users (id, name, email, created_at) VALUES ($1, $2, $3, $4)', [newId(), name, mail, iso(now)])
-        created = true
-      } catch (e) { if (!isUnique(e)) throw e }
-      rows = (await db.query('SELECT id, name, email FROM users WHERE email = $1', [mail])).rows
-    }
-    const user = rows[0]
-    const token = newToken()
-    await db.query('DELETE FROM sessions WHERE expires_at < $1', [iso(now)])
-    await db.query('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES ($1, $2, $3, $4)', [sha(token), user.id, iso(now), iso(now + SESSION_DAYS * DAY)])
-    // One welcome note on the first sign-in. It is keyed, so it is never written twice.
-    if (created) await kit.welcome(user.id)
-    res.status(created ? 201 : 200).json({ token, user: { id: user.id, name: user.name, email: user.email, isAdmin: isAdmin(user) }, created })
+    const { user, created } = await findOrCreateUser(mail, name)
+    const token = await issueSession(user.id, false)
+    res.status(created ? 201 : 200).json({ token, user: userOut(user), created })
   })
   api.delete('/session', auth, async (req, res) => {
     await db.query('DELETE FROM sessions WHERE token_hash = $1', [req.user.tokenHash])
@@ -825,7 +853,7 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     res.set('X-Frame-Options', 'DENY')
     res.type('html')
   }
-  const kit = { api, app, db, auth, admin, isAdmin, adminIds, isUnique, email, userFor, dogFor, memberItem, HttpError, bad, text, number, bool, object, sha, newToken, newId, iso, num, round, firstName, ageLabel, origin, ID_RE, TOKEN_RE, limiter, limited, readLimit, R, pageHeaders, photoUrl, parseRoute, thin, pawCounts, demoOnBoards, walkFor, walkPhotos, walkPhotoUrl, SLUG_RE, sniff }
+  const kit = { api, app, db, auth, admin, isAdmin, adminIds, isUnique, email, userFor, dogFor, memberItem, HttpError, bad, text, number, bool, object, sha, newToken, newId, iso, num, round, firstName, ageLabel, origin, ID_RE, TOKEN_RE, limiter, limited, readLimit, R, pageHeaders, photoUrl, parseRoute, thin, pawCounts, demoOnBoards, walkFor, walkPhotos, walkPhotoUrl, SLUG_RE, sniff, LIMITS, wos, issueSession, findOrCreateUser, userOut, demoMail }
   // First, so every other module can call kit.notify.
   registerNotifications(kit)
   registerUsage(kit)
@@ -843,6 +871,8 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
   // Live walks for mutual friends. `liveNow` lets the tests move the clock.
   kit.WALK_TYPES = WALK_TYPES
   registerLive(kit, liveNow ? { now: liveNow } : {})
+  // Email codes, and account deletion. `authFetch` and `authNow` let the tests stand in for WorkOS and the clock.
+  registerAuth(kit, { fetchImpl: authFetch, now: authNow })
   // Read-only lookups, no sign-in. They sit on the API router, so only the per-address read limit applies.
   api.use('/geo', geoRouter(db))
 
@@ -852,8 +882,9 @@ export function createApp({ db, staticDir, baseUrl = '', trustProxy = 0, rate = 
     let message = err.message
     if (err.type === 'entity.too.large') { status = 413; message = 'That is too much data for one request.' }
     else if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) { status = 400; message = 'The request body is not valid JSON.' }
-    else if (status >= 500) { console.error(err); message = 'Something went wrong on our side.' }
-    res.status(status).json({ error: message })
+    // A 5xx this server chose to send (sign-in unavailable, for one) keeps its own plain message. Anything else is a fault.
+    else if (status >= 500 && !(err instanceof HttpError)) { console.error(err); message = 'Something went wrong on our side.' }
+    res.status(status).json({ error: message, ...(err instanceof HttpError && err.appCode ? { code: err.appCode } : {}) })
   })
   app.use('/api', api)
 

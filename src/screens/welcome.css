@@ -18,3 +18,15 @@
 @keyframes wpop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 @keyframes wrise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.whero,.wchip,.wdog,.welcome .wlogo{animation:none}}
+/* Sign-in with an emailed code. One wide field, large digits, at least 48 px tall. */
+.field input.codein{height:56px;font:700 26px/1 Inter,sans-serif;letter-spacing:.32em;text-align:center;font-variant-numeric:tabular-nums;padding:0 8px 0 calc(8px + .32em)}
+.field input.codein::placeholder{color:#C3CAD5;font-weight:500}
+.field input.codein[aria-invalid=true]{box-shadow:inset 0 0 0 3px #B02A00}
+.field.lightf input.codein{border:1px solid var(--line)}
+.wmail{font-weight:700;color:#fff;overflow-wrap:anywhere}
+.wlink:disabled{opacity:.6;text-decoration:none;cursor:default}
+/* Delete my account (src/screens/DeleteAccount.jsx). */
+.cta.danger{background:#8F2100;color:#fff}.cta.danger:focus-visible{outline-color:var(--ink)}
+.dellist{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.45}
+.delwarn{margin:0;font-size:14px;line-height:1.45;color:#0F1B2D;background:#FFD9CB;border-radius:10px;padding:10px 12px}
+.delacct{z-index:12}
