@@ -24,6 +24,7 @@ before(async () => {
   staticDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trot-static-'))
   fs.writeFileSync(path.join(staticDir, 'index.html'), '<!DOCTYPE html><title>Trot</title><div id="root">app shell</div>')
   fs.writeFileSync(path.join(staticDir, 'icon-192.png'), 'png')
+  fs.writeFileSync(path.join(staticDir, 'privacy.html'), '<!doctype html><title>Privacy Policy | Trot</title>')
   const l = await listen(createApp({ db, staticDir, rate: { sessionMax: 1000, writeMax: 100000, readMax: 100000 } }))
   server = l.s; base = l.url
 })
@@ -2020,4 +2021,12 @@ test('the client reads the ownership fields safely and builds a plain Google Map
   const osm = { id: 'n1', name: 'Hound and Hops', at: [35.2, -80.8], tags: [], website: 'http://old.example', osm: { type: 'node', id: 1 } }
   assert.equal(mergePlaces([osm], [p])[0].website, 'https://hops.example/')
   assert.equal(mergePlaces([osm], normalizeCommunity([{ ...raw, website: null }]))[0].website, 'http://old.example')
+})
+
+test('the privacy policy is served at /privacy and /privacy-policy', async () => {
+  for (const p of ['/privacy', '/privacy-policy', '/privacy.html']) {
+    const r = await fetch(base + p)
+    assert.equal(r.status, 200, p)
+    assert.match(await r.text(), /Privacy Policy \| Trot/, p)
+  }
 })

@@ -950,6 +950,12 @@ self.addEventListener('fetch', (e) => {
       return req.method === 'HEAD' ? res.end() : res.end(hit.buf)
     })
     app.use(express.static(staticDir, { index: false, maxAge: '1h', setHeaders: (res, p) => { if (/[\\/]assets[\\/]/.test(p)) res.set('Cache-Control', 'public, max-age=31536000, immutable') } }))
+    // The privacy policy is a plain page, linked from the App Store listing.
+    app.get(['/privacy', '/privacy-policy'], (req, res, next) => {
+      const page = path.join(staticDir, 'privacy.html')
+      if (!fs.existsSync(page)) return next()
+      res.set('Cache-Control', 'public, max-age=3600').sendFile(page)
+    })
     app.use((req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next()
       // A missing file is a 404. Everything else is a route inside the app.
