@@ -43,6 +43,11 @@ const MODE = 'trot-mode', DOGKEY = 'trot-dog'
 const getLS = (k) => { try { return localStorage.getItem(k) } catch (e) { return null } }
 const setLS = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v) } catch (e) {} }
 const WALK_TYPES = ACTIVITY_TYPES.map((t) => t.id)
+// The last signed-in answer from /me, kept on this device so the app can open straight to
+// the dog's page and check with the server afterwards. Cleared on sign out and on a 401.
+const MECACHE = 'trot-me-v1'
+const readMe = () => { try { const m = JSON.parse(localStorage.getItem(MECACHE)); return m && m.user && Array.isArray(m.dogs) && m.dogs.length ? m : null } catch (e) { return null } }
+const writeMe = (m) => { try { const t = JSON.stringify(m); if (t.length < 200000) localStorage.setItem(MECACHE, t); else localStorage.removeItem(MECACHE) } catch (e) {} }
 
 // Decides between three paths:
 //   demo    the seeded Biscuit demo. The only path when no API is reachable.
@@ -57,7 +62,7 @@ export default function App() {
   const [notice, setNotice] = useState('')
 
   const enter = useCallback((m, pick, note) => {
-    setMe(m)
+    setMe(m); writeMe(m)
     const want = pick || getLS(DOGKEY)
     const s = m.dogs.find((d) => d.slug === want) ? want : m.dogs[0] && m.dogs[0].slug
     setSlug(s || null); setLS(DOGKEY, s || null); setLS(MODE, null)
@@ -71,13 +76,22 @@ export default function App() {
       const invite = takeInviteFromUrl()
       // A friend link (/?friend=<dog>) waits in sessionStorage until someone is signed in with a dog of their own.
       const friend = takeFriendFromUrl()
+      const lost = () => { setLS(MECACHE, null); setMe(null); setNotice('Your session ended. Sign in again.'); setPhase('welcome') }
+      // Open from what this device already knows, then check with the server. Without this the
+      // first screen waits for a round trip to the API, which is slow on a phone signal.
+      let early = false
+      if (!invite && !friend) {
+        const cached = hasToken() ? readMe() : null
+        if (cached) { setHasApi(true); usageReady(true); setAuthLost(lost); enter(cached); early = true }
+        else if (getLS(MODE) === 'demo') { setPhase('demo'); early = true }
+      }
       const ok = await probe()
       if (!on) return
       // Usage counting only runs against a real Trot API. On static hosting it stays a no-op.
       usageReady(ok)
-      if (!ok) { setPhase('demo'); return }
+      if (!ok) { if (!early) setPhase('demo'); return }
       setHasApi(true)
-      setAuthLost(() => { setMe(null); setNotice('Your session ended. Sign in again.'); setPhase('welcome') })
+      setAuthLost(lost)
       if (hasToken()) {
         try {
           const joined = await acceptPendingInvite()
@@ -86,7 +100,8 @@ export default function App() {
           return
         } catch (e) {
           if (!on) return
-          if (e.status !== 401) { setNotice(e.message); setPhase('welcome'); return }
+          if (e.status !== 401) { if (!early) { setNotice(e.message); setPhase('welcome') } return }
+          setLS(MECACHE, null); setMe(null)
         }
       }
       setPhase(!invite && !friend && getLS(MODE) === 'demo' ? 'demo' : 'welcome')
@@ -104,7 +119,7 @@ export default function App() {
     track('app_open', { mode, standalone: isStandalone() })
   }, [phase, me, slug])
   const toWelcome = () => { setLS(MODE, null); setNotice(''); setPhase(me && me.dogs.length ? 'real' : 'welcome') }
-  const out = async () => { await signOut(); setMe(null); setSlug(null); setLS(DOGKEY, null); setNotice(''); setPhase('welcome') }
+  const out = async () => { await signOut(); setLS(MECACHE, null); setMe(null); setSlug(null); setLS(DOGKEY, null); setNotice(''); setPhase('welcome') }
 
   // The demo saves nothing, so usage.js only counts looking around while it is showing.
   setUsageMode(phase === 'demo' || (phase === 'real' && !(me && slug)) ? 'demo' : 'real')
