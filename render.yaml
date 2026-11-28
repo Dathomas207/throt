@@ -17,6 +17,11 @@ services:
         value: "22"
       - key: MAPBOX
         sync: false
+      # Sign-in with emailed codes (docs/workos-setup.md). Set by hand in the Render dashboard; never in this file.
+      - key: WORKOS_API_KEY
+        sync: false
+      - key: WORKOS_CLIENT_ID
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: trot-db
